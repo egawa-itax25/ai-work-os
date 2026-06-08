@@ -20,7 +20,14 @@ export async function POST(request: NextRequest) {
     : verifyWebhookSecret(request);
 
   if (!isVerified) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    return NextResponse.json(
+      {
+        error: "Unauthorized",
+        has_line_channel_secret: Boolean(process.env.LINE_CHANNEL_SECRET),
+        has_line_signature: Boolean(request.headers.get("x-line-signature")),
+      },
+      { status: 401 },
+    );
   }
 
   const payload = JSON.parse(rawBody) as LineWebhookPayload;
