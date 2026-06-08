@@ -1,14 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { verifyWebhookSecret } from "@/lib/webhooks/auth";
-import { LineWebhookPayload, normalizeLineEvents } from "@/lib/webhooks/line";
+import {
+  LineWebhookPayload,
+  normalizeLineEvents,
+  verifyLineSignature,
+} from "@/lib/webhooks/line";
+
+export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
-  if (!verifyWebhookSecret(request)) {
+  const rawBody = await request.text();
+  const isVerified = process.env.LINE_CHANNEL_SECRET
+    ? verifyLineSignature({
+        body: rawBody,
+        signature: request.headers.get("x-line-signature"),
+        channelSecret: process.env.LINE_CHANNEL_SECRET,
+      })
+    : verifyWebhookSecret(request);
+
+  if (!isVerified) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const payload = (await request.json()) as LineWebhookPayload;
+  const payload = JSON.parse(rawBody) as LineWebhookPayload;
   const events = normalizeLineEvents(payload);
 
   if (events.length === 0) {
