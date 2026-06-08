@@ -11,6 +11,13 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   const rawBody = await request.text();
+  const payload = JSON.parse(rawBody) as LineWebhookPayload;
+  const events = normalizeLineEvents(payload);
+
+  if (events.length === 0) {
+    return NextResponse.json({ ok: true, inserted: 0 });
+  }
+
   const isVerified = process.env.LINE_CHANNEL_SECRET
     ? verifyLineSignature({
         body: rawBody,
@@ -28,13 +35,6 @@ export async function POST(request: NextRequest) {
       },
       { status: 401 },
     );
-  }
-
-  const payload = JSON.parse(rawBody) as LineWebhookPayload;
-  const events = normalizeLineEvents(payload);
-
-  if (events.length === 0) {
-    return NextResponse.json({ ok: true, inserted: 0 });
   }
 
   const supabase = createSupabaseAdminClient();
