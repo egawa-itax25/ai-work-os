@@ -27,6 +27,12 @@ export async function POST(request: NextRequest) {
     : verifyWebhookSecret(request);
 
   if (!isVerified) {
+    console.warn("LINE webhook auth failed", {
+      has_line_channel_secret: Boolean(process.env.LINE_CHANNEL_SECRET),
+      has_line_signature: Boolean(request.headers.get("x-line-signature")),
+      event_count: events.length,
+    });
+
     return NextResponse.json(
       {
         error: "Unauthorized",
