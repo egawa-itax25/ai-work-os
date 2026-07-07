@@ -1,0 +1,30 @@
+---
+description: Visual and interaction rules for the near-future task interface.
+alwaysApply: false
+---
+
+# UI Rules
+
+The product should feel like a dark, spatial AI task operating system.
+
+## Direction
+
+- Use Dark Theme as the baseline.
+- Use glassmorphism with restraint: translucent surfaces, subtle borders, and readable contrast.
+- Support drag and drop interactions where they naturally improve planning.
+- Favor node-based views for relationships between tasks, projects, people, decisions, and knowledge.
+- Prefer productive density over marketing-style layouts.
+
+## Interaction
+
+- Make draggable, selected, focused, disabled, loading, and empty states clear.
+- Keep motion purposeful and calm.
+- Use Motion for transitions that clarify structure or state changes.
+- Avoid decorative visuals that reduce readability.
+
+## Layout
+
+- Avoid nested cards.
+- Keep text readable on dark/glass backgrounds.
+- Use stable dimensions for boards, node canvases, toolbars, tiles, and counters.
+- Ensure mobile and desktop layouts do not overlap or clip text.

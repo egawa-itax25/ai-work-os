@@ -1,0 +1,28 @@
+---
+description: TypeScript and data modeling rules.
+alwaysApply: false
+---
+
+# TypeScript Rules
+
+Use TypeScript to make product behavior explicit and maintainable.
+
+## Modeling
+
+- Prefer typed data structures over loosely shaped objects.
+- Keep domain types close to the features that own them unless they are shared.
+- Use clear names for task, project, node, edge, decision, and preference concepts.
+- Avoid broad shared abstractions until duplication proves they are needed.
+
+## Implementation
+
+- Follow existing repository patterns.
+- Prefer simple functions and explicit state transitions.
+- Keep nullable and optional values deliberate.
+- Validate external input at boundaries such as routes, webhooks, storage, and imports.
+- Avoid `any` unless there is a clear boundary or migration reason.
+
+## Maintenance
+
+- Keep types readable for future AI agents and humans.
+- When a type encodes a product decision, link or update the related note.

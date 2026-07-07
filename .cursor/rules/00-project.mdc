@@ -1,0 +1,38 @@
+---
+description: Project identity and shared operating model.
+alwaysApply: true
+---
+
+# Project Rules
+
+This repository combines a Next.js application with an Obsidian-compatible Markdown knowledge base.
+
+## Identity
+
+- Build a near-future AI task management system.
+- Treat the Vault as the Single Source of Truth for product, task, design, decision, knowledge, and project state.
+- Use Markdown as the primary specification and knowledge layer, not just documentation.
+- Preserve existing files and user work.
+
+## Operating Model
+
+- Read `AGENTS.md` and relevant rules before structural or product changes.
+- Follow the Vault First development flow in `01-obsidian.mdc` before implementing changes that affect product behavior, UX, architecture, task flow, project state, or reusable knowledge.
+- Prefer small, additive, reversible changes.
+- When code and notes disagree, the Vault wins. Resolve the mismatch according to `01-obsidian.mdc`.
+- Keep implementation aligned with Vault notes.
+
+## Stack Direction
+
+- Framework: Next.js
+- Language: TypeScript
+- Styling: Tailwind CSS
+- Motion: Motion
+- Knowledge layer: Obsidian-compatible Markdown
+
+## Safety
+
+- Do not expose secrets from `.env.local`.
+- Do not delete or overwrite user-created notes unless explicitly requested.
+- Avoid unrelated refactors.
+- If a change affects long-term direction, update the Vault first.

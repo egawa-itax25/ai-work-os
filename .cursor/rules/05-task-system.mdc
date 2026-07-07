@@ -1,0 +1,37 @@
+---
+description: Product behavior rules for tasks, projects, decisions, and preferences.
+alwaysApply: false
+---
+
+# Task System Rules
+
+The task system connects action, context, and knowledge. Vault ownership, fields, naming, persistence, and update rules live in `01-obsidian.mdc`.
+
+## Core Objects
+
+- Tasks describe actionable work.
+- Projects group work around outcomes.
+- Decisions explain why durable choices were made.
+- Knowledge notes explain reusable context.
+- Preferences guide future behavior and design choices.
+
+## Task State
+
+- Task data is owned by the Vault.
+- The UI is a view of Vault task state.
+- Task state changes must update the corresponding Obsidian Task note.
+- Complete tasks by changing the Task note to `status: done`.
+- Preserve blocked, archived, dependency, estimate, deadline, energy, priority, importance, and urgency context when available.
+
+## Behavior
+
+- A task should have a clear outcome.
+- A project should link to relevant tasks and decisions.
+- A decision should explain context, choice, reason, consequences, and links.
+- Preferences should be easy to revise.
+- Node-based views should make relationships visible, not merely decorative.
+
+## AI Collaboration
+
+- Follow the Vault First workflow in `01-obsidian.mdc`.
+- Do not treat UI state or code as the source of truth for tasks.

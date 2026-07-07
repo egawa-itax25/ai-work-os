@@ -3,3 +3,16 @@ node_modules
 .env.local
 dist
 coverage
+dev-server-*.log
+dev-server-*.err.log
+
+# Obsidian local workspace state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache
+
+# Local AI/editor state
+.cursor/index
+.cursor/cache
+.agents/tmp
+.agents/logs

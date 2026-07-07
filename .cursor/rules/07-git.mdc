@@ -1,0 +1,28 @@
+---
+description: Git hygiene and repository safety rules.
+alwaysApply: false
+---
+
+# Git Rules
+
+Protect user work and keep repository history understandable.
+
+## Safety
+
+- Check working tree status before broad edits.
+- Do not revert user changes unless explicitly requested.
+- Do not delete generated or user files as cleanup unless the user asks.
+- Never commit secrets or local-only files.
+
+## Ignore Policy
+
+- Keep generated build output ignored.
+- Keep dependency folders ignored.
+- Keep local Obsidian workspace state ignored.
+- Keep local AI/editor cache and logs ignored.
+
+## Change Hygiene
+
+- Keep changes scoped to the request.
+- Separate structural rule updates from product implementation when practical.
+- Summarize changed files and why they changed.

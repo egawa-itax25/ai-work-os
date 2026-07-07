@@ -1,6 +1,75 @@
-# Customer Notification Hub
+# AI Work OS
 
-Next.js + TypeScript + Supabaseで、複数チャットの通知を顧客ごとにまとめるMVPです。
+AI Work OS is a near-future work operating layer for visualizing project flow,
+task dependencies, AI insight, and durable knowledge in one space.
+
+The product treats an Obsidian-compatible Markdown Vault as the source of truth.
+Markdown notes preserve specifications, reusable knowledge, decisions, project
+plans, tasks, and long-term preferences.
+
+The current implementation includes:
+
+- Japanese-first AI Work OS cockpit.
+- Spatial Project Flow canvas with pan, zoom, and draggable task nodes.
+- Portfolio View for comparing multiple projects by progress, priority, current
+  ball holder, and stalled state.
+- Obsidian-style Vault folders for decisions, projects, knowledge, tasks, and
+  preferences.
+- Next.js, React, TypeScript, Tailwind CSS, and Motion.
+
+## Knowledge Base Layout
+
+- `Knowledge/`: Reusable concepts, research, UI patterns, architecture notes, and domain knowledge.
+- `Decisions/`: Product, design, and technical decisions that should be visible later.
+- `Projects/`: Feature specs, project briefs, milestones, and implementation plans.
+- `Tasks/`: Actionable work items and backlog notes.
+- `Preferences/`: User preferences, design taste, workflow norms, and AI collaboration guidance.
+- `AGENTS.md`: Project philosophy and AI collaboration mindset.
+- `.cursor/rules/`: Responsibility-specific operating and implementation rules.
+
+## Working Principles
+
+- Treat Obsidian as the persistent memory layer.
+- Keep Markdown notes small, linked, and useful for both humans and AI.
+- Preserve existing files and move in small, safe steps.
+- Record durable choices in `Decisions/`.
+- Keep implementation aligned with the Vault.
+
+## Project Structure
+
+```text
+.
+|-- AGENTS.md
+|-- README.md
+|-- .cursor/
+|   `-- rules/
+|       |-- project-rules.mdc
+|       |-- 00-project.mdc
+|       |-- 01-obsidian.mdc
+|       |-- 02-typescript.mdc
+|       |-- 03-react.mdc
+|       |-- 04-ui.mdc
+|       |-- 05-task-system.mdc
+|       |-- 06-documentation.mdc
+|       |-- 07-git.mdc
+|       `-- 08-quality.mdc
+|-- Knowledge/
+|-- Decisions/
+|-- Projects/
+|-- Tasks/
+|-- Preferences/
+|-- src/
+|-- supabase/
+`-- package.json
+```
+
+---
+
+## Legacy Base
+
+This repository began from a small customer notification hub prototype. It is now
+being evolved into AI Work OS, and remaining notification routes are treated as
+legacy implementation context until they are removed or integrated deliberately.
 
 ## MVPの範囲
 

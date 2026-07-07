@@ -1,0 +1,27 @@
+---
+description: Documentation and note maintenance rules.
+alwaysApply: false
+---
+
+# Documentation Rules
+
+Documentation is part of the product system, but Vault Markdown is the source of truth.
+
+## README
+
+- Keep the top-level README useful as the project entry point.
+- Include the project structure, setup hints, and links to durable rules.
+- Preserve existing useful setup notes when updating the README.
+
+## Vault Specs
+
+- Follow the Vault First rules in `01-obsidian.mdc`.
+- Treat Vault Markdown as the source of truth for long-lived specifications, decisions, knowledge, project state, and task state.
+- Keep implementation synchronized with Vault notes when behavior changes.
+
+## Style
+
+- Prefer concise Markdown with stable headings.
+- Use checklists for concrete work.
+- Use diagrams when structure is easier to understand visually.
+- Avoid duplicating Vault operating rules outside `01-obsidian.mdc`; link to that rule instead.

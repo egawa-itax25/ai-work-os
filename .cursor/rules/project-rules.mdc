@@ -1,0 +1,22 @@
+---
+description: Rule index for the Obsidian-backed AI task management system.
+alwaysApply: true
+---
+
+# Rule Index
+
+This file is intentionally small. Detailed rules are split by responsibility so the rule set can grow without becoming hard to maintain.
+
+Read these rules as needed:
+
+- `00-project.mdc`: Project identity, operating model, and shared priorities.
+- `01-obsidian.mdc`: Vault structure, Markdown conventions, and durable memory rules.
+- `02-typescript.mdc`: TypeScript and data modeling rules.
+- `03-react.mdc`: React and Next.js component rules.
+- `04-ui.mdc`: Dark glassmorphism, drag and drop, node-based UI direction.
+- `05-task-system.mdc`: Task, project, decision, and preference system behavior.
+- `06-documentation.mdc`: README, specs, decisions, and note maintenance.
+- `07-git.mdc`: Git hygiene and repository safety rules.
+- `08-quality.mdc`: Verification, testing, accessibility, and review expectations.
+
+Start with `00-project.mdc`, then apply the specialized rule that matches the work.

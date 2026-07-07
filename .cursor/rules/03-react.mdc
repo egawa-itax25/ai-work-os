@@ -1,0 +1,27 @@
+---
+description: React and Next.js component rules.
+alwaysApply: false
+---
+
+# React Rules
+
+Build React and Next.js code that is clear, composed, and aligned with the existing app.
+
+## Components
+
+- Keep components focused on one responsibility.
+- Extract components when it reduces real complexity or matches an existing local pattern.
+- Prefer explicit props and stable data flow.
+- Keep server/client boundaries intentional in Next.js.
+
+## State
+
+- Model UI states explicitly: loading, empty, error, active, disabled, dragging, selected.
+- Keep drag and node interactions predictable.
+- Avoid hidden global state unless the feature truly needs shared coordination.
+
+## Accessibility
+
+- Make controls keyboard reachable.
+- Use semantic elements where practical.
+- Preserve focus states and visible interaction feedback.

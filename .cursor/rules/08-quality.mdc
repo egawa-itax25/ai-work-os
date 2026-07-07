@@ -1,0 +1,27 @@
+---
+description: Verification, testing, accessibility, and review rules.
+alwaysApply: false
+---
+
+# Quality Rules
+
+Quality means the system remains understandable, usable, and safe to change.
+
+## Verification
+
+- Run the smallest relevant verification after code changes.
+- For documentation-only changes, inspect the generated diff.
+- For UI changes, verify responsive layout and important interaction states.
+- For data changes, verify migration or schema assumptions before relying on them.
+
+## Testing
+
+- Add or update tests when behavior changes and the risk justifies it.
+- Prefer focused tests over broad brittle tests.
+- Cover shared logic more carefully than isolated UI copy.
+
+## Review
+
+- Look for regressions, missing states, broken links, inaccessible controls, and stale docs.
+- Ensure task and decision notes remain aligned with implemented behavior.
+- Keep final explanations concise and specific.

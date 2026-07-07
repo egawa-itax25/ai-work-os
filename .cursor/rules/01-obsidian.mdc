@@ -1,0 +1,296 @@
+---
+description: Vault First operating rules for Obsidian as the Single Source of Truth.
+alwaysApply: false
+---
+
+# Obsidian Rules
+
+## Philosophy
+
+Obsidian Vault is the only Single Source of Truth for this project.
+
+The Vault is not supporting documentation. It is the shared memory between humans and AI.
+
+Code is the result of implementing the Vault. Do not update the Vault as an afterthought based on code. Design, specifications, decisions, knowledge, project state, task state, and long-term preferences must use the Vault as the authoritative source.
+
+If implementation work reveals that the Vault must change, update the Vault immediately instead of skipping the update.
+
+## Required Development Flow
+
+Work in this order:
+
+1. Understand the requirement.
+2. Read the Vault when the work needs project context.
+3. Decide which Vault notes must be updated.
+4. If design, specification, judgment, task state, or project state changes, update the Vault before writing code.
+5. Implement code from the Vault as the source.
+6. Save reusable knowledge learned during or after implementation back to the Vault.
+7. Update the relevant Project note to the latest state when project state changed.
+8. Output a Vault Report.
+
+Code-only changes are prohibited when the change affects design, specification, decisions, project state, task state, preferences, or reusable knowledge.
+
+## Vault Reading Order
+
+For work that needs project context, read only the necessary notes in this order:
+
+1. `Knowledge/mistakes.md`
+2. `Preferences/`
+3. Relevant `Projects/` note
+4. Relevant `Knowledge/` note
+5. Relevant `Decisions/` note
+6. Relevant `Tasks/` note
+
+Do not read the Vault for questions that can be answered safely from general knowledge alone.
+
+## Vault Update Responsibility
+
+Vault updates are event-driven.
+
+When work creates an event, update the fixed Vault targets for that event. If one event maps to multiple targets, update all of them. Skipping a required target is prohibited.
+
+### Event Map
+
+| Event | Required Vault Updates |
+| --- | --- |
+| Design change | `Decisions/` + `Projects/` |
+| New feature added | `Projects/` |
+| Bug resolved | `Knowledge/` + `Projects/` |
+| Technology selection | `Decisions/` + `Knowledge/` + `Projects/` |
+| Task added | `Tasks/` + `Projects/` |
+| Task completed | `Tasks/` + `Projects/` |
+| User setting changed | `Preferences/` |
+| AI improvement from correction | `Knowledge/mistakes.md` |
+
+Always decide whether the current work matches one or more events before changing files.
+
+### Design, Specification, Or Architecture Change
+
+Update `Decisions/`.
+
+Examples:
+
+- Technology selection
+- Design change
+- Naming rule change
+- UI direction change
+- Database design change
+
+Always record the reason.
+
+Also update the relevant `Projects/` note when the change affects project state, roadmap, TODO, blocker, version, or implemented features.
+
+### Project State Change
+
+Update `Projects/`.
+
+Examples:
+
+- Version change
+- Roadmap change
+- Status change
+- TODO change
+- Blocker added
+- Feature added
+- Feature removed
+- Implementation completed
+
+### Newly Learned Knowledge
+
+Update `Knowledge/`.
+
+Examples:
+
+- Bug
+- Cause
+- Solution
+- Library knowledge
+- API specification
+- Best practice
+- Environment setup
+- Performance improvement
+- Knowledge that will help next time
+
+Do not leave reusable knowledge only in chat.
+
+### Task State Change
+
+Update `Tasks/`.
+
+Examples:
+
+- `status`
+- `priority`
+- `importance`
+- `urgency`
+- `energy`
+- `deadline`
+- `estimate`
+- `depends`
+
+Task data is owned by the Vault. The UI is a view of Vault state, not the source of truth.
+
+Updating only the UI is prohibited.
+
+### Long-Term User Preference
+
+Update `Preferences/`.
+
+Examples:
+
+- UI preferences
+- Development style
+- Naming rules
+- Library preferences
+- Design philosophy
+
+Do not save temporary instructions or one-off constraints as preferences.
+
+## Multiple Updates
+
+If one change belongs to multiple events or categories, update every relevant Vault target.
+
+Example: adopting React Query requires:
+
+- `Decisions/`: record the adoption decision and reason.
+- `Knowledge/`: preserve cache and library knowledge.
+- `Projects/`: update roadmap, TODO, blocker, or implemented features if affected.
+
+It is prohibited to skip an existing event target.
+
+## Implementation Rule
+
+Implement from the Vault.
+
+If code and Vault disagree, the Vault wins. Resolve the mismatch by updating implementation to match the Vault, or by making an explicit Vault change first when the intended direction has changed.
+
+Do not silently infer project direction from code.
+
+## Project State Updates
+
+After implementation, update the relevant `Projects/` note when any project state changed.
+
+Project notes should preserve:
+
+- Version
+- Status
+- Roadmap
+- TODO
+- Blocker
+- Implemented features
+
+Implementation is not complete until the relevant Project note reflects the current state when such state changed.
+
+## Task Source Of Truth
+
+Task data is owned by the Vault.
+
+The UI is a view of Vault state. It is not the source of truth for task data.
+
+When a task state changes, do not update only the UI. Update the corresponding Obsidian Task note as well.
+
+Tasks are not deleted. When complete, update the task note to:
+
+```yaml
+status: done
+```
+
+If a task is no longer relevant, keep the note and use a non-destructive status such as `archived` only when explicitly appropriate.
+
+Task notes must preserve these fields when applicable:
+
+```yaml
+status: todo
+priority:
+importance:
+urgency:
+estimate:
+energy:
+deadline:
+depends: []
+project:
+tags: []
+```
+
+## Required Frontmatter
+
+Every Vault note must include:
+
+```yaml
+---
+date: YYYY-MM-DD
+tags: []
+project:
+related: []
+---
+```
+
+Add extra fields only when they help the note's responsibility.
+
+## Naming Rules
+
+- `Knowledge/`: `topic-subtopic.md`
+- `Decisions/`: `YYYY-MM-DD-topic.md`
+- `Projects/`: `project-name.md`
+- `Tasks/`: `YYYY-MM-DD-task.md`
+- `Preferences/`: `category.md`
+
+Use lowercase kebab-case for topics and project names unless the user explicitly requests a different filename.
+
+## Folder Responsibilities
+
+- `Knowledge/`: reusable knowledge, bugs, causes, solutions, API details, library behavior, environment setup, best practices, performance learning, and lessons that should help future work.
+- `Decisions/`: design judgments, technology selections, UI direction, database design, naming rationale, and other choices. Every decision must include the reason.
+- `Projects/`: project state, roadmap, version, TODO, blockers, implemented features, and project-level specifications.
+- `Tasks/`: actionable work and task state. Task state changes must be reflected in the corresponding Task note.
+- `Preferences/`: long-term user preferences only.
+
+## Mistakes Note
+
+Use `Knowledge/mistakes.md` only when the user gives an explicit correction and both are true:
+
+- The mistake can reasonably recur.
+- A concrete prevention rule can be written.
+
+Do not log every small correction. Keep entries concise and prevention-focused.
+
+## Required Vault Report
+
+Always report Vault activity at the end of work.
+
+Use this exact structure:
+
+```text
+Vault Report
+
+Read
+
+Updated
+
+Created
+
+Why
+```
+
+If a category has no entries, write `none`.
+
+In `Why`, explain in 1-2 lines why each Vault update was made.
+
+Silent Vault reads or updates are prohibited.
+
+## Prohibited
+
+- Changing code without updating the Vault when the change affects design, specification, decisions, task state, project state, preferences, or reusable knowledge.
+- Changing design without updating `Decisions/`.
+- Finishing implementation without updating the relevant `Projects/` note when project state changed.
+- Leaving reusable knowledge only in chat.
+- Treating the Vault as an attachment to code.
+- Updating task state only in UI while leaving the Task note stale.
+- Skipping a Vault update target when a change belongs to that target.
+
+## Note Style
+
+- Use focused Markdown notes with stable headings.
+- Prefer links between notes instead of one large mixed document.
+- Use Obsidian-friendly links where they improve navigation.
+- Keep Markdown readable for both humans and AI agents.
