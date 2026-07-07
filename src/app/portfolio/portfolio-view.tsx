@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -787,8 +788,13 @@ function ProjectNode({
   onDuplicate: (project: PortfolioProject) => void;
   onArchive: (project: PortfolioProject) => void;
 }) {
+  const router = useRouter();
   const score = getPriorityScore(project);
   const stateClass = project.status === "done" ? "opacity-45" : project.status === "waiting" ? "opacity-75" : "";
+
+  function openProjectTasks() {
+    router.push(projectFlowHref(project));
+  }
 
   return (
     <article
@@ -836,9 +842,19 @@ function ProjectNode({
       </div>
       <div className="mt-3 flex items-center justify-between gap-2">
         <StatusPill project={project} />
-        <Link href={projectFlowHref(project)} className="rounded-md border border-white/10 px-2 py-1 text-[11px] font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
+        <button
+          type="button"
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+            openProjectTasks();
+          }}
+          className="rounded-md border border-white/10 px-2 py-1 text-[11px] font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100"
+        >
           開く
-        </Link>
+        </button>
         <button type="button" onClick={() => onMenuToggle(project.id)} className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-white/[0.06]" title="操作メニュー">
           …
         </button>
