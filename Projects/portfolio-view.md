@@ -4,6 +4,7 @@ tags: [spec, portfolio, ui, project-flow]
 project: ai-task-system
 related:
   - Decisions/2026-07-07-portfolio-view.md
+  - Decisions/2026-07-07-portfolio-operation-hub.md
   - Projects/AI-Task-System-Architecture.md
   - Preferences/ui.md
 ---
@@ -47,6 +48,26 @@ Use four calm regions:
 Keep the default surface quiet. Show deeper details only when selected or
 expanded.
 
+## Operation Hub
+
+Portfolio View is also the main operation hub for moving work forward.
+
+The user should be able to create and edit projects and tasks without leaving
+the context of the portfolio comparison view.
+
+Supported operation surfaces:
+
+- Global "＋ 作成" action.
+- Portfolio header "＋ プロジェクトを追加" action.
+- Shared Project Inspector.
+- Create Project Modal.
+- Create Task Modal.
+- Context menus for project rows and project nodes.
+- Project Flow Task Inspector.
+
+Ordinary project and task creation should not require navigation to a separate
+administration screen.
+
 ## Project List Fields
 
 Each project row must show:
@@ -65,6 +86,10 @@ Show only when useful:
 - Stalled count.
 - Deadline risk.
 - Short AI suggestion.
+
+Project rows should expose secondary actions through a compact "…" menu rather
+than permanent large buttons. The row selection opens the shared Project
+Inspector.
 
 ## Ball Ownership
 
@@ -102,6 +127,41 @@ State expression:
 
 The map should support pan and zoom. Clicking a project opens that project's
 Project Flow screen.
+
+### Drag And Drop Layout
+
+Portfolio project nodes can be moved by drag and drop.
+
+Initial node coordinates come from the project data model. User-adjusted
+coordinates are stored as local UI layout state so the comparison map can be
+rearranged without changing the project owner, current ball holder, progress,
+or priority score.
+
+Dragging a project node must:
+
+- Select the project immediately.
+- Move only that project node, not the whole canvas.
+- Keep the node within the visible board bounds.
+- Preserve the new position across reloads when possible.
+- Avoid changing task state or project state in the Vault.
+
+Dragging the empty canvas should continue to pan the Portfolio map.
+
+Opening a project should be explicit and always available from:
+
+- Project list row action.
+- Project node action.
+- Right priority/detail panel.
+
+This prevents accidental navigation while the user is arranging the map.
+
+Project nodes should also expose a compact context menu with:
+
+- 開く
+- 編集
+- タスクを追加
+- 複製
+- アーカイブ
 
 ## Filters
 
@@ -159,8 +219,135 @@ Use restrained feedback:
 - 150ms to 300ms transitions.
 - Detail expansion for Priority Score breakdown.
 - Filter switching.
+- Center modal opening and closing.
+- Inline edit focus and saved state.
+- Undo-capable toast after create or edit.
+- Outside-click close behavior that returns to the previous view.
 
 Avoid decorative animation.
+
+## Creation And Editing
+
+### Global Create
+
+The global "＋ 作成" menu starts either project or task creation.
+
+The initial structure must be extensible for:
+
+- メモを作成
+- AIへの自然言語指示
+
+### Create Project Modal
+
+The modal appears in the center of the screen and starts with only:
+
+- プロジェクト名
+- 目的
+- 期限
+- 責任者
+
+After saving, the new project appears immediately in:
+
+- Project list.
+- Project Flow Map.
+- AI priority ranking.
+- Project Inspector.
+
+The created project should be selected and highlighted briefly.
+
+Clicking outside the modal closes it and returns to the same Portfolio context.
+
+### Project Inspector
+
+Project list selection and map node selection use the same Project Inspector.
+
+The Inspector supports viewing and inline editing for:
+
+- プロジェクト名
+- 目的
+- 責任者
+- 期限
+- 進捗
+- Priority Score
+- 現在のボール
+- ボール保持時間
+- 次のマイルストーン
+- AIインサイト
+- リスク情報
+
+The Inspector also provides:
+
+- フローを見る
+- ＋ タスクを追加
+
+### Create Task Modal
+
+The modal appears in the center of the screen and starts with:
+
+- タスク名
+- 所属プロジェクト
+- 担当者
+- 現在のボール
+- 期限
+- 優先順位
+- 次のアクション
+
+When launched from a project, the project is preselected.
+
+Clicking outside the modal closes it and returns to the same Portfolio context.
+
+### Task Inspector
+
+Task Nodes in Project Flow open a Task Inspector in the same view.
+
+The inspector supports viewing and editing:
+
+- タスク名
+- 進捗
+- 担当者
+- 現在のボール
+- ボール保持開始日時
+- 期限
+- 優先順位
+- 次のアクション
+- 依存関係
+
+Task node context menu:
+
+- 開く
+- 編集
+- 複製
+- ボールを渡す
+- 完了
+- アーカイブ
+
+### Persistence
+
+Minor edits auto-save.
+
+The first implementation persists editable mock state in localStorage. Future
+implementations should replace this with Vault parsing and write-back while
+preserving the same field names.
+
+After edits, show:
+
+```text
+保存中…
+保存済み
+```
+
+Also show an undo-capable toast for recent create/edit actions.
+
+### State Restoration
+
+Portfolio should restore as much as possible when returning from Project Flow:
+
+- Scroll position.
+- Canvas pan.
+- Zoom.
+- Selected project.
+- Filter state.
+- Project node layout.
 
 ## Completion Criteria
 
@@ -169,6 +356,16 @@ Avoid decorative animation.
 - Stalled projects and user's actionable projects can be filtered.
 - Priority Score breakdown can be inspected.
 - Project nodes can be panned, zoomed, selected, and opened.
+- Project nodes can be repositioned with drag and drop.
+- The Project Flow screen for a single project is reachable from the list,
+  map node, and selected project panel.
+- Projects can be created from Portfolio View.
+- Projects can be edited from the shared Project Inspector.
+- Tasks can be created from Portfolio View with a preselected project.
+- Tasks can be created and edited from Project Flow.
+- Minor edits auto-save and show quiet saved feedback.
+- Recent edits provide undo-capable feedback.
+- Portfolio state is restored as much as possible after returning from Project Flow.
 - Japanese UI is used throughout.
 - Existing Project Flow is preserved.
 
@@ -182,10 +379,18 @@ Implemented:
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
+- Project node drag and drop with persisted local layout state.
 - Priority Score ranking and visible score breakdown.
 - Separate `owner` and `currentBallHolder` data fields.
 - Links from Portfolio project rows and nodes into the existing Project Flow
   route.
+- Return path from single Project Flow back to Portfolio View.
+- Portfolio operation hub behavior is planned for in-context project and task
+  creation/editing.
+- Verified after stale dev-server restart that `/portfolio` serves successfully
+  on `http://127.0.0.1:3030/portfolio`.
+- Verified LAN access from the PC using
+  `http://172.16.1.157:3030/portfolio` for mobile review on the same Wi-Fi.
 
 Current mock data is deterministic and should later be replaced by Vault parsing
 and AI scoring.

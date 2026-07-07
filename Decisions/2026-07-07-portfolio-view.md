@@ -66,3 +66,22 @@ the portfolio screen.
   AI scoring.
 - Filters must make "projects that move if I act" immediately visible.
 - Project nodes should be compact, calm, clickable, and pan/zoom capable.
+
+## Follow-up Decision: Node Drag And Explicit Open
+
+Portfolio project nodes should be draggable on the map.
+
+Dragging a node changes only the user's map layout. It does not change project
+priority, owner, current ball holder, progress, or Vault task state.
+
+Because drag and navigation conflict, opening a single Project Flow should be an
+explicit action from the project list, the node, or the right detail panel.
+Clicking or dragging a node selects and positions it; the "フローを見る" action
+opens the project-specific map.
+
+## Reason
+
+The Portfolio map is a planning surface. Users need to arrange projects
+spatially while comparing them, without accidentally leaving the view. Explicit
+open actions keep navigation predictable and make the drag interaction feel
+safe.

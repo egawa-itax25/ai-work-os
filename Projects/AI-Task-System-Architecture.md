@@ -18,6 +18,11 @@ The goal is to make tasks understandable to both humans and AI agents. The syste
 
 The GitHub repository for this product is `egawa-itax25/ai-work-os`.
 
+Mobile review should use a Vercel deployment connected to the GitHub
+repository. Local LAN URLs are acceptable for quick checks, but Vercel is the
+preferred path when the user wants to inspect the product from a phone without
+depending on the PC and phone being on the same Wi-Fi.
+
 ## Core Concepts
 
 ### Task
@@ -51,6 +56,30 @@ A project should answer:
 - What work remains?
 - What is blocking progress?
 - Which decisions and knowledge notes shape this project?
+
+### Project Editable Fields
+
+Project data should support in-context creation and editing from Portfolio View.
+
+Recommended project fields:
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| `id` | string | Stable identifier for UI, Vault sync, and links. |
+| `name` | string | Human-readable project name. |
+| `objective` | string | Why the project exists and what outcome it creates. |
+| `owner` | string | Responsible person or agent. |
+| `dueDate` | date | Target deadline. |
+| `progress` | number | Completion percentage from 0 to 100. |
+| `currentBallHolder` | string | Person, customer, team, or AI currently holding the ball. |
+| `ballHolderType` | enum | `self`, `customer`, `member`, `ai`, or `none`. |
+| `ballHoldingDays` | number | How long the ball has been held. |
+| `nextMilestone` | string | Next meaningful progress marker. |
+| `aiSuggestion` | string | Short AI insight when useful. |
+| `risk` | string | Risk text only when there is a meaningful risk. |
+
+`owner` and `currentBallHolder` must remain separate. A user can own a project
+while the current ball sits with a customer, another member, or AI.
 
 ### Knowledge
 
@@ -167,6 +196,10 @@ energy: medium
 deadline: 2026-07-10
 depends: []
 owner:
+currentBallHolder:
+ballHoldingStartedAt:
+progress:
+nextAction:
 area:
 source:
 created: 2026-07-06
@@ -193,6 +226,10 @@ updated: 2026-07-06
 | `tags` | list | Search, grouping, and AI context hints. |
 | `related` | list | Linked notes, decisions, knowledge, or projects. |
 | `owner` | string | Person or agent responsible. |
+| `currentBallHolder` | string | Current person, team, customer, or AI that must act next. |
+| `ballHoldingStartedAt` | date | When the current ball holder started holding the ball. |
+| `progress` | number | Task progress from 0 to 100. |
+| `nextAction` | string | The next concrete action needed to move the task. |
 | `area` | string | Optional product or work area. |
 | `source` | string | Origin of the task, such as user, AI, meeting, bug, or decision. |
 | `created` | date | Creation date. |
@@ -380,10 +417,14 @@ The navigation hierarchy is:
 
 ```text
 Portfolio View
+Project Inspector
 Project Flow
-Task Detail
+Task Inspector
 Knowledge
 ```
+
+Portfolio View should also be the operation hub for creating and editing
+projects and tasks without leaving the comparison context.
 
 The first implementation may still use typed dummy records, but the interaction model should favor:
 
@@ -410,6 +451,11 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - Portfolio View is implemented at `/portfolio` with URL filters, compact
   project nodes, Priority Score breakdown, and links into existing Project Flow
   routes.
+- Portfolio View should support in-context project creation/editing and task
+  creation through drawers and a shared Project Inspector.
+- Project Flow should support Task Inspector editing on node selection.
+- GitHub and Vercel are the preferred deployment path for mobile review of the
+  current UI.
 
 ## Next UI Requirements
 

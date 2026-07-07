@@ -54,3 +54,18 @@ game-like space effects in Portfolio View.
 Interactions should feel precise and quiet: row hover, node selection, pan,
 zoom, filter switching, and detail expansion should use short 150ms to 300ms
 transitions.
+
+Portfolio operations should not turn the screen into a dense administration
+page. Creation and editing controls should appear only when useful:
+
+- Global "＋ 作成" is always available but compact.
+- Project and task creation use centered modals that keep the current screen
+  visible behind them.
+- Clicking outside a creation modal closes it and returns to the previous
+  screen state.
+- Project editing happens in the shared Project Inspector.
+- Task creation uses the current project preselected when
+  possible.
+- Context menus are available through right click or "…" buttons.
+- Minor edits auto-save with quiet "保存中…" and "保存済み" feedback.
+- Recent changes should show an undo-capable toast.

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const navItems = [
   { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
@@ -19,6 +20,25 @@ const navItems = [
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isCockpit = pathname === "/";
+  const [createMenuOpen, setCreateMenuOpen] = useState(false);
+
+  useEffect(() => {
+    function handleShortcut(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        setCreateMenuOpen((current) => !current);
+      }
+    }
+
+    window.addEventListener("keydown", handleShortcut);
+
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
+  function dispatchCreate(type: "project" | "task") {
+    window.dispatchEvent(new CustomEvent("ai-work-os:create", { detail: { type } }));
+    setCreateMenuOpen(false);
+  }
 
   return (
     <body>
@@ -82,6 +102,69 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         </header> : null}
+
+        {!isCockpit ? (
+          <div className="fixed right-4 top-4 z-40 hidden lg:block">
+            <button
+              type="button"
+              onClick={() => setCreateMenuOpen(true)}
+              className="rounded-md border border-sky-200/30 bg-slate-950/80 px-4 py-2 text-sm font-semibold text-sky-50 shadow-xl shadow-black/30 backdrop-blur-xl transition hover:bg-sky-200/[0.12]"
+              title="作成メニューを開く。ショートカットは Ctrl+Shift+N です。"
+            >
+              ＋ 作成
+            </button>
+          </div>
+        ) : null}
+
+        {createMenuOpen ? (
+          <div
+            className="fixed inset-0 z-50 grid place-items-center bg-black/45 p-4 backdrop-blur-[2px]"
+            onMouseDown={() => setCreateMenuOpen(false)}
+          >
+            <div
+              className="w-full max-w-sm rounded-xl border border-white/10 bg-slate-950/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-2xl"
+              onMouseDown={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-3 px-2 py-2">
+                <div>
+                  <p className="text-sm font-semibold text-white">作成</p>
+                  <p className="mt-1 text-xs text-slate-500">今の画面の文脈で追加します。</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCreateMenuOpen(false)}
+                  className="h-8 w-8 rounded-md border border-white/10 text-slate-300 transition hover:bg-white/[0.06]"
+                  title="閉じる"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="mt-2 grid gap-2">
+                <button
+                  type="button"
+                  onClick={() => dispatchCreate("project")}
+                  className="rounded-lg border border-white/10 bg-white/[0.035] px-4 py-3 text-left text-sm font-semibold text-slate-100 transition hover:border-sky-200/40 hover:bg-sky-200/[0.08]"
+                >
+                  プロジェクトを作成
+                </button>
+                <button
+                  type="button"
+                  onClick={() => dispatchCreate("task")}
+                  className="rounded-lg border border-white/10 bg-white/[0.035] px-4 py-3 text-left text-sm font-semibold text-slate-100 transition hover:border-sky-200/40 hover:bg-sky-200/[0.08]"
+                >
+                  タスクを作成
+                </button>
+                <div className="my-1 border-t border-white/10" />
+                <button type="button" disabled className="rounded-lg px-4 py-3 text-left text-sm text-slate-600">
+                  メモを作成
+                </button>
+                <button type="button" disabled className="rounded-lg px-4 py-3 text-left text-sm text-slate-600">
+                  AIへ指示
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <main className={isCockpit ? "min-h-screen" : "px-4 py-6 lg:ml-72 lg:px-8 lg:py-8"}>{children}</main>
       </div>
