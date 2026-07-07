@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { getTaskLinks, knowledge, projects, tasks, type TaskRecord } from "@/lib/workspace-data";
 
 type Point = { x: number; y: number };
@@ -89,10 +89,26 @@ export default function DashboardView() {
   const [zoom, setZoom] = useState(1);
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [panelOpen, setPanelOpen] = useState(true);
+  const panRef = useRef(pan);
+  const positionsRef = useRef(positions);
+  const zoomRef = useRef(zoom);
+  const dragStateRef = useRef<DragState | null>(null);
+  const frameRef = useRef<number | null>(null);
+  const shouldCommitPanRef = useRef(false);
+  const shouldCommitPositionsRef = useRef(false);
 
   const selectedTask = tasks.find((task) => task.id === selectedId) ?? tasks[0];
   const activeTasks = tasks.filter((task) => task.status !== "done");
   const links = getTaskLinks();
+
+  useEffect(
+    () => () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    },
+    [],
+  );
 
   const aiFocus = useMemo(
     () =>
@@ -104,55 +120,91 @@ export default function DashboardView() {
     [activeTasks],
   );
 
+  function scheduleCanvasCommit() {
+    if (frameRef.current !== null) {
+      return;
+    }
+
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+
+      if (shouldCommitPanRef.current) {
+        shouldCommitPanRef.current = false;
+        setPan(panRef.current);
+      }
+
+      if (shouldCommitPositionsRef.current) {
+        shouldCommitPositionsRef.current = false;
+        setPositions(positionsRef.current);
+      }
+    });
+  }
+
+  function updateDragState(nextDragState: DragState | null) {
+    dragStateRef.current = nextDragState;
+    setDragState(nextDragState);
+  }
+
   function startCanvasDrag(client: Point) {
-    setDragState({ type: "canvas", start: client, origin: pan });
+    updateDragState({ type: "canvas", start: client, origin: panRef.current });
   }
 
   function startPlanetDrag(id: string, client: Point) {
     setSelectedId(id);
     setPanelOpen(true);
-    setDragState({
+    updateDragState({
       type: "planet",
       id,
       start: client,
-      origin: positions[id] ?? { x: 0, y: 0 },
+      origin: positionsRef.current[id] ?? { x: 0, y: 0 },
     });
   }
 
   function movePointer(client: Point) {
-    if (!dragState) {
+    const currentDragState = dragStateRef.current;
+
+    if (!currentDragState) {
       return;
     }
 
     const delta = {
-      x: client.x - dragState.start.x,
-      y: client.y - dragState.start.y,
+      x: client.x - currentDragState.start.x,
+      y: client.y - currentDragState.start.y,
     };
 
-    if (dragState.type === "canvas") {
-      setPan({ x: dragState.origin.x + delta.x, y: dragState.origin.y + delta.y });
+    if (currentDragState.type === "canvas") {
+      panRef.current = {
+        x: currentDragState.origin.x + delta.x,
+        y: currentDragState.origin.y + delta.y,
+      };
+      shouldCommitPanRef.current = true;
+      scheduleCanvasCommit();
       return;
     }
 
-    setPositions((current) => ({
-      ...current,
-      [dragState.id]: {
-        x: dragState.origin.x + delta.x / zoom,
-        y: dragState.origin.y + delta.y / zoom,
+    positionsRef.current = {
+      ...positionsRef.current,
+      [currentDragState.id]: {
+        x: currentDragState.origin.x + delta.x / zoomRef.current,
+        y: currentDragState.origin.y + delta.y / zoomRef.current,
       },
-    }));
+    };
+    shouldCommitPositionsRef.current = true;
+    scheduleCanvasCommit();
   }
 
   function zoomCanvas(nextZoom: number) {
-    setZoom(Math.min(1.35, Math.max(0.72, nextZoom)));
+    const boundedZoom = Math.min(1.35, Math.max(0.72, nextZoom));
+    zoomRef.current = boundedZoom;
+    setZoom(boundedZoom);
   }
 
   return (
     <section
       className="relative min-h-screen overflow-x-hidden bg-black/35 text-slate-100 shadow-2xl shadow-black/40 lg:overflow-hidden"
       onPointerMove={(event) => movePointer({ x: event.clientX, y: event.clientY })}
-      onPointerUp={() => setDragState(null)}
-      onPointerLeave={() => setDragState(null)}
+      onPointerUp={() => updateDragState(null)}
+      onPointerLeave={() => updateDragState(null)}
       onWheel={(event) => {
         if (Math.abs(event.deltaY) > 2) {
           zoomCanvas(zoom - event.deltaY * 0.0012);
@@ -628,6 +680,7 @@ function CanvasSurface({
       className={`absolute inset-0 cursor-grab overflow-hidden ${dragState?.type === "canvas" ? "cursor-grabbing" : ""}`}
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) {
+          event.currentTarget.setPointerCapture(event.pointerId);
           onCanvasPointerDown({ x: event.clientX, y: event.clientY });
         }
       }}
@@ -799,6 +852,7 @@ function Planet({
       onClick={onSelect}
       onPointerDown={(event) => {
         event.stopPropagation();
+        event.currentTarget.setPointerCapture(event.pointerId);
         onPointerDown({ x: event.clientX, y: event.clientY });
       }}
       className={`float-planet group absolute z-10 grid h-[188px] w-[188px] touch-none place-items-center rounded-full border bg-white/[0.022] text-center outline-none backdrop-blur-sm transition duration-300 hover:-translate-y-2 hover:scale-105 focus-visible:ring-2 focus-visible:ring-cyan-200 active:scale-95 ${

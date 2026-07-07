@@ -448,6 +448,8 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - Left navigation uses Cockpit, My Tasks, Inbox, Projects, Knowledge, Calendar, Analytics, AI, and Settings language to match the OS concept.
 - The visible product UI has been localized for Japanese users across the cockpit and primary task/project/knowledge/settings pages.
 - The cockpit now supports canvas pan, smooth zoom, draggable task planets, animated flow paths, pulsing important/stalled nodes, and a smooth AI analysis panel.
+- Canvas pan and node drag should batch pointer updates to animation frames so
+  the empty canvas follows the cursor without visible delay.
 - The home cockpit should occupy the full viewport and carry its own in-canvas navigation, layer controls, minimap, AI message, command bar, and timeline.
 - The cockpit should keep a compact navigation surface visible even when the
   standard app shell is hidden, so users can move to Portfolio, Tasks,

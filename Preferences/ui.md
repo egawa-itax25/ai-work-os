@@ -36,6 +36,10 @@ When choosing between more features and better feel, prefer animation, spacing, 
 
 The product should feel like an AI Work OS for manipulating work flow, not a conventional task dashboard.
 
+Canvas drag should feel direct and fluid. When interaction performance and
+visual decoration conflict, prioritize pointer response, frame pacing, and
+stable transforms.
+
 ## Responsive Layout
 
 PC is the primary operating surface. Preserve the immersive spatial canvas,

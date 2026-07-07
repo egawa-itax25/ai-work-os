@@ -31,6 +31,8 @@ The primary cockpit UI will use a full-screen dark spatial canvas:
   the cockpit must automatically switch to a compact vertical review layout
   instead of forcing the desktop canvas, Flow Score, and inspector panels into
   the same absolute-positioned surface.
+- Canvas panning should feel immediate. Pointer movement should be batched to
+  animation frames so empty-space dragging does not lag behind the cursor.
 
 ## Reason
 
@@ -47,6 +49,8 @@ The product concept is to visualize and keep work flowing with AI, rather than m
   same context as a readable confirmation surface: compact navigation, Flow
   Score, AI focus, selected work details, and timeline should stack without
   overlap or clipping.
+- Drag and pan interactions are part of the product feel, not secondary
+  polish. They should prioritize smooth response over extra decorative motion.
 
 ## Revisit When
 
