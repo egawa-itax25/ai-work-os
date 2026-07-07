@@ -149,7 +149,7 @@ export default function DashboardView() {
 
   return (
     <section
-      className="relative min-h-screen overflow-hidden bg-black/35 text-slate-100 shadow-2xl shadow-black/40"
+      className="relative min-h-screen overflow-x-hidden bg-black/35 text-slate-100 shadow-2xl shadow-black/40 lg:overflow-hidden"
       onPointerMove={(event) => movePointer({ x: event.clientX, y: event.clientY })}
       onPointerUp={() => setDragState(null)}
       onPointerLeave={() => setDragState(null)}
@@ -167,7 +167,17 @@ export default function DashboardView() {
       <BrandHeader />
       <TopOverlay activeTasks={activeTasks.length} zoom={zoom} onZoom={zoomCanvas} />
 
-      <div className="relative z-10 grid min-h-screen grid-rows-[1fr_auto]">
+      <MobileCockpit
+        activeTasks={activeTasks.length}
+        aiFocus={aiFocus}
+        selectedTask={selectedTask}
+        onSelectTask={(id) => {
+          setSelectedId(id);
+          setPanelOpen(true);
+        }}
+      />
+
+      <div className="relative z-10 hidden min-h-screen grid-rows-[1fr_auto] lg:grid">
         <div className="relative min-h-[760px] overflow-hidden">
           <CanvasSurface
             aiFocusId={aiFocus?.id}
@@ -201,6 +211,153 @@ export default function DashboardView() {
         <Timeline />
       </div>
     </section>
+  );
+}
+
+function MobileCockpit({
+  activeTasks,
+  aiFocus,
+  selectedTask,
+  onSelectTask,
+}: {
+  activeTasks: number;
+  aiFocus?: TaskRecord;
+  selectedTask: TaskRecord;
+  onSelectTask: (id: string) => void;
+}) {
+  const flowImpact = selectedTask.importance * 12 + selectedTask.urgency * 7;
+  const stalledDays = selectedTask.status === "blocked" ? 3 : 0;
+  const statusLabel: Record<TaskRecord["status"], string> = {
+    todo: "待機中",
+    doing: "進行中",
+    blocked: "停滞中",
+    done: "完了",
+  };
+
+  return (
+    <div className="relative z-20 min-h-screen px-4 pb-10 pt-36 sm:px-6 lg:hidden">
+      <section className="rounded-xl border border-white/12 bg-slate-950/54 p-5 shadow-2xl shadow-black/35 backdrop-blur-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-cyan-100">流動スコア</p>
+            <p className="mt-2 text-sm leading-6 text-slate-300">仕事の流れは良好です</p>
+          </div>
+          <div className="text-right">
+            <div className="flex items-end justify-end gap-2">
+              <span className="text-5xl font-semibold leading-none text-white">94</span>
+              <span className="pb-1 text-sm font-semibold text-emerald-200">+6</span>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">稼働中 {activeTasks}件</p>
+          </div>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <Signal label="現在の焦点" value={aiFocus?.title ?? "確認中"} />
+          <Signal label="表示モード" value="スマホ確認" />
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-xl border border-white/10 bg-slate-950/48 p-4 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold tracking-[0.18em] text-cyan-100">AIフォーカス</p>
+            <h2 className="mt-2 text-lg font-semibold leading-7 text-white">今見るべき仕事</h2>
+          </div>
+          <span className="rounded-md border border-cyan-100/15 bg-cyan-100/[0.06] px-2 py-1 text-xs text-cyan-100">
+            自動解析
+          </span>
+        </div>
+
+        <div className="mt-4 space-y-2">
+          {tasks.slice(0, 4).map((task) => (
+            <button
+              key={task.id}
+              type="button"
+              className={`w-full rounded-lg border px-3 py-3 text-left transition ${
+                task.id === selectedTask.id
+                  ? "border-cyan-100/40 bg-cyan-100/[0.08]"
+                  : "border-white/10 bg-white/[0.035] hover:bg-white/[0.06]"
+              }`}
+              onClick={() => onSelectTask(task.id)}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold leading-6 text-white">{task.title}</p>
+                  <p className="text-xs leading-5 text-slate-400">{task.owner} / {statusLabel[task.status]}</p>
+                </div>
+                <span className="shrink-0 rounded-md border border-white/10 bg-white/[0.05] px-2 py-1 text-xs text-slate-300">
+                  {task.deadline}
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-xl border border-white/10 bg-slate-950/56 p-5 shadow-2xl shadow-black/35 backdrop-blur-2xl">
+        <div>
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-cyan-100">AI解析</p>
+          <h2 className="mt-2 text-2xl font-semibold leading-9 text-white">{selectedTask.title}</h2>
+          <p className="mt-3 text-sm leading-7 text-slate-300">{selectedTask.summary}</p>
+        </div>
+
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <Signal label="担当" value={selectedTask.owner} />
+          <Signal label="期限" value={selectedTask.deadline} />
+          <Signal label="重要度" value={`${selectedTask.importance}/5`} />
+          <Signal label="緊急度" value={`${selectedTask.urgency}/5`} />
+          <Signal label="優先度" value={priorityLabel[selectedTask.priority]} />
+          <Signal label="流れへの影響" value={`${flowImpact}%`} />
+          <Signal label="停止日数" value={`${stalledDays}日`} />
+          <Signal label="必要エネルギー" value={energyLabel[selectedTask.energy]} />
+        </div>
+
+        <div className="mt-5 rounded-lg border border-cyan-100/15 bg-cyan-100/[0.045] p-4">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-cyan-100">AIコメント</p>
+          <p className="mt-2 text-sm leading-7 text-slate-200">
+            この仕事が現在のボトルネックです。依存する取込導線を先に流すと、3日後の遅延リスクを下げられます。
+          </p>
+        </div>
+
+        <div className="mt-5">
+          <p className="text-[11px] font-semibold tracking-[0.18em] text-slate-500">関連ノート</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {selectedTask.related.map((item) => (
+              <span
+                key={item}
+                className="rounded-md border border-white/10 bg-white/[0.055] px-2 py-1 text-xs leading-5 text-slate-300"
+              >
+                {noteLabel[item] ?? item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-xl border border-white/10 bg-slate-950/46 p-4 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+        <p className="text-[11px] font-semibold tracking-[0.18em] text-cyan-100">画面移動</p>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {[
+            { href: "/portfolio", label: "ポートフォリオ" },
+            { href: "/tasks", label: "仕事" },
+            { href: "/knowledge", label: "知識" },
+            { href: "/settings", label: "設定" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-3 text-center text-sm font-semibold text-slate-200 transition hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <div className="mt-4 overflow-hidden rounded-xl border border-white/10">
+        <Timeline />
+      </div>
+    </div>
   );
 }
 
@@ -254,7 +411,7 @@ function TopOverlay({
   onZoom: (nextZoom: number) => void;
 }) {
   return (
-    <div className="pointer-events-none absolute left-0 right-0 top-0 z-30 grid gap-3 px-4 py-4 md:grid-cols-[1fr_auto_1fr] md:px-6">
+    <div className="pointer-events-none absolute left-0 right-0 top-0 z-30 hidden gap-3 px-4 py-4 lg:grid lg:grid-cols-[1fr_auto_1fr] lg:px-6">
       <div className="hidden items-center gap-3 md:flex">
         <span className="ml-72 h-2 w-2 rounded-full bg-teal-200 shadow-[0_0_20px_rgba(45,212,191,0.9)]" />
         <span className="text-xs font-semibold tracking-[0.18em] text-slate-400">今日の流れ</span>

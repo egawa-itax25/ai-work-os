@@ -23,6 +23,10 @@ repository. Local LAN URLs are acceptable for quick checks, but Vercel is the
 preferred path when the user wants to inspect the product from a phone without
 depending on the PC and phone being on the same Wi-Fi.
 
+The cockpit is primarily operated on PC. Mobile access is a review and light
+navigation surface, so the application should automatically choose a mobile
+layout that avoids desktop absolute-positioned panels overlapping the viewport.
+
 ## Core Concepts
 
 ### Task
@@ -459,6 +463,9 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - Project Flow should support Task Inspector editing on node selection.
 - GitHub and Vercel are the preferred deployment path for mobile review of the
   current UI.
+- The cockpit now requires responsive layout separation: desktop keeps the
+  full spatial canvas, while mobile stacks compact navigation, Flow Score, AI
+  focus, selected task details, and timeline as readable panels.
 
 ## Next UI Requirements
 
@@ -468,3 +475,5 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - Flow animation should become the visual lead so users immediately feel that work is moving from start to end.
 - Portfolio View should use a restrained dark business UI with pale blue as the
   main accent and warning colors only where they carry state meaning.
+- Mobile cockpit review must avoid overlapping panels, clipped labels, and
+  browser-toolbar collisions. PC remains the default authoring surface.

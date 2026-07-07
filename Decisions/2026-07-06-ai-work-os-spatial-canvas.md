@@ -27,6 +27,10 @@ The primary cockpit UI will use a full-screen dark spatial canvas:
   hidden app shell.
 - A right inspection panel exposes task metadata, AI commentary, related notes, people, and projects.
 - A bottom timeline projects future bottlenecks.
+- The desktop cockpit remains the primary experience. On small mobile screens,
+  the cockpit must automatically switch to a compact vertical review layout
+  instead of forcing the desktop canvas, Flow Score, and inspector panels into
+  the same absolute-positioned surface.
 
 ## Reason
 
@@ -39,6 +43,10 @@ The product concept is to visualize and keep work flowing with AI, rather than m
 - Future integrations such as RAG, MCP, agents, calendar, Slack, Gmail, GitHub, OpenAI, Claude, and an Obsidian plugin should attach to this spatial work graph.
 - Hiding the standard sidebar in the cockpit must not trap the user. The
   cockpit should include its own low-noise navigation entry points.
+- Mobile must not simply shrink the desktop cockpit. It should preserve the
+  same context as a readable confirmation surface: compact navigation, Flow
+  Score, AI focus, selected work details, and timeline should stack without
+  overlap or clipping.
 
 ## Revisit When
 

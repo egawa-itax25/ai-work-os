@@ -36,6 +36,16 @@ When choosing between more features and better feel, prefer animation, spacing, 
 
 The product should feel like an AI Work OS for manipulating work flow, not a conventional task dashboard.
 
+## Responsive Layout
+
+PC is the primary operating surface. Preserve the immersive spatial canvas,
+drag, pan, zoom, and inspector behavior on desktop.
+
+Smartphone access is primarily for checking the current state and moving
+between views. Do not force desktop absolute-positioned overlays into a narrow
+screen. Use an automatic mobile layout with stacked panels, compact navigation,
+readable Japanese text, and no overlap with browser controls.
+
 ## Portfolio View
 
 Portfolio-level screens should be calmer than the single-project cockpit.
