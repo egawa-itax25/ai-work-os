@@ -1,5 +1,5 @@
 {
-  "name": "customer-notification-hub",
+  "name": "ai-work-os",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,6 +11,7 @@
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.48.1",
+    "motion": "^12.42.2",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"

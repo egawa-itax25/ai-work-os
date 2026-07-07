@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import DashboardView from "./workspace-dashboard";
 
 export default function Home() {
-  redirect("/notifications");
+  return <DashboardView />;
 }
