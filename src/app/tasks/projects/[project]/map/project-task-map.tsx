@@ -30,12 +30,44 @@ type DragState = {
   offsetX: number;
   offsetY: number;
 };
+type BallTransferTarget = "self" | "other" | "ai" | "done";
 type ToastState = { message: string; undo?: () => void } | null;
 
 const cardWidth = 280;
 const cardHeight = 256;
 const boardWidth = 1120;
 const boardHeight = 720;
+const ballTransferTargets: {
+  id: BallTransferTarget;
+  label: string;
+  description: string;
+  tone: string;
+}[] = [
+  {
+    id: "self",
+    label: "自分",
+    description: "自分が次に動く",
+    tone: "border-sky-300/40 bg-sky-300/10 text-sky-100",
+  },
+  {
+    id: "other",
+    label: "相手",
+    description: "回答・確認待ち",
+    tone: "border-amber-300/40 bg-amber-300/10 text-amber-100",
+  },
+  {
+    id: "ai",
+    label: "AI",
+    description: "AIが処理中",
+    tone: "border-violet-300/40 bg-violet-300/10 text-violet-100",
+  },
+  {
+    id: "done",
+    label: "完了",
+    description: "流れ終わり",
+    tone: "border-emerald-300/35 bg-emerald-300/10 text-emerald-100",
+  },
+];
 
 export default function ProjectTaskMap() {
   const params = useParams<{ project: string }>();
@@ -151,6 +183,25 @@ export default function ProjectTaskMap() {
     );
   }
 
+  function finishMoving(event: ReactPointerEvent<HTMLDivElement>) {
+    if (!dragState) {
+      return;
+    }
+
+    const dropTarget = document
+      .elementFromPoint(event.clientX, event.clientY)
+      ?.closest<HTMLElement>("[data-ball-target]");
+
+    if (dropTarget?.dataset.ballTarget) {
+      transferBall(
+        dragState.id,
+        dropTarget.dataset.ballTarget as BallTransferTarget,
+      );
+    }
+
+    setDragState(null);
+  }
+
   function addTaskAtPoint(event: ReactMouseEvent<HTMLDivElement>) {
     if (!boardRef.current || !(event.target instanceof HTMLElement)) {
       return;
@@ -248,6 +299,29 @@ export default function ProjectTaskMap() {
             current.map((task) => (task.id === id ? beforeTask : task)),
           );
         }
+      },
+    });
+  }
+
+  function transferBall(id: string, target: BallTransferTarget) {
+    const beforeTask = tasks.find((task) => task.id === id);
+
+    if (!beforeTask) {
+      return;
+    }
+
+    const patch = getBallTransferPatch(target);
+
+    setTasks((current) =>
+      current.map((task) => (task.id === id ? { ...task, ...patch } : task)),
+    );
+    setActiveTaskId(id);
+    setToast({
+      message: `${beforeTask.title} を${getBallTransferLabel(target)}へ移しました。`,
+      undo: () => {
+        setTasks((current) =>
+          current.map((task) => (task.id === id ? beforeTask : task)),
+        );
       },
     });
   }
@@ -354,7 +428,7 @@ export default function ProjectTaskMap() {
             onContextMenu={addTaskAtPoint}
             onDoubleClick={addTaskAtPoint}
             onPointerMove={moveTask}
-            onPointerUp={() => setDragState(null)}
+            onPointerUp={finishMoving}
             onPointerCancel={() => setDragState(null)}
             className="neo-map-grid relative cursor-default"
             style={{ width: boardWidth, height: boardHeight }}
@@ -455,6 +529,7 @@ export default function ProjectTaskMap() {
       ) : null}
 
       {toast ? <UndoToast toast={toast} onClose={() => setToast(null)} /> : null}
+      <BallTransferDock visible={Boolean(dragState)} />
     </div>
   );
 }
@@ -498,6 +573,8 @@ function TaskNode({
   onRemove: (id: string) => void;
   onStatusChange: (status: TaskStatus) => void;
 }) {
+  const ballMeta = getTaskBallMeta(task);
+
   return (
     <article
       onPointerDown={(event) => onStartMoving(event, task)}
@@ -566,6 +643,17 @@ function TaskNode({
       </button>
       <div className="mb-3 flex h-5 cursor-grab items-center justify-center active:cursor-grabbing">
         <span className="h-1 w-12 rounded-full bg-violet-300/30 shadow-sm shadow-violet-400/30" aria-hidden="true" />
+      </div>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <span
+          className={`rounded-full border px-2.5 py-1 text-[11px] font-semibold ${ballMeta.tone}`}
+          title={`現在のボール: ${ballMeta.detail}`}
+        >
+          {ballMeta.label}
+        </span>
+        <span className="truncate text-[11px] text-zinc-500">
+          {ballMeta.detail}
+        </span>
       </div>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
@@ -816,6 +904,45 @@ function TaskInspector({
   );
 }
 
+function BallTransferDock({ visible }: { visible: boolean }) {
+  return (
+    <div
+      className={`pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 transition duration-200 ${
+        visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
+      }`}
+      aria-hidden={!visible}
+    >
+      <div
+        className={`w-full max-w-3xl rounded-2xl border border-zinc-700/80 bg-zinc-950/92 p-3 shadow-2xl shadow-black/50 backdrop-blur-2xl ${
+          visible ? "pointer-events-auto" : "pointer-events-none"
+        }`}
+      >
+        <div className="flex items-center justify-between gap-3 px-2 pb-3">
+          <div>
+            <p className="text-sm font-semibold text-white">ボールを渡す</p>
+            <p className="text-xs text-zinc-500">タスクを置くと、現在のボールが切り替わります。</p>
+          </div>
+          <span className="hidden rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400 sm:inline">
+            ドラッグ中
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          {ballTransferTargets.map((target) => (
+            <div
+              key={target.id}
+              data-ball-target={target.id}
+              className={`rounded-xl border px-3 py-3 text-center transition duration-150 ${target.tone} hover:scale-[1.02] hover:bg-white/[0.08]`}
+            >
+              <p className="text-sm font-semibold">{target.label}</p>
+              <p className="mt-1 text-[11px] opacity-75">{target.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function CreateTaskDrawer({
   onClose,
   onCreate,
@@ -1051,6 +1178,84 @@ function DetailRow({
       </span>
     </div>
   );
+}
+
+function getBallTransferPatch(target: BallTransferTarget): Partial<Task> {
+  if (target === "self") {
+    return {
+      currentBallHolder: "あなた",
+      ballHoldingStartedAt: todayString(),
+      status: "doing",
+    };
+  }
+
+  if (target === "other") {
+    return {
+      currentBallHolder: "相手",
+      ballHoldingStartedAt: todayString(),
+      status: "todo",
+    };
+  }
+
+  if (target === "ai") {
+    return {
+      currentBallHolder: "AI",
+      ballHoldingStartedAt: todayString(),
+      status: "doing",
+    };
+  }
+
+  return {
+    currentBallHolder: "なし",
+    ballHoldingStartedAt: todayString(),
+    status: "done",
+    progress: 100,
+  };
+}
+
+function getBallTransferLabel(target: BallTransferTarget) {
+  const transferTarget = ballTransferTargets.find((item) => item.id === target);
+  return transferTarget?.label ?? "移動先";
+}
+
+function getTaskBallMeta(task: Task) {
+  if (task.status === "done") {
+    return {
+      label: "完了",
+      detail: "流れ終わり",
+      tone: "border-emerald-300/35 bg-emerald-300/10 text-emerald-100",
+    };
+  }
+
+  if (task.currentBallHolder === "あなた") {
+    return {
+      label: "自分のボール",
+      detail: "あなたが次に動く",
+      tone: "border-sky-300/40 bg-sky-300/10 text-sky-100",
+    };
+  }
+
+  if (task.currentBallHolder === "AI") {
+    return {
+      label: "AI処理中",
+      detail: "AIが進めています",
+      tone: "border-violet-300/40 bg-violet-300/10 text-violet-100",
+    };
+  }
+
+  if (!task.currentBallHolder || task.currentBallHolder === "なし") {
+    return {
+      label: "ボールなし",
+      detail: "次の所在を決める",
+      tone: "border-zinc-600 bg-zinc-900 text-zinc-300",
+    };
+  }
+
+  return {
+    label: "相手のボール",
+    detail: task.currentBallHolder,
+    tone: "border-amber-300/40 bg-amber-300/10 text-amber-100",
+  };
 }
 
 function clamp(value: number, min: number, max: number) {

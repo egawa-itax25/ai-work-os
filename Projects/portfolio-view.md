@@ -326,6 +326,18 @@ Task node context menu:
 - 完了
 - アーカイブ
 
+Task Flow also supports drag-to-transfer. When a Task Node is dragged, a
+temporary "ボールを渡す" dock appears with these initial destinations:
+
+- 自分
+- 相手
+- AI
+- 完了
+
+Dropping a task onto a destination updates the task's current ball holder and
+shows undo-capable feedback. The dock appears only while dragging so the map
+does not become visually crowded.
+
 ### Persistence
 
 Minor edits auto-save.
@@ -370,6 +382,8 @@ Portfolio should restore as much as possible when returning from Project Flow:
 - Projects can be edited from the shared Project Inspector.
 - Tasks can be created from Portfolio View with a preselected project.
 - Tasks can be created and edited from Project Flow.
+- Task Nodes can be dragged onto a transfer dock to move the ball to 自分,
+  相手, AI, or 完了.
 - Minor edits auto-save and show quiet saved feedback.
 - Recent edits provide undo-capable feedback.
 - Portfolio state is restored as much as possible after returning from Project Flow.

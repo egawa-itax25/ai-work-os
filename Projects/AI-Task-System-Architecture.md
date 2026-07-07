@@ -463,6 +463,8 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - Portfolio View should support in-context project creation/editing and task
   creation through drawers and a shared Project Inspector.
 - Project Flow should support Task Inspector editing on node selection.
+- Project Flow should support drag-to-transfer for task ball ownership, using a
+  temporary dock for 自分, 相手, AI, and 完了 while a Task Node is being dragged.
 - GitHub and Vercel are the preferred deployment path for mobile review of the
   current UI.
 - The cockpit now requires responsive layout separation: desktop keeps the

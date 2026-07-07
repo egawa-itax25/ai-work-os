@@ -96,6 +96,11 @@ Task data must support:
 - Next action.
 - Dependencies.
 
+Project Flow should let users pass the ball by dragging a Task Node onto a
+temporary transfer dock. Initial dock targets are 自分, 相手, AI, and 完了.
+Dropping onto a target updates `currentBallHolder`, `ballHoldingStartedAt`, and
+the task status/progress when appropriate.
+
 The first implementation can persist editable mock data in localStorage, but
 the field names should remain compatible with future Vault frontmatter and
 Dataview-style parsing.
