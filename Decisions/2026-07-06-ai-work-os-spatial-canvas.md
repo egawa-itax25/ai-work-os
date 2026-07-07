@@ -22,6 +22,9 @@ The primary cockpit UI will use a full-screen dark spatial canvas:
 - Dependencies appear as orbit and gravity-like flow paths instead of simple arrows.
 - AI focus highlights the work that needs attention now.
 - A top-centered Flow Score summarizes the health of work.
+- The immersive cockpit still needs a compact navigation surface so users can
+  move to Portfolio, tasks, knowledge, and settings without relying on the
+  hidden app shell.
 - A right inspection panel exposes task metadata, AI commentary, related notes, people, and projects.
 - A bottom timeline projects future bottlenecks.
 
@@ -34,6 +37,8 @@ The product concept is to visualize and keep work flowing with AI, rather than m
 - The cockpit should prioritize motion, spacing, hover/drag feel, and visual hierarchy over adding many static features.
 - Existing task data can remain Markdown-compatible while the presentation becomes more spatial.
 - Future integrations such as RAG, MCP, agents, calendar, Slack, Gmail, GitHub, OpenAI, Claude, and an Obsidian plugin should attach to this spatial work graph.
+- Hiding the standard sidebar in the cockpit must not trap the user. The
+  cockpit should include its own low-noise navigation entry points.
 
 ## Revisit When
 

@@ -445,6 +445,9 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - The visible product UI has been localized for Japanese users across the cockpit and primary task/project/knowledge/settings pages.
 - The cockpit now supports canvas pan, smooth zoom, draggable task planets, animated flow paths, pulsing important/stalled nodes, and a smooth AI analysis panel.
 - The home cockpit should occupy the full viewport and carry its own in-canvas navigation, layer controls, minimap, AI message, command bar, and timeline.
+- The cockpit should keep a compact navigation surface visible even when the
+  standard app shell is hidden, so users can move to Portfolio, Tasks,
+  Knowledge, and Settings.
 - Next.js development indicators are disabled so English framework overlays do not appear during product review.
 - Portfolio View is specified as a multi-project overview for progress,
   priority, current ball holder, stalled state, and user-actionable filtering.

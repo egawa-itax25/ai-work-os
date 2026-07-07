@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { getTaskLinks, knowledge, projects, tasks, type TaskRecord } from "@/lib/workspace-data";
 
@@ -204,15 +205,41 @@ export default function DashboardView() {
 }
 
 function BrandHeader() {
+  const cockpitNav = [
+    { href: "/portfolio", label: "ポートフォリオ" },
+    { href: "/tasks", label: "仕事" },
+    { href: "/knowledge", label: "知識" },
+    { href: "/settings", label: "設定" },
+  ];
+
   return (
-    <div className="absolute left-5 top-4 z-40 flex items-center gap-3">
-      <div className="grid h-9 w-9 place-items-center rounded-lg border border-cyan-100/20 bg-white/[0.06] text-sm font-semibold text-cyan-100 shadow-[0_0_24px_rgba(125,211,252,0.18)] backdrop-blur-xl">
-        N
+    <div className="absolute left-4 right-4 top-4 z-40 flex flex-wrap items-center gap-3 md:left-5 md:right-auto">
+      <div className="flex items-center gap-3">
+        <div className="grid h-9 w-9 place-items-center rounded-lg border border-cyan-100/20 bg-white/[0.06] text-sm font-semibold text-cyan-100 shadow-[0_0_24px_rgba(125,211,252,0.18)] backdrop-blur-xl">
+          N
+        </div>
+        <div>
+          <p className="text-lg font-semibold leading-5 text-white">AI仕事基盤</p>
+          <p className="mt-1 text-[10px] tracking-[0.16em] text-cyan-200/80">
+            仕事の流れを動かす空間
+          </p>
+        </div>
       </div>
-      <div>
-        <p className="text-lg font-semibold leading-5 text-white">AI仕事基盤</p>
-        <p className="mt-1 text-[10px] tracking-[0.16em] text-cyan-200/80">仕事の流れを動かす空間</p>
-      </div>
+
+      <nav
+        aria-label="司令室内ナビゲーション"
+        className="flex max-w-full gap-2 overflow-x-auto rounded-lg border border-white/10 bg-slate-950/45 p-1 shadow-xl shadow-black/20 backdrop-blur-2xl"
+      >
+        {cockpitNav.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className="shrink-0 rounded-md px-3 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.07] hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-200"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }
