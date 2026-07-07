@@ -50,6 +50,16 @@ between views. Do not force desktop absolute-positioned overlays into a narrow
 screen. Use an automatic mobile layout with stacked panels, compact navigation,
 readable Japanese text, and no overlap with browser controls.
 
+## Review Links
+
+When reporting completed UI changes, include the latest relevant review links
+every time so the user can open the current screen quickly from phone or PC.
+Prefer the Vercel URL for mobile review:
+
+- Cockpit: `https://ai-work-os-preview.vercel.app/`
+- Portfolio: `https://ai-work-os-preview.vercel.app/portfolio`
+- Tasks: `https://ai-work-os-preview.vercel.app/tasks`
+
 ## Portfolio View
 
 Portfolio-level screens should be calmer than the single-project cockpit.

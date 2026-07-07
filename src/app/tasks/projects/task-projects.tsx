@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   Task,
@@ -15,6 +16,8 @@ import {
 } from "../task-data";
 
 export default function TaskProjects() {
+  const searchParams = useSearchParams();
+  const projectFilter = searchParams.get("project") ?? "";
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
@@ -40,8 +43,9 @@ export default function TaskProjects() {
             .includes(normalizedQuery);
         const matchesStatus =
           statusFilter === "all" || task.status === statusFilter;
+        const matchesProject = !projectFilter || task.project === projectFilter;
 
-        return matchesQuery && matchesStatus;
+        return matchesQuery && matchesStatus && matchesProject;
       })
       .sort((a, b) => {
         const projectDiff = a.project.localeCompare(b.project, "ja-JP");
@@ -59,7 +63,7 @@ export default function TaskProjects() {
 
         return a.dueDate.localeCompare(b.dueDate);
       });
-  }, [query, statusFilter, tasks]);
+  }, [projectFilter, query, statusFilter, tasks]);
 
   const projectGroups = useMemo(() => {
     const groups = new Map<string, Task[]>();
@@ -88,8 +92,13 @@ export default function TaskProjects() {
         <div>
           <p className="neo-accent text-sm font-medium">プロジェクト別の仕事</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-normal text-white">
-            プロジェクトごとにタスクを見る
+            {projectFilter ? `${projectFilter} のタスク` : "プロジェクトごとにタスクを見る"}
           </h1>
+          {projectFilter ? (
+            <p className="mt-2 text-sm text-zinc-500">
+              ポートフォリオで選んだプロジェクトだけを表示しています。
+            </p>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-3 gap-3 sm:min-w-96">
@@ -136,6 +145,22 @@ export default function TaskProjects() {
             マップで見る
           </Link>
         </div>
+        {projectFilter ? (
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/tasks/projects"
+              className="rounded-md border border-zinc-700 px-3 py-2 text-sm font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white"
+            >
+              すべてのプロジェクトを表示
+            </Link>
+            <Link
+              href={`/tasks/projects/${encodeURIComponent(projectFilter)}/map`}
+              className="rounded-md border border-violet-400/40 bg-violet-400/10 px-3 py-2 text-sm font-semibold text-violet-100 hover:bg-violet-400/20"
+            >
+              このプロジェクトをマップで見る
+            </Link>
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-4">

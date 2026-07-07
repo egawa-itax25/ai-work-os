@@ -576,8 +576,8 @@ function ProjectList({
               </button>
 
               <div className="mt-3 flex items-center justify-between gap-2">
-                <Link href={projectFlowHref(project)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
-                  フローを見る
+                <Link href={projectScheduleHref(project)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
+                  開く
                 </Link>
                 <button type="button" onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
                   内訳を見る
@@ -793,7 +793,7 @@ function ProjectNode({
   const stateClass = project.status === "done" ? "opacity-45" : project.status === "waiting" ? "opacity-75" : "";
 
   function openProjectTasks() {
-    router.push(projectFlowHref(project));
+    router.push(projectScheduleHref(project));
   }
 
   return (
@@ -944,8 +944,8 @@ function ProjectInspector({
         </div>
 
         <div className="mt-4 grid gap-2">
-          <Link href={projectFlowHref(project)} className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-4 py-3 text-center text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
-            フローを見る
+          <Link href={projectScheduleHref(project)} className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-4 py-3 text-center text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
+            タスクを見る
           </Link>
           <button type="button" onClick={() => onCreateTask(project)} className="rounded-md border border-white/10 px-4 py-3 text-center text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]">
             ＋ タスクを追加
@@ -1085,7 +1085,7 @@ function ProjectContextMenu({
 }) {
   return (
     <div className="absolute right-3 top-12 z-50 w-40 rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
-      <Link href={projectFlowHref(project)} className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.06]">開く</Link>
+      <Link href={projectScheduleHref(project)} className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.06]">開く</Link>
       <button type="button" onClick={() => { onEdit(); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onCreateTask(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">タスクを追加</button>
       <button type="button" onClick={() => { onDuplicate(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">複製</button>
@@ -1318,7 +1318,7 @@ function SummaryBlock({ title, children }: { title: string; children: ReactNode 
 
 function SummaryLine({ project }: { project: PortfolioProject }) {
   return (
-    <Link href={projectFlowHref(project)} className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-sm transition hover:border-sky-200/40 hover:bg-white/[0.06]">
+    <Link href={projectScheduleHref(project)} className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-sm transition hover:border-sky-200/40 hover:bg-white/[0.06]">
       <span className="truncate text-slate-200">{project.name}</span>
       <span className="shrink-0 text-xs text-slate-500">{project.currentBallHolder} / {project.ballHoldingDays}日</span>
     </Link>
@@ -1342,8 +1342,8 @@ type CreateTaskInput = {
   nextAction: string;
 };
 
-function projectFlowHref(project: PortfolioProject) {
-  return `/tasks/projects/${encodeURIComponent(project.name)}/map`;
+function projectScheduleHref(project: PortfolioProject) {
+  return `/tasks/projects?project=${encodeURIComponent(project.name)}`;
 }
 
 function readTasks() {

@@ -1,4 +1,5 @@
 import TaskProjects from "./task-projects";
+import { Suspense } from "react";
 
 export const metadata = {
   title: "プロジェクト別の仕事",
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function TaskProjectsPage() {
-  return <TaskProjects />;
+  return (
+    <Suspense fallback={null}>
+      <TaskProjects />
+    </Suspense>
+  );
 }

@@ -155,10 +155,11 @@ Opening a project should be explicit and always available from:
 
 This prevents accidental navigation while the user is arranging the map.
 
-The explicit "開く" / "タスクを見る" action must move to that project's task
-Flow Map so the user can immediately see and edit the tasks belonging to the
-selected project. On touch devices, tapping the open action must not be
-captured as node drag or selection.
+The explicit "開く" / "タスクを見る" action must move to the schedule tab's
+project task list for the selected project. The user should first see the
+project and its tasks as a list, then choose "マップ" when they want the spatial
+Task Flow Map. On touch devices, tapping the open action must not be captured
+as node drag or selection.
 
 Project nodes should also expose a compact context menu with:
 
@@ -374,9 +375,9 @@ Portfolio should restore as much as possible when returning from Project Flow:
 - Priority Score breakdown can be inspected.
 - Project nodes can be panned, zoomed, selected, and opened.
 - Project nodes can be repositioned with drag and drop.
-- The Project Flow screen for a single project is reachable from the list,
-  map node, and selected project panel.
-- The "開く" action on a project node opens the selected project's task map
+- The schedule tab's project task list for a single project is reachable from
+  the Portfolio list, map node, and selected project panel.
+- The "開く" action on a project node opens the selected project's task list
   directly, without being swallowed by drag handling on mobile.
 - Projects can be created from Portfolio View.
 - Projects can be edited from the shared Project Inspector.
