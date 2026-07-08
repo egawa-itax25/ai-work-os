@@ -40,6 +40,10 @@ Canvas drag should feel direct and fluid. When interaction performance and
 visual decoration conflict, prioritize pointer response, frame pacing, and
 stable transforms.
 
+Desktop navigation should remain available in the cockpit by default so the
+user can move between major views without losing context. It should also be
+hideable when the user wants the spatial canvas to take the full visual field.
+
 ## Responsive Layout
 
 PC is the primary operating surface. Preserve the immersive spatial canvas,

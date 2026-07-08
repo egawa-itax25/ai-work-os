@@ -454,6 +454,9 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - The cockpit should keep a compact navigation surface visible even when the
   standard app shell is hidden, so users can move to Portfolio, Tasks,
   Knowledge, and Settings.
+- On desktop, the cockpit should also preserve the shared side navigation by
+  default. The user can hide it for a more immersive canvas and restore it with
+  a compact Japanese menu control.
 - Next.js development indicators are disabled so English framework overlays do not appear during product review.
 - Portfolio View is specified as a multi-project overview for progress,
   priority, current ball holder, stalled state, and user-actionable filtering.
@@ -470,6 +473,8 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - The cockpit now requires responsive layout separation: desktop keeps the
   full spatial canvas, while mobile stacks compact navigation, Flow Score, AI
   focus, selected task details, and timeline as readable panels.
+- The shared desktop navigation is available in the cockpit and can be hidden
+  or restored without leaving the current view.
 
 ## Next UI Requirements
 

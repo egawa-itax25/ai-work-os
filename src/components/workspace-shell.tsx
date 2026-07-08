@@ -21,6 +21,16 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isCockpit = pathname === "/";
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
+  const [navigationCollapsed, setNavigationCollapsed] = useState(false);
+  const showDesktopNavigation = !navigationCollapsed;
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem("ai-work-os:navigation-collapsed");
+
+    if (saved === "true") {
+      setNavigationCollapsed(true);
+    }
+  }, []);
 
   useEffect(() => {
     function handleShortcut(event: KeyboardEvent) {
@@ -40,11 +50,20 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     setCreateMenuOpen(false);
   }
 
+  function setDesktopNavigationCollapsed(collapsed: boolean) {
+    setNavigationCollapsed(collapsed);
+    window.localStorage.setItem("ai-work-os:navigation-collapsed", String(collapsed));
+  }
+
+  const mainClassName = isCockpit
+    ? `min-h-screen ${showDesktopNavigation ? "lg:ml-72" : ""}`
+    : `px-4 py-6 lg:px-8 lg:py-8 ${showDesktopNavigation ? "lg:ml-72" : ""}`;
+
   return (
     <body>
       <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(20,184,166,0.22),transparent_28rem),radial-gradient(circle_at_85%_15%,rgba(244,63,94,0.14),transparent_24rem),linear-gradient(135deg,#09090b_0%,#111827_48%,#030712_100%)] text-slate-100">
         <div className="fixed inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:64px_64px]" />
-        {!isCockpit ? <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100vh-2rem)] w-64 rounded-lg border border-white/10 bg-white/[0.055] p-4 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:block">
+        {showDesktopNavigation ? <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100vh-2rem)] w-64 rounded-lg border border-white/10 bg-white/[0.055] p-4 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:block">
           <Link href="/" className="block rounded-md border border-white/10 bg-black/20 p-4">
             <span className="text-xs font-semibold tracking-[0.16em] text-teal-200">
               流れの司令室
@@ -53,6 +72,15 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
               AI仕事基盤
             </span>
           </Link>
+
+          <button
+            type="button"
+            onClick={() => setDesktopNavigationCollapsed(true)}
+            className="mt-3 w-full rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-teal-200/30 hover:bg-white/[0.06] hover:text-white"
+            title="メニューを隠す"
+          >
+            メニューを隠す
+          </button>
 
           <nav className="mt-6 space-y-2" aria-label="主要メニュー">
             {navItems.map((item) => {
@@ -83,6 +111,17 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
             <p className="mt-2 text-sm leading-6 text-slate-300">知識庫を仕事の記憶として扱います</p>
           </div>
         </aside> : null}
+
+        {!showDesktopNavigation ? (
+          <button
+            type="button"
+            onClick={() => setDesktopNavigationCollapsed(false)}
+            className="fixed left-4 top-4 z-50 hidden rounded-lg border border-white/10 bg-slate-950/80 px-4 py-3 text-sm font-semibold text-slate-100 shadow-2xl shadow-black/40 backdrop-blur-2xl transition hover:border-teal-200/35 hover:bg-white/[0.08] lg:block"
+            title="メニューを表示"
+          >
+            メニュー
+          </button>
+        ) : null}
 
         {!isCockpit ? <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-2xl lg:hidden">
           <div className="flex items-center justify-between gap-3 px-4 py-4">
@@ -166,7 +205,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </div>
         ) : null}
 
-        <main className={isCockpit ? "min-h-screen" : "px-4 py-6 lg:ml-72 lg:px-8 lg:py-8"}>{children}</main>
+        <main className={mainClassName}>{children}</main>
       </div>
     </body>
   );
