@@ -161,6 +161,11 @@ project and its tasks as a list, then choose "マップ" when they want the spat
 Task Flow Map. On touch devices, tapping the open action must not be captured
 as node drag or selection.
 
+Direct access to `/tasks/projects/[project]/map` without an explicit map intent
+must also redirect to the schedule tab's project task list. Explicit map actions
+use `view=map` so old or stale project open links cannot strand the user on the
+map when they expected the task list.
+
 Project nodes should also expose a compact context menu with:
 
 - 開く
@@ -379,6 +384,8 @@ Portfolio should restore as much as possible when returning from Project Flow:
   the Portfolio list, map node, and selected project panel.
 - The "開く" action on a project node opens the selected project's task list
   directly, without being swallowed by drag handling on mobile.
+- Direct project map URLs without `view=map` redirect to the selected project's
+  schedule task list.
 - Projects can be created from Portfolio View.
 - Projects can be edited from the shared Project Inspector.
 - Tasks can be created from Portfolio View with a preselected project.

@@ -154,7 +154,7 @@ export default function TaskProjects() {
               すべてのプロジェクトを表示
             </Link>
             <Link
-              href={`/tasks/projects/${encodeURIComponent(projectFilter)}/map`}
+              href={`/tasks/projects/${encodeURIComponent(projectFilter)}/map?view=map`}
               className="rounded-md border border-violet-400/40 bg-violet-400/10 px-3 py-2 text-sm font-semibold text-violet-100 hover:bg-violet-400/20"
             >
               このプロジェクトをマップで見る
@@ -188,7 +188,7 @@ export default function TaskProjects() {
                   {group.tasks.length}件
                 </span>
                 <Link
-                  href={`/tasks/projects/${encodeURIComponent(group.project)}/map`}
+                  href={`/tasks/projects/${encodeURIComponent(group.project)}/map?view=map`}
                   className="rounded-md border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-xs font-semibold text-violet-100 hover:bg-violet-400/20"
                 >
                   マップ
