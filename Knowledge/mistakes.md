@@ -28,3 +28,13 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: On scrollable pages, embedded canvas zoom should require
   Shift+scroll or another deliberate modifier. Plain wheel/trackpad movement
   should remain page scrolling.
+
+### 2026-07-08 - Vercel preview tracked the wrong repository
+
+- Mistake: The public preview domain `ai-work-os-preview.vercel.app` was backed
+  by the Vercel project `ai-work-os-preview`, which was connected to
+  `egawa-itax25/ai-work-os-preview`, while development commits were pushed to
+  `egawa-itax25/ai-work-os`.
+- Prevention: Before assuming a deploy is stale, compare the Vercel project's
+  connected Git repository with the active development repository. The preferred
+  source repository for this product is `egawa-itax25/ai-work-os`.
