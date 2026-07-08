@@ -663,7 +663,7 @@ function ProjectFlowMap({
         <div>
           <h2 className="text-base font-semibold text-white">プロジェクトフローマップ</h2>
           <p className="mt-1 text-sm text-slate-500">
-            空白をドラッグで移動。Nodeはドラッグで配置できます。
+            空白をドラッグで移動。ズームはShift+スクロールで操作できます。
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -701,7 +701,8 @@ function ProjectFlowMap({
           onNodeDragEnd();
         }}
         onWheel={(event) => {
-          if (Math.abs(event.deltaY) > 1) {
+          if (event.shiftKey && Math.abs(event.deltaY) > 1) {
+            event.preventDefault();
             onZoom(zoom - event.deltaY * 0.001);
           }
         }}

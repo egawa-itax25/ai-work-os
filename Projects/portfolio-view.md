@@ -125,8 +125,9 @@ State expression:
 - AI processing: subtle AI mark.
 - Done: semi-transparent.
 
-The map should support pan and zoom. Clicking a project opens that project's
-Project Flow screen.
+The map should support pan and zoom. Mouse wheel zoom must only run while Shift
+is pressed, so normal page scrolling does not accidentally resize the map.
+Clicking a project opens that project's Project Flow screen.
 
 ### Drag And Drop Layout
 
@@ -379,6 +380,7 @@ Portfolio should restore as much as possible when returning from Project Flow:
 - Stalled projects and user's actionable projects can be filtered.
 - Priority Score breakdown can be inspected.
 - Project nodes can be panned, zoomed, selected, and opened.
+- Project Flow Map mouse-wheel zoom responds only to Shift+scroll.
 - Project nodes can be repositioned with drag and drop.
 - The schedule tab's project task list for a single project is reachable from
   the Portfolio list, map node, and selected project panel.

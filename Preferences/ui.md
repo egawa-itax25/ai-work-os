@@ -40,6 +40,10 @@ Canvas drag should feel direct and fluid. When interaction performance and
 visual decoration conflict, prioritize pointer response, frame pacing, and
 stable transforms.
 
+Canvas zoom inside scrollable pages should require an intentional modifier such
+as Shift+scroll. Plain wheel or trackpad scrolling should keep moving the page
+instead of resizing an embedded map.
+
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be
 hideable when the user wants the spatial canvas to take the full visual field.

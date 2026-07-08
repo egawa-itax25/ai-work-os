@@ -66,6 +66,8 @@ the portfolio screen.
   AI scoring.
 - Filters must make "projects that move if I act" immediately visible.
 - Project nodes should be compact, calm, clickable, and pan/zoom capable.
+- Wheel zoom inside the Portfolio map should require Shift+scroll so normal
+  page scrolling remains predictable.
 
 ## Follow-up Decision: Node Drag And Explicit Open
 
