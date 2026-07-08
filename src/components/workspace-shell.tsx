@@ -8,12 +8,12 @@ const navItems = [
   { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
   { id: "cockpit", href: "/", label: "司令室" },
   { id: "my-tasks", href: "/tasks", label: "自分の仕事" },
-  { id: "inbox", href: "/tasks", label: "受信箱" },
+  { id: "inbox", href: "/inbox", label: "受信箱" },
   { id: "projects", href: "/projects", label: "プロジェクト" },
   { id: "knowledge", href: "/knowledge", label: "知識" },
   { id: "calendar", href: "/tasks/projects", label: "予定" },
-  { id: "analytics", href: "/notifications", label: "分析" },
-  { id: "ai", href: "/settings", label: "AI頭脳" },
+  { id: "analytics", href: "/analytics", label: "分析" },
+  { id: "ai", href: "/ai", label: "AI頭脳" },
   { id: "settings", href: "/settings", label: "設定" },
 ];
 
@@ -59,6 +59,18 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     ? `min-h-screen ${showDesktopNavigation ? "lg:ml-72" : ""}`
     : `px-4 py-6 lg:px-8 lg:py-8 ${showDesktopNavigation ? "lg:ml-72" : ""}`;
 
+  function isNavActive(href: string) {
+    if (href === "/") {
+      return pathname === "/";
+    }
+
+    if (href === "/tasks") {
+      return pathname === "/tasks";
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
   return (
     <body>
       <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(20,184,166,0.22),transparent_28rem),radial-gradient(circle_at_85%_15%,rgba(244,63,94,0.14),transparent_24rem),linear-gradient(135deg,#09090b_0%,#111827_48%,#030712_100%)] text-slate-100">
@@ -84,8 +96,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
           <nav className="mt-6 space-y-2" aria-label="主要メニュー">
             {navItems.map((item) => {
-              const isActive =
-                item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+              const isActive = isNavActive(item.href);
 
               return (
                 <Link

@@ -68,6 +68,28 @@ Prefer the Vercel URL for mobile review:
 - Portfolio: `https://ai-work-os-preview.vercel.app/portfolio`
 - Tasks: `https://ai-work-os-preview.vercel.app/tasks`
 
+## Primary Navigation
+
+Every item in the left navigation should move to a distinct, predictable
+product area. Do not map multiple labels to the same placeholder route unless
+the labels clearly represent the same area.
+
+Current intended routes:
+
+- ポートフォリオ: `/portfolio`
+- 司令室: `/`
+- 自分の仕事: `/tasks`
+- 受信箱: `/inbox`
+- プロジェクト: `/projects`
+- 知識: `/knowledge`
+- 予定: `/tasks/projects`
+- 分析: `/analytics`
+- AI頭脳: `/ai`
+- 設定: `/settings`
+
+Placeholder or early pages should still make the destination clear in Japanese
+and provide a useful next action, so the user can tell that navigation worked.
+
 ## Portfolio View
 
 Portfolio-level screens should be calmer than the single-project cockpit.
