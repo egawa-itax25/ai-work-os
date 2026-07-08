@@ -167,6 +167,12 @@ must also redirect to the schedule tab's project task list. Explicit map actions
 use `view=map` so old or stale project open links cannot strand the user on the
 map when they expected the task list.
 
+Inside the schedule tab's project task list, "全体マップ" must return to the
+Portfolio View overview map. It should not route to the task-level `/tasks`
+canvas, because that breaks the project comparison context. The project-specific
+spatial map remains available only through explicit map actions such as
+"このプロジェクトをマップで見る".
+
 Project nodes should also expose a compact context menu with:
 
 - 開く
@@ -386,6 +392,9 @@ Portfolio should restore as much as possible when returning from Project Flow:
   the Portfolio list, map node, and selected project panel.
 - The "開く" action on a project node opens the selected project's task list
   directly, without being swallowed by drag handling on mobile.
+- In the schedule tab's project task list, "全体マップ" returns to Portfolio
+  View's project-level overview map, while "このプロジェクトをマップで見る" opens the
+  selected project's Task Flow Map.
 - Direct project map URLs without `view=map` redirect to the selected project's
   schedule task list.
 - Projects can be created from Portfolio View.

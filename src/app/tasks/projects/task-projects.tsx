@@ -139,10 +139,10 @@ export default function TaskProjects() {
             <option value="done">完了</option>
           </select>
           <Link
-            href="/tasks"
+            href="/portfolio"
             className="rounded-md border border-violet-400/40 bg-violet-400/10 px-3 py-2 text-center text-sm font-semibold text-violet-100 hover:bg-violet-400/20"
           >
-            マップで見る
+            全体マップを見る
           </Link>
         </div>
         {projectFilter ? (
@@ -266,7 +266,7 @@ function TaskTabs({ active }: { active: "map" | "projects" }) {
   return (
     <div className="neo-surface grid gap-3 rounded-md border p-3 sm:grid-cols-2">
       <Link
-        href="/tasks"
+        href="/portfolio"
         className={`rounded-md border px-5 py-4 text-center text-base font-semibold ${
           active === "map"
             ? "border-violet-400 bg-violet-500/20 text-violet-50 shadow-lg shadow-violet-950/30"

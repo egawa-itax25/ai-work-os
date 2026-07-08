@@ -87,3 +87,14 @@ The Portfolio map is a planning surface. Users need to arrange projects
 spatially while comparing them, without accidentally leaving the view. Explicit
 open actions keep navigation predictable and make the drag interaction feel
 safe.
+
+## Follow-up Decision: Project Task List Map Navigation
+
+From the schedule tab's project task list, "全体マップ" should return to the
+Portfolio View overview map.
+
+It must not send the user to the task-level `/tasks` canvas, because that feels
+like a different product area when the user is comparing or reviewing projects.
+
+The single-project spatial task map remains available through explicit actions
+such as "このプロジェクトをマップで見る" or each project's compact "マップ" action.
