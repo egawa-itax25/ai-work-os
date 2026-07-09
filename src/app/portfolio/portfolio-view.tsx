@@ -570,18 +570,18 @@ function ProjectList({
                 </div>
               </button>
 
-              <div className="mt-4 flex items-center justify-between gap-2">
-                <Link href={projectScheduleHref(project)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
+              <div className="mt-4 grid grid-cols-[auto_minmax(7.75rem,1fr)_auto] gap-2">
+                <Link href={projectScheduleHref(project)} className="whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-center text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
                   開く
                 </Link>
-                <Link href={projectTaskMapHref(project)} className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-xs font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
+                <Link href={projectTaskMapHref(project)} className="whitespace-nowrap rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-center text-xs font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
                   タスクフローマップ
                 </Link>
-                <button type="button" onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
-                  内訳を見る
-                </button>
-                <button type="button" onClick={() => onMenuToggle(project.id)} className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100" title="操作メニュー">
+                <button type="button" onClick={() => onMenuToggle(project.id)} className="whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100" title="操作メニュー">
                   …
+                </button>
+                <button type="button" onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="col-span-3 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
+                  内訳を見る
                 </button>
               </div>
 

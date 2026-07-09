@@ -500,6 +500,9 @@ Implemented:
 - Portfolio project list is moving from a left vertical list to a top project
   card strip/grid with a selected-project workspace below it and Project
   Inspector on the right.
+- Compact project card actions keep labels such as "タスクフローマップ"
+  horizontal by giving the primary map action its own stable button width and
+  moving secondary score details to a second row.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

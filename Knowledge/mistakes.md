@@ -38,3 +38,11 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Before assuming a deploy is stale, compare the Vercel project's
   connected Git repository with the active development repository. The preferred
   source repository for this product is `egawa-itax25/ai-work-os`.
+
+### 2026-07-09 - Japanese action labels wrapped vertically
+
+- Mistake: Compact project card actions allowed long Japanese labels such as
+  "タスクフローマップ" to wrap character-by-character when the card became narrow.
+- Prevention: Keep short action labels horizontal with stable button widths,
+  `white-space: nowrap`, and a layout that moves secondary actions to another
+  row instead of squeezing labels into vertical text.
