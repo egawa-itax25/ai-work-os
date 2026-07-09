@@ -503,6 +503,8 @@ Implemented:
 - Compact project card actions keep labels such as "タスクフローマップ"
   horizontal by giving the primary map action its own stable button width and
   moving secondary score details to a second row.
+- Task Flow Map fixed ownership zones no longer pan the entire task layer when
+  the user drags empty space. Only task cards move when directly dragged.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

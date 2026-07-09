@@ -650,7 +650,7 @@ export default function ProjectTaskMap() {
             onDoubleClick={addTaskAtPoint}
             onPointerDown={(event) => {
               if (event.target instanceof HTMLElement && !event.target.closest("article")) {
-                setPanState({ start: { x: event.clientX, y: event.clientY }, origin: pan });
+                setPanState(null);
               }
             }}
             onPointerMove={(event) => {
@@ -675,7 +675,7 @@ export default function ProjectTaskMap() {
                 updateZoom(zoom - event.deltaY * 0.001);
               }
             }}
-            className={`relative min-h-0 flex-1 overflow-hidden ${panState ? "cursor-grabbing" : "cursor-grab"}`}
+            className="relative min-h-0 flex-1 overflow-hidden"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(125,211,252,0.08),transparent_18rem),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,48px_48px,48px_48px]" />
             <div className="pointer-events-none absolute inset-0 z-0">

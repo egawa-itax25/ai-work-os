@@ -46,3 +46,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Keep short action labels horizontal with stable button widths,
   `white-space: nowrap`, and a layout that moves secondary actions to another
   row instead of squeezing labels into vertical text.
+
+### 2026-07-09 - Empty task-map drag moved the whole task layer
+
+- Mistake: After Task Flow ownership zones became fixed viewport regions,
+  empty-space panning made every task move together under the fixed zones, which
+  looked like the user had dragged all tasks at once.
+- Prevention: On fixed-zone Task Flow Maps, reserve drag movement for task
+  cards only. Empty-space drag should not pan the task layer unless a separate,
+  explicit pan mode is introduced.
