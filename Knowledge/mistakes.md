@@ -64,3 +64,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Project comparison cards need a stable minimum width. Use
   horizontal scrolling with `shrink-0` cards instead of forcing many cards into
   the visible width.
+
+### 2026-07-09 - Resized task map hid edge tasks
+
+- Mistake: Task nodes kept their large-screen coordinates after the map panel
+  became narrower, and empty-space panning had been disabled, so tasks near the
+  edge could become unreachable.
+- Prevention: Fixed-zone Task Flow Maps should auto-fit the current project's
+  task bounds after panel resize or project load, reducing zoom and recentering
+  the task layer when needed.

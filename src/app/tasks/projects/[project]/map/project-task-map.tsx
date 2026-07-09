@@ -38,6 +38,7 @@ type ToastState = { message: string; undo?: () => void } | null;
 const cardWidth = 236;
 const cardHeight = 138;
 const minimumBoardSize = { width: 1240, height: 620 };
+const taskFitPadding = 96;
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
 type TaskFlowZoneDefinition = {
   id: BallTransferTarget;
@@ -118,10 +119,58 @@ function createTaskFlowZones(boardSize: Point): TaskFlowZoneDefinition[] {
   ];
 }
 
+function getTaskFitFrame({
+  boardSize,
+  currentZoom,
+  tasks,
+  viewport,
+}: {
+  boardSize: Point;
+  currentZoom: number;
+  tasks: Task[];
+  viewport: DOMRect;
+}) {
+  const bounds = tasks.reduce(
+    (current, task) => ({
+      minX: Math.min(current.minX, task.x),
+      minY: Math.min(current.minY, task.y),
+      maxX: Math.max(current.maxX, task.x + cardWidth),
+      maxY: Math.max(current.maxY, task.y + cardHeight),
+    }),
+    {
+      minX: Number.POSITIVE_INFINITY,
+      minY: Number.POSITIVE_INFINITY,
+      maxX: Number.NEGATIVE_INFINITY,
+      maxY: Number.NEGATIVE_INFINITY,
+    },
+  );
+  const contentWidth = bounds.maxX - bounds.minX + taskFitPadding * 2;
+  const contentHeight = bounds.maxY - bounds.minY + taskFitPadding * 2;
+  const availableWidth = Math.max(280, viewport.width);
+  const availableHeight = Math.max(280, viewport.height);
+  const fitZoom = Math.min(
+    currentZoom,
+    availableWidth / contentWidth,
+    availableHeight / contentHeight,
+  );
+  const nextZoom = clamp(fitZoom, 0.72, 1.25);
+  const centerX = (bounds.minX + bounds.maxX) / 2;
+  const centerY = (bounds.minY + bounds.maxY) / 2;
+
+  return {
+    zoom: nextZoom,
+    pan: {
+      x: (boardSize.x / 2 - centerX) * nextZoom,
+      y: (boardSize.y / 2 - centerY) * nextZoom,
+    },
+  };
+}
+
 export default function ProjectTaskMap() {
   const params = useParams<{ project: string }>();
   const projectName = decodeURIComponent(params.project);
   const boardRef = useRef<HTMLDivElement | null>(null);
+  const projectTasksRef = useRef<Task[]>([]);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTaskId, setActiveTaskId] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -204,6 +253,44 @@ export default function ProjectTaskMap() {
   const projectTasks = useMemo(() => {
     return tasks.filter((task) => task.project === projectName);
   }, [projectName, tasks]);
+
+  useEffect(() => {
+    projectTasksRef.current = projectTasks;
+  }, [projectTasks]);
+
+  useEffect(() => {
+    if (!isReady || dragState || projectTasksRef.current.length === 0) {
+      return;
+    }
+
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    const nextFrame = getTaskFitFrame({
+      boardSize,
+      currentZoom: zoom,
+      tasks: projectTasksRef.current,
+      viewport: rect,
+    });
+
+    if (Math.abs(nextFrame.zoom - zoom) > 0.01) {
+      setZoom(nextFrame.zoom);
+    }
+
+    setPan((current) => {
+      if (
+        Math.abs(current.x - nextFrame.pan.x) < 1 &&
+        Math.abs(current.y - nextFrame.pan.y) < 1
+      ) {
+        return current;
+      }
+
+      return nextFrame.pan;
+    });
+  }, [boardSize, dragState, isReady, projectName, zoom]);
 
   const taskMap = useMemo(() => {
     return new Map(tasks.map((task) => [task.id, task]));

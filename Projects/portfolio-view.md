@@ -507,6 +507,9 @@ Implemented:
   instead of being squeezed into too many responsive columns.
 - Task Flow Map fixed ownership zones no longer pan the entire task layer when
   the user drags empty space. Only task cards move when directly dragged.
+- Task Flow Map automatically fits the selected project's task bounds after the
+  panel is resized or the project is opened, so tasks placed near an edge on a
+  wide screen remain visible on narrower screens.
 - In the schedule project task list, the Task Flow Map action is placed near the
   project title as a large horizontal primary button, because users open this
   map frequently from the project summary.
