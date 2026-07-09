@@ -40,6 +40,51 @@ const cardHeight = 138;
 const boardWidth = 1240;
 const boardHeight = 620;
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
+const taskFlowZones: {
+  id: BallTransferTarget;
+  label: string;
+  description: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  icon: string;
+  tone: string;
+}[] = [
+  {
+    id: "self",
+    label: "自分ボール",
+    description: "あなたが対応すべきタスク",
+    x: 24,
+    y: 26,
+    width: 570,
+    height: 330,
+    icon: "●",
+    tone: "border-sky-300/55 bg-sky-400/[0.055] text-sky-100 shadow-sky-950/25",
+  },
+  {
+    id: "other",
+    label: "相手ボール",
+    description: "相手に対応してもらうタスク",
+    x: 646,
+    y: 26,
+    width: 570,
+    height: 330,
+    icon: "●",
+    tone: "border-amber-300/60 bg-amber-300/[0.06] text-amber-100 shadow-amber-950/25",
+  },
+  {
+    id: "done",
+    label: "完了",
+    description: "完了したタスク",
+    x: 24,
+    y: 392,
+    width: 1192,
+    height: 198,
+    icon: "✓",
+    tone: "border-emerald-300/45 bg-emerald-300/[0.045] text-emerald-100 shadow-emerald-950/20",
+  },
+];
 const ballTransferTargets: {
   id: BallTransferTarget;
   label: string;
@@ -153,6 +198,18 @@ export default function ProjectTaskMap() {
     );
   }, [projectName, projectTasks, taskMap]);
 
+  const zoneCounts = useMemo(() => {
+    return taskFlowZones.reduce<Record<BallTransferTarget, number>>(
+      (counts, zone) => {
+        counts[zone.id] = projectTasks.filter(
+          (task) => getTaskTransferTarget(task) === zone.id,
+        ).length;
+        return counts;
+      },
+      { self: 0, other: 0, done: 0 },
+    );
+  }, [projectTasks]);
+
   const activeTask =
     taskMap.get(activeTaskId) ?? projectTasks[0] ?? tasks[0] ?? null;
   const overdueCount = projectTasks.filter(
@@ -187,6 +244,16 @@ export default function ProjectTaskMap() {
     setZoom(Math.min(1.25, Math.max(0.72, nextZoom)));
   }
 
+  function getZoneTarget(point: Point) {
+    return taskFlowZones.find(
+      (zone) =>
+        point.x >= zone.x &&
+        point.x <= zone.x + zone.width &&
+        point.y >= zone.y &&
+        point.y <= zone.y + zone.height,
+    )?.id;
+  }
+
   function moveTask(event: ReactPointerEvent<HTMLDivElement>) {
     if (!dragState || !boardRef.current) {
       return;
@@ -216,6 +283,22 @@ export default function ProjectTaskMap() {
       return;
     }
 
+    const point = getBoardPoint(event.clientX, event.clientY);
+    const taskX = clamp(
+      point.x - dragState.offsetX,
+      16,
+      boardWidth - cardWidth - 16,
+    );
+    const taskY = clamp(
+      point.y - dragState.offsetY,
+      16,
+      boardHeight - cardHeight - 16,
+    );
+    const zoneTarget = getZoneTarget({
+      x: taskX + cardWidth / 2,
+      y: taskY + cardHeight / 2,
+    });
+    const task = tasks.find((item) => item.id === dragState.id);
     const dropTarget = document
       .elementFromPoint(event.clientX, event.clientY)
       ?.closest<HTMLElement>("[data-ball-target]");
@@ -225,6 +308,8 @@ export default function ProjectTaskMap() {
         dragState.id,
         dropTarget.dataset.ballTarget as BallTransferTarget,
       );
+    } else if (zoneTarget && task && getTaskTransferTarget(task) !== zoneTarget) {
+      transferBall(dragState.id, zoneTarget);
     }
 
     setDragState(null);
@@ -482,7 +567,7 @@ export default function ProjectTaskMap() {
             <div>
               <h2 className="text-base font-semibold text-white">タスクフローマップ</h2>
               <p className="mt-1 text-sm text-slate-500">
-                空白をドラッグで移動。ズームはShift+スクロールで操作できます。
+                タスクをドラッグして枠内に移動すると、状態が自動で更新されます。
               </p>
             </div>
             <div className="flex items-center gap-2">
@@ -539,6 +624,13 @@ export default function ProjectTaskMap() {
                 transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
               }}
             >
+              {taskFlowZones.map((zone) => (
+                <TaskFlowZone
+                  key={zone.id}
+                  count={zoneCounts[zone.id]}
+                  zone={zone}
+                />
+              ))}
               <svg
                 className="pointer-events-none absolute inset-0"
                 width={boardWidth}
@@ -641,7 +733,6 @@ export default function ProjectTaskMap() {
       ) : null}
 
       {toast ? <UndoToast toast={toast} onClose={() => setToast(null)} /> : null}
-      <BallTransferDock visible={Boolean(dragState)} />
     </div>
   );
 }
@@ -1153,43 +1244,72 @@ function TaskInspector({
   );
 }
 
-function BallTransferDock({ visible }: { visible: boolean }) {
+function TaskFlowZone({
+  zone,
+  count,
+}: {
+  zone: (typeof taskFlowZones)[number];
+  count: number;
+}) {
+  const statusLabel = zone.id === "done" ? "完了" : "進行中";
+
   return (
-    <div
-      className={`pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 transition duration-200 ${
-        visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-      }`}
-      aria-hidden={!visible}
+    <section
+      className={`pointer-events-none absolute rounded-2xl border border-dashed p-7 shadow-2xl ${zone.tone}`}
+      style={{
+        left: zone.x,
+        top: zone.y,
+        width: zone.width,
+        height: zone.height,
+      }}
+      aria-hidden="true"
     >
-      <div
-        className={`w-full max-w-3xl rounded-2xl border border-zinc-700/80 bg-zinc-950/92 p-3 shadow-2xl shadow-black/50 backdrop-blur-2xl ${
-          visible ? "pointer-events-auto" : "pointer-events-none"
-        }`}
-      >
-        <div className="flex items-center justify-between gap-3 px-2 pb-3">
-          <div>
-            <p className="text-sm font-semibold text-white">ボールを渡す</p>
-            <p className="text-xs text-zinc-500">タスクをここへドロップすると、現在のボールが切り替わります。</p>
-          </div>
-          <span className="hidden rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400 sm:inline">
-            ドラッグ中
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <span
+            className={`grid h-12 w-12 place-items-center rounded-full border text-lg font-semibold shadow-lg ${
+              zone.id === "self"
+                ? "border-sky-300/50 bg-sky-300/15 text-sky-100 shadow-sky-950/40"
+                : zone.id === "other"
+                  ? "border-amber-300/50 bg-amber-300/15 text-amber-100 shadow-amber-950/40"
+                  : "border-emerald-300/45 bg-emerald-300/15 text-emerald-100 shadow-emerald-950/40"
+            }`}
+          >
+            {zone.icon}
           </span>
+          <div>
+            <h3 className="text-2xl font-semibold tracking-normal text-white">
+              {zone.label}
+            </h3>
+            <p className="mt-1 text-sm text-slate-300/75">{zone.description}</p>
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-          {ballTransferTargets.map((target) => (
-            <div
-              key={target.id}
-              data-ball-target={target.id}
-              className={`rounded-xl border px-3 py-3 text-center transition duration-150 ${target.tone} hover:scale-[1.02] hover:bg-white/[0.08]`}
-            >
-              <p className="text-sm font-semibold">{target.label}</p>
-              <p className="mt-1 text-[11px] opacity-75">{target.description}</p>
-              <p className="mt-2 text-[10px] font-semibold opacity-60">ここへドロップ</p>
-            </div>
-          ))}
+        <div
+          className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
+            zone.id === "self"
+              ? "border-sky-300/45 bg-sky-300/10 text-sky-100"
+              : zone.id === "other"
+                ? "border-amber-300/45 bg-amber-300/10 text-amber-100"
+                : "border-emerald-300/40 bg-emerald-300/10 text-emerald-100"
+          }`}
+        >
+          <span>{count}</span>
+          <span>{statusLabel}</span>
         </div>
       </div>
-    </div>
+      {zone.id === "done" ? (
+        <div className="mt-9 grid place-items-center text-center text-slate-300/70">
+          <div className="grid h-16 w-16 place-items-center rounded-full border border-emerald-300/25 bg-emerald-300/10 text-3xl text-emerald-100">
+            ✓
+          </div>
+          <p className="mt-4 text-sm leading-6">
+            ここにタスクを移動すると
+            <br />
+            完了として記録されます
+          </p>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -1484,6 +1604,18 @@ function getBallTransferPatch(target: BallTransferTarget): Partial<Task> {
 function getBallTransferLabel(target: BallTransferTarget) {
   const transferTarget = ballTransferTargets.find((item) => item.id === target);
   return transferTarget?.label ?? "移動先";
+}
+
+function getTaskTransferTarget(task: Task): BallTransferTarget {
+  if (task.status === "done") {
+    return "done";
+  }
+
+  if (task.currentBallHolder === "あなた") {
+    return "self";
+  }
+
+  return "other";
 }
 
 function getTaskBallMeta(task: Task) {

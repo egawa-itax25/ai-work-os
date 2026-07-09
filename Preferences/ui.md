@@ -73,6 +73,10 @@ Temporary handoff surfaces should stay focused. The first ball-transfer dock
 should show only 自分, 相手, and 完了 while dragging a task; other destinations can
 be added later when they represent a concrete workflow.
 
+Task Flow Maps can use persistent drop regions when they make ownership more
+obvious than a temporary dock. The regions should be calm and functional:
+自分ボール, 相手ボール, and 完了, with automatic status updates on drop.
+
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be
 hideable when the user wants the spatial canvas to take the full visual field.

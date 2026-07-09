@@ -395,6 +395,12 @@ Compact Task Flow nodes should not wrap short operation labels such as
 separate rows so the label remains readable instead of folding characters into
 multiple lines.
 
+Task Flow Map should visually group task nodes into three large drop regions:
+自分ボール, 相手ボール, and 完了. Dragging a task into one of these regions updates
+the task's current ball/status automatically. The regions should be visible but
+quiet, using blue for self, amber for waiting on others, and green only for
+completed work.
+
 ### Persistence
 
 Minor edits auto-save.
