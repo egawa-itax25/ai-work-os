@@ -147,6 +147,14 @@ Dragging a project node must:
 - Avoid changing task state or project state in the Vault.
 
 Dragging the empty canvas should continue to pan the Portfolio map.
+Empty-canvas panning should feel immediate. The board transform should not keep
+a decorative transition while the pointer is moving, because that makes the map
+feel like it is lagging behind the hand.
+
+Project-to-project connections are editable from the shared Project Inspector.
+The Portfolio map draws the saved connections rather than implying that list
+order is the only relationship. Connection editing is portfolio UI state in the
+first implementation and should later map to Vault project dependencies.
 
 Opening a project should be explicit and always available from:
 
@@ -161,6 +169,11 @@ project task list for the selected project. The user should first see the
 project and its tasks as a list, then choose "マップ" when they want the spatial
 Task Flow Map. On touch devices, tapping the open action must not be captured
 as node drag or selection.
+
+Because the project-internal Task Flow Map is often the user's real target,
+Portfolio rows, project nodes, and the Project Inspector should also expose a
+direct "タスクフローマップ" action. This does not remove the schedule list; it
+reduces friction when the user wants the spatial task map first.
 
 Direct access to `/tasks/projects/[project]/map` without an explicit map intent
 must also redirect to the schedule tab's project task list. Explicit map actions

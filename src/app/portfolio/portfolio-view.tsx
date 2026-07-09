@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -44,11 +45,19 @@ type DrawerState =
   | { type: "task"; projectName?: string }
   | null;
 type ToastState = { message: string; undo?: () => void } | null;
+type ProjectConnection = { sourceId: string; targetId: string };
 
 const boardSize = { width: 1240, height: 620 };
 const nodeSize = { width: 236, height: 120 };
 const layoutStorageKey = "ai-work-os:portfolio-node-layout:v1";
 const viewStorageKey = "ai-work-os:portfolio-view-state:v1";
+const connectionStorageKey = "ai-work-os:portfolio-connections:v1";
+const defaultProjectConnections: ProjectConnection[] = portfolioProjects
+  .slice(0, -1)
+  .map((project, index) => ({
+    sourceId: project.id,
+    targetId: portfolioProjects[index + 1].id,
+  }));
 
 export default function PortfolioView({
   initialFilter,
@@ -76,11 +85,15 @@ export default function PortfolioView({
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const [highlightId, setHighlightId] = useState("");
   const [menuProjectId, setMenuProjectId] = useState("");
+  const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
+  const panAnimationFrameRef = useRef<number | null>(null);
+  const pendingPanRef = useRef<Point | null>(null);
 
   useEffect(() => {
     const savedProjects = window.localStorage.getItem(portfolioStorageKey);
     const savedLayout = window.localStorage.getItem(layoutStorageKey);
     const savedView = window.localStorage.getItem(viewStorageKey);
+    const savedConnections = window.localStorage.getItem(connectionStorageKey);
 
     if (savedProjects) {
       try {
@@ -128,6 +141,22 @@ export default function PortfolioView({
         window.localStorage.removeItem(viewStorageKey);
       }
     }
+
+    if (savedConnections) {
+      try {
+        setProjectConnections(normalizeProjectConnections(JSON.parse(savedConnections)));
+      } catch {
+        window.localStorage.removeItem(connectionStorageKey);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (panAnimationFrameRef.current !== null) {
+        window.cancelAnimationFrame(panAnimationFrameRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -161,6 +190,10 @@ export default function PortfolioView({
   useEffect(() => {
     window.localStorage.setItem(layoutStorageKey, JSON.stringify(nodePositions));
   }, [nodePositions]);
+
+  useEffect(() => {
+    window.localStorage.setItem(connectionStorageKey, JSON.stringify(projectConnections));
+  }, [projectConnections]);
 
   useEffect(() => {
     const saveView = () => {
@@ -326,14 +359,50 @@ export default function PortfolioView({
     });
   }
 
+  function addProjectConnection(sourceId: string, targetId: string) {
+    if (!sourceId || !targetId || sourceId === targetId) {
+      return;
+    }
+
+    setProjectConnections((current) => {
+      if (current.some((connection) => connection.sourceId === sourceId && connection.targetId === targetId)) {
+        return current;
+      }
+
+      return [...current, { sourceId, targetId }];
+    });
+  }
+
+  function removeProjectConnection(sourceId: string, targetId: string) {
+    setProjectConnections((current) =>
+      current.filter(
+        (connection) =>
+          connection.sourceId !== sourceId || connection.targetId !== targetId,
+      ),
+    );
+  }
+
   function moveCanvas(point: Point) {
     if (!panState || nodeDragState) {
       return;
     }
 
-    setPan({
+    pendingPanRef.current = {
       x: panState.origin.x + point.x - panState.start.x,
       y: panState.origin.y + point.y - panState.start.y,
+    };
+
+    if (panAnimationFrameRef.current !== null) {
+      return;
+    }
+
+    panAnimationFrameRef.current = window.requestAnimationFrame(() => {
+      if (pendingPanRef.current) {
+        setPan(pendingPanRef.current);
+      }
+
+      pendingPanRef.current = null;
+      panAnimationFrameRef.current = null;
     });
   }
 
@@ -408,6 +477,7 @@ export default function PortfolioView({
           nodePositions={nodePositions}
           pan={pan}
           panState={panState}
+          projectConnections={projectConnections}
           projects={visibleProjects}
           selectedId={selectedProject?.id}
           zoom={zoom}
@@ -433,8 +503,11 @@ export default function PortfolioView({
         <ProjectInspector
           project={selectedProject}
           projects={visibleProjects}
+          projectConnections={projectConnections}
           saveState={saveState}
+          onAddConnection={addProjectConnection}
           onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
+          onRemoveConnection={removeProjectConnection}
           onSelect={setSelectedId}
           onUpdate={updateProject}
         />
@@ -579,6 +652,9 @@ function ProjectList({
                 <Link href={projectScheduleHref(project)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
                   開く
                 </Link>
+                <Link href={projectTaskMapHref(project)} className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-xs font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
+                  タスクフローマップ
+                </Link>
                 <button type="button" onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
                   内訳を見る
                 </button>
@@ -620,6 +696,7 @@ function ProjectFlowMap({
   panState,
   nodeDragState,
   nodePositions,
+  projectConnections,
   highlightId,
   menuProjectId,
   onPanStart,
@@ -642,6 +719,7 @@ function ProjectFlowMap({
   panState: PanState;
   nodeDragState: NodeDragState;
   nodePositions: NodePositions;
+  projectConnections: ProjectConnection[];
   highlightId: string;
   menuProjectId: string;
   onPanStart: (point: Point) => void;
@@ -709,7 +787,9 @@ function ProjectFlowMap({
       >
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(125,211,252,0.08),transparent_18rem),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,48px_48px,48px_48px]" />
         <div
-          className="absolute left-1/2 top-1/2 origin-center transition-transform duration-200"
+          className={`absolute left-1/2 top-1/2 origin-center ${
+            panState || nodeDragState ? "transition-none" : "transition-transform duration-200"
+          }`}
           style={{
             width: boardSize.width,
             height: boardSize.height,
@@ -717,10 +797,16 @@ function ProjectFlowMap({
           }}
         >
           <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-            {projects.slice(0, -1).map((project, index) => {
-              const next = projects[index + 1];
-              const source = nodePositions[project.id] ?? project;
-              const target = nodePositions[next.id] ?? next;
+            {projectConnections.map((connection) => {
+              const sourceProject = projects.find((project) => project.id === connection.sourceId);
+              const targetProject = projects.find((project) => project.id === connection.targetId);
+
+              if (!sourceProject || !targetProject) {
+                return null;
+              }
+
+              const source = nodePositions[sourceProject.id] ?? sourceProject;
+              const target = nodePositions[targetProject.id] ?? targetProject;
               const x1 = source.x + nodeSize.width / 2;
               const y1 = source.y + nodeSize.height / 2;
               const x2 = target.x + nodeSize.width / 2;
@@ -728,7 +814,7 @@ function ProjectFlowMap({
               const midX = (x1 + x2) / 2;
 
               return (
-                <path key={`${project.id}-${next.id}`} d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`} fill="none" stroke="rgba(148,163,184,0.22)" strokeLinecap="round" strokeWidth="1.5" />
+                <path key={`${connection.sourceId}-${connection.targetId}`} d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`} fill="none" stroke="rgba(148,163,184,0.22)" strokeLinecap="round" strokeWidth="1.5" />
               );
             })}
           </svg>
@@ -856,6 +942,18 @@ function ProjectNode({
         >
           開く
         </button>
+        <Link
+          href={projectTaskMapHref(project)}
+          onPointerDown={(event) => {
+            event.stopPropagation();
+          }}
+          onClick={(event) => {
+            event.stopPropagation();
+          }}
+          className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
+        >
+          マップ
+        </Link>
         <button type="button" onClick={() => onMenuToggle(project.id)} className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-white/[0.06]" title="操作メニュー">
           …
         </button>
@@ -877,14 +975,20 @@ function ProjectNode({
 function ProjectInspector({
   project,
   projects,
+  projectConnections,
   saveState,
+  onAddConnection,
+  onRemoveConnection,
   onSelect,
   onUpdate,
   onCreateTask,
 }: {
   project?: PortfolioProject;
   projects: PortfolioProject[];
+  projectConnections: ProjectConnection[];
   saveState: "saved" | "saving";
+  onAddConnection: (sourceId: string, targetId: string) => void;
+  onRemoveConnection: (sourceId: string, targetId: string) => void;
   onSelect: (id: string) => void;
   onUpdate: (id: string, patch: Partial<PortfolioProject>) => void;
   onCreateTask: (project: PortfolioProject) => void;
@@ -948,11 +1052,22 @@ function ProjectInspector({
           <Link href={projectScheduleHref(project)} className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-4 py-3 text-center text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
             タスクを見る
           </Link>
+          <Link href={projectTaskMapHref(project)} className="rounded-md border border-white/10 px-4 py-3 text-center text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06] hover:text-sky-100">
+            タスクフローマップ
+          </Link>
           <button type="button" onClick={() => onCreateTask(project)} className="rounded-md border border-white/10 px-4 py-3 text-center text-sm font-semibold text-slate-200 transition hover:bg-white/[0.06]">
             ＋ タスクを追加
           </button>
         </div>
       </section>
+
+      <ProjectConnectionEditor
+        connections={projectConnections}
+        project={project}
+        projects={projects}
+        onAddConnection={onAddConnection}
+        onRemoveConnection={onRemoveConnection}
+      />
 
       <section className="rounded-lg border border-sky-200/15 bg-sky-200/[0.06] p-4 shadow-xl shadow-black/20">
         <p className="text-sm font-semibold text-sky-100">AIインサイト</p>
@@ -964,6 +1079,111 @@ function ProjectInspector({
         <EditableTextarea value={project.risk ?? ""} label="リスク情報" onChange={(value) => onUpdate(project.id, { risk: value })} compact />
       </section>
     </aside>
+  );
+}
+
+function ProjectConnectionEditor({
+  project,
+  projects,
+  connections,
+  onAddConnection,
+  onRemoveConnection,
+}: {
+  project: PortfolioProject;
+  projects: PortfolioProject[];
+  connections: ProjectConnection[];
+  onAddConnection: (sourceId: string, targetId: string) => void;
+  onRemoveConnection: (sourceId: string, targetId: string) => void;
+}) {
+  const candidates = projects.filter((item) => item.id !== project.id);
+  const outgoingConnections = connections.filter((connection) => connection.sourceId === project.id);
+  const incomingConnections = connections.filter((connection) => connection.targetId === project.id);
+  const [targetId, setTargetId] = useState(candidates[0]?.id ?? "");
+
+  useEffect(() => {
+    if (!candidates.some((candidate) => candidate.id === targetId)) {
+      setTargetId(candidates[0]?.id ?? "");
+    }
+  }, [candidates, targetId]);
+
+  function getProjectName(id: string) {
+    return projects.find((item) => item.id === id)?.name ?? "不明なプロジェクト";
+  }
+
+  return (
+    <section className="rounded-lg border border-white/10 bg-slate-950/62 p-4 shadow-xl shadow-black/25 backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-white">プロジェクトのつながり</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            このプロジェクトから次に流れるプロジェクトを指定します。
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2">
+        <label className="text-xs text-slate-500" htmlFor={`connection-${project.id}`}>
+          後続プロジェクトを追加
+        </label>
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+          <select
+            id={`connection-${project.id}`}
+            value={targetId}
+            onChange={(event) => setTargetId(event.target.value)}
+            className="min-w-0 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-slate-100 outline-none focus:border-sky-200/60"
+          >
+            {candidates.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={() => onAddConnection(project.id, targetId)}
+            className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
+          >
+            つなぐ
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        {outgoingConnections.length > 0 ? (
+          outgoingConnections.map((connection) => (
+            <div key={`${connection.sourceId}-${connection.targetId}`} className="flex items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.035] px-3 py-2">
+              <span className="min-w-0 truncate text-sm text-slate-200">
+                → {getProjectName(connection.targetId)}
+              </span>
+              <button
+                type="button"
+                onClick={() => onRemoveConnection(connection.sourceId, connection.targetId)}
+                className="shrink-0 rounded-md border border-white/10 px-2 py-1 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100"
+              >
+                外す
+              </button>
+            </div>
+          ))
+        ) : (
+          <p className="rounded-md border border-dashed border-white/10 px-3 py-3 text-sm text-slate-500">
+            後続プロジェクトはまだありません。
+          </p>
+        )}
+      </div>
+
+      {incomingConnections.length > 0 ? (
+        <div className="mt-4 border-t border-white/10 pt-3">
+          <p className="text-xs text-slate-500">このプロジェクトへ流れてくるもの</p>
+          <div className="mt-2 space-y-1">
+            {incomingConnections.map((connection) => (
+              <p key={`${connection.sourceId}-${connection.targetId}`} className="truncate text-xs text-slate-400">
+                ← {getProjectName(connection.sourceId)}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -1087,6 +1307,7 @@ function ProjectContextMenu({
   return (
     <div className="absolute right-3 top-12 z-50 w-40 rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <Link href={projectScheduleHref(project)} className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.06]">開く</Link>
+      <Link href={projectTaskMapHref(project)} className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.06]">タスクフローマップ</Link>
       <button type="button" onClick={() => { onEdit(); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onCreateTask(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">タスクを追加</button>
       <button type="button" onClick={() => { onDuplicate(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">複製</button>
@@ -1345,6 +1566,42 @@ type CreateTaskInput = {
 
 function projectScheduleHref(project: PortfolioProject) {
   return `/tasks/projects?project=${encodeURIComponent(project.name)}`;
+}
+
+function projectTaskMapHref(project: PortfolioProject) {
+  return `/tasks/projects/${encodeURIComponent(project.name)}/map?view=map`;
+}
+
+function normalizeProjectConnections(value: unknown): ProjectConnection[] {
+  if (!Array.isArray(value)) {
+    return defaultProjectConnections;
+  }
+
+  const seen = new Set<string>();
+
+  return value
+    .filter((connection): connection is ProjectConnection => {
+      if (
+        !connection ||
+        typeof connection !== "object" ||
+        !("sourceId" in connection) ||
+        !("targetId" in connection) ||
+        typeof connection.sourceId !== "string" ||
+        typeof connection.targetId !== "string" ||
+        connection.sourceId === connection.targetId
+      ) {
+        return false;
+      }
+
+      const key = `${connection.sourceId}:${connection.targetId}`;
+
+      if (seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
 }
 
 function readTasks() {

@@ -40,6 +40,10 @@ Canvas drag should feel direct and fluid. When interaction performance and
 visual decoration conflict, prioritize pointer response, frame pacing, and
 stable transforms.
 
+While a canvas is actively being panned, remove transform transitions that make
+the surface trail behind the pointer. Transitions can return after the drag
+ends.
+
 Canvas zoom inside scrollable pages should require an intentional modifier such
 as Shift+scroll. Plain wheel or trackpad scrolling should keep moving the page
 instead of resizing an embedded map.
