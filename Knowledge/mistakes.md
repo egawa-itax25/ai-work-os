@@ -55,3 +55,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: On fixed-zone Task Flow Maps, reserve drag movement for task
   cards only. Empty-space drag should not pan the task layer unless a separate,
   explicit pan mode is introduced.
+
+### 2026-07-09 - Portfolio cards were squeezed by responsive grid columns
+
+- Mistake: Portfolio project cards used too many responsive grid columns inside
+  a constrained layout, so Japanese labels and action buttons overlapped and
+  became unreadable.
+- Prevention: Project comparison cards need a stable minimum width. Use
+  horizontal scrolling with `shrink-0` cards instead of forcing many cards into
+  the visible width.

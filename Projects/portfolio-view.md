@@ -503,6 +503,8 @@ Implemented:
 - Compact project card actions keep labels such as "タスクフローマップ"
   horizontal by giving the primary map action its own stable button width and
   moving secondary score details to a second row.
+- Portfolio project cards use stable fixed widths with horizontal scrolling
+  instead of being squeezed into too many responsive columns.
 - Task Flow Map fixed ownership zones no longer pan the entire task layer when
   the user drags empty space. Only task cards move when directly dragged.
 - In the schedule project task list, the Task Flow Map action is placed near the
