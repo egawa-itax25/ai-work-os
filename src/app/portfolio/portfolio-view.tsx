@@ -804,7 +804,7 @@ function ProjectInspector({
     <aside className="space-y-4">
       <section className="rounded-lg border border-white/10 bg-slate-950/62 p-4 shadow-xl shadow-black/25 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
-          <p className="text-sm font-semibold text-white">Project Inspector</p>
+          <p className="text-sm font-semibold text-white">プロジェクト切替</p>
           <span className="text-xs text-slate-500">
             {saveState === "saving" ? "保存中…" : "保存済み"}
           </span>
@@ -820,6 +820,16 @@ function ProjectInspector({
       </section>
 
       <section className="rounded-lg border border-white/10 bg-slate-950/62 p-4 shadow-xl shadow-black/25 backdrop-blur-xl">
+        <div className="mb-4 flex items-start justify-between gap-3 border-b border-white/10 pb-4">
+          <div>
+            <p className="text-sm font-semibold text-white">プロジェクト編集</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">枠内の項目をクリックして、その場で直接編集できます。</p>
+          </div>
+          <span className="shrink-0 rounded-md border border-sky-200/25 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-100">
+            自動保存
+          </span>
+        </div>
+
         <div className="flex items-start justify-between gap-3">
           <EditableText value={project.name} label="プロジェクト名" onChange={(value) => onUpdate(project.id, { name: value })} className="text-lg font-semibold text-white" />
           <StatusPill project={project} />
@@ -1189,8 +1199,11 @@ function EditableText({
 }) {
   return (
     <label className="block w-full">
-      <span className="text-xs text-slate-500">{label}</span>
-      <input value={value} onChange={(event) => onChange(event.target.value)} className={`mt-1 w-full rounded-md border border-transparent bg-transparent px-0 py-1 outline-none transition hover:border-white/10 hover:bg-white/[0.035] focus:border-sky-200/60 focus:bg-white/[0.045] ${className}`} />
+      <span className="flex items-center justify-between gap-2 text-xs text-slate-500">
+        <span>{label}</span>
+        <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-400">編集可</span>
+      </span>
+      <input value={value} onChange={(event) => onChange(event.target.value)} className={`mt-2 w-full rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 outline-none transition hover:border-sky-200/35 hover:bg-white/[0.06] focus:border-sky-200/70 focus:bg-sky-200/[0.06] ${className}`} />
     </label>
   );
 }
@@ -1208,8 +1221,11 @@ function EditableTextarea({
 }) {
   return (
     <label className="mt-3 block">
-      <span className="sr-only">{label}</span>
-      <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder="未設定" className={`${compact ? "min-h-20" : "min-h-24"} w-full resize-none rounded-md border border-transparent bg-white/[0.035] px-3 py-2 text-sm leading-6 text-slate-200 outline-none transition placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/60`} />
+      <span className="flex items-center justify-between gap-2 text-xs text-slate-500">
+        <span>{label}</span>
+        <span className="rounded-full border border-white/10 px-2 py-0.5 text-[10px] text-slate-400">編集可</span>
+      </span>
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} placeholder="未設定" className={`${compact ? "min-h-20" : "min-h-24"} mt-2 w-full resize-none rounded-md border border-white/10 bg-white/[0.045] px-3 py-2 text-sm leading-6 text-slate-200 outline-none transition placeholder:text-slate-600 hover:border-sky-200/35 hover:bg-white/[0.06] focus:border-sky-200/70 focus:bg-sky-200/[0.06]`} />
     </label>
   );
 }
@@ -1228,10 +1244,10 @@ function EditableInfo({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="min-w-0 rounded-md bg-white/[0.035] px-2 py-2">
+    <label className="min-w-0 rounded-md border border-white/10 bg-white/[0.045] px-2 py-2 transition hover:border-sky-200/35 hover:bg-white/[0.06] focus-within:border-sky-200/70 focus-within:bg-sky-200/[0.06]">
       <span className="text-[10px] text-slate-500">{label}</span>
       <span className="mt-1 flex items-center gap-1">
-        <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-xs font-medium text-slate-200 outline-none" />
+        <input type={type} value={value} onChange={(event) => onChange(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-200 outline-none focus:text-white" />
         {suffix ? <span className="text-xs text-slate-500">{suffix}</span> : null}
       </span>
     </label>

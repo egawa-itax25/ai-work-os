@@ -337,6 +337,11 @@ The Inspector also provides:
 - フローを見る
 - ＋ タスクを追加
 
+Project editing must be visually obvious. The right Inspector should label the
+editable area as project editing, show a short hint that fields can be edited
+directly, and render editable fields with visible borders/backgrounds instead
+of transparent read-only-looking text.
+
 ### Create Task Modal
 
 The modal appears in the center of the screen and starts with:
