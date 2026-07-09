@@ -90,6 +90,11 @@ Current intended routes:
 Placeholder or early pages should still make the destination clear in Japanese
 and provide a useful next action, so the user can tell that navigation worked.
 
+The desktop left navigation order should be user-adjustable by drag and drop.
+The order is a personal UI preference and should be persisted in localStorage,
+not treated as project data or Vault content. Reordering the navigation must not
+change the destination route of each item.
+
 ## Portfolio View
 
 Portfolio-level screens should be calmer than the single-project cockpit.

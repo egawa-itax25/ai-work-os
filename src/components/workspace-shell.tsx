@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-const navItems = [
+const defaultNavItems = [
   { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
   { id: "cockpit", href: "/", label: "司令室" },
   { id: "my-tasks", href: "/tasks", label: "自分の仕事" },
@@ -17,18 +17,49 @@ const navItems = [
   { id: "settings", href: "/settings", label: "設定" },
 ];
 
+const navOrderStorageKey = "ai-work-os:navigation-order";
+
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isCockpit = pathname === "/";
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [navigationCollapsed, setNavigationCollapsed] = useState(false);
+  const [orderedNavIds, setOrderedNavIds] = useState(() => defaultNavItems.map((item) => item.id));
+  const [draggingNavId, setDraggingNavId] = useState<string | null>(null);
   const showDesktopNavigation = !navigationCollapsed;
+  const navItems = orderedNavIds
+    .map((id) => defaultNavItems.find((item) => item.id === id))
+    .filter((item): item is (typeof defaultNavItems)[number] => Boolean(item));
 
   useEffect(() => {
     const saved = window.localStorage.getItem("ai-work-os:navigation-collapsed");
 
     if (saved === "true") {
       setNavigationCollapsed(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem(navOrderStorageKey);
+
+    if (!saved) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(saved);
+
+      if (!Array.isArray(parsed)) {
+        return;
+      }
+
+      const knownIds = new Set(defaultNavItems.map((item) => item.id));
+      const savedIds = parsed.filter((id): id is string => typeof id === "string" && knownIds.has(id));
+      const missingIds = defaultNavItems.map((item) => item.id).filter((id) => !savedIds.includes(id));
+
+      setOrderedNavIds([...savedIds, ...missingIds]);
+    } catch {
+      window.localStorage.removeItem(navOrderStorageKey);
     }
   }, []);
 
@@ -53,6 +84,35 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   function setDesktopNavigationCollapsed(collapsed: boolean) {
     setNavigationCollapsed(collapsed);
     window.localStorage.setItem("ai-work-os:navigation-collapsed", String(collapsed));
+  }
+
+  function moveNavigationItem(sourceId: string, targetId: string) {
+    if (sourceId === targetId) {
+      return;
+    }
+
+    setOrderedNavIds((current) => {
+      const sourceIndex = current.indexOf(sourceId);
+      const targetIndex = current.indexOf(targetId);
+
+      if (sourceIndex < 0 || targetIndex < 0) {
+        return current;
+      }
+
+      const next = [...current];
+      const [moved] = next.splice(sourceIndex, 1);
+      next.splice(targetIndex, 0, moved);
+      window.localStorage.setItem(navOrderStorageKey, JSON.stringify(next));
+
+      return next;
+    });
+  }
+
+  function resetNavigationOrder() {
+    const next = defaultNavItems.map((item) => item.id);
+    setOrderedNavIds(next);
+    window.localStorage.setItem(navOrderStorageKey, JSON.stringify(next));
+    setDraggingNavId(null);
   }
 
   const mainClassName = isCockpit
@@ -97,23 +157,53 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           <nav className="mt-6 space-y-2" aria-label="主要メニュー">
             {navItems.map((item) => {
               const isActive = isNavActive(item.href);
+              const isDragging = draggingNavId === item.id;
 
               return (
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`flex items-center justify-between rounded-md border px-3 py-3 text-[13px] font-medium leading-5 transition ${
+                  draggable
+                  onDragStart={(event) => {
+                    setDraggingNavId(item.id);
+                    event.dataTransfer.effectAllowed = "move";
+                    event.dataTransfer.setData("text/plain", item.id);
+                  }}
+                  onDragEnd={() => setDraggingNavId(null)}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const sourceId = event.dataTransfer.getData("text/plain");
+                    moveNavigationItem(sourceId, item.id);
+                    setDraggingNavId(null);
+                  }}
+                  className={`flex cursor-grab items-center justify-between rounded-md border px-3 py-3 text-[13px] font-medium leading-5 transition active:cursor-grabbing ${
                     isActive
                       ? "border-teal-300/40 bg-teal-300/12 text-white shadow-lg shadow-teal-950/30"
                       : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.055] hover:text-white"
-                  }`}
+                  } ${isDragging ? "scale-[0.98] opacity-55" : ""}`}
+                  title="ドラッグで並び替え"
                 >
                   {item.label}
-                  <span className="h-2 w-2 rounded-full bg-current opacity-60" />
+                  <span className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-600">⋮⋮</span>
+                    <span className="h-2 w-2 rounded-full bg-current opacity-60" />
+                  </span>
                 </Link>
               );
             })}
           </nav>
+
+          <button
+            type="button"
+            onClick={resetNavigationOrder}
+            className="mt-3 w-full rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-500 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-slate-300"
+          >
+            並び順をリセット
+          </button>
 
           <div className="absolute bottom-4 left-4 right-4 rounded-md border border-white/10 bg-black/20 p-4">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
