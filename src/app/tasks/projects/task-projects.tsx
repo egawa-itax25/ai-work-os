@@ -201,51 +201,64 @@ export default function TaskProjects() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
+              <table className="w-full min-w-[980px] table-fixed text-left text-sm">
+                <colgroup>
+                  <col className="w-[34%]" />
+                  <col className="w-[13%]" />
+                  <col className="w-[12%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[14%]" />
+                  <col className="w-[11%]" />
+                  <col className="w-[5%]" />
+                </colgroup>
                 <thead className="text-xs uppercase text-zinc-500">
                   <tr>
                     <th className="px-4 py-3">タスク</th>
-                    <th className="px-4 py-3">状態</th>
-                    <th className="px-4 py-3">優先度</th>
-                    <th className="px-4 py-3">担当</th>
-                    <th className="px-4 py-3">期限</th>
-                    <th className="px-4 py-3">関連</th>
+                    <th className="px-4 py-3 align-middle">ボール</th>
+                    <th className="px-4 py-3 align-middle">状態</th>
+                    <th className="px-4 py-3 align-middle">優先度</th>
+                    <th className="px-4 py-3 align-middle">担当</th>
+                    <th className="px-4 py-3 align-middle">期限</th>
+                    <th className="px-4 py-3 align-middle">関連</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
                   {group.tasks.map((task) => (
                     <tr key={task.id} className="hover:bg-zinc-900/60">
-                      <td className="max-w-sm px-4 py-3">
+                      <td className="px-4 py-3 align-middle">
                         <div className="font-medium text-white">{task.title}</div>
                         <div className="mt-1 line-clamp-1 text-xs text-zinc-500">
                           {task.description || "メモなし"}
                         </div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-middle">
+                        <BallBadge task={task} />
+                      </td>
+                      <td className="px-4 py-3 align-middle">
                         <span
-                          className={`rounded-md border px-2 py-1 text-xs font-semibold ${statusMeta[task.status].tone}`}
+                          className={`inline-flex min-h-8 items-center rounded-md border px-3 py-1 text-sm font-semibold ${statusMeta[task.status].tone}`}
                         >
                           {statusMeta[task.status].label}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-middle">
                         <span
-                          className={`rounded-md border px-2 py-1 text-xs font-semibold ${priorityMeta[task.priority].badge}`}
+                          className={`inline-flex min-h-8 items-center rounded-md border px-3 py-1 text-sm font-semibold ${priorityMeta[task.priority].badge}`}
                         >
                           {priorityMeta[task.priority].label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-zinc-300">{task.owner}</td>
+                      <td className="truncate px-4 py-3 align-middle font-medium text-zinc-200">{task.owner}</td>
                       <td
                         className={
                           task.status !== "done" && isOverdue(task.dueDate)
-                            ? "px-4 py-3 font-semibold text-red-200"
-                            : "px-4 py-3 text-zinc-300"
+                            ? "px-4 py-3 align-middle font-semibold text-red-200"
+                            : "px-4 py-3 align-middle text-zinc-300"
                         }
                       >
                         {formatDate(task.dueDate)}
                       </td>
-                      <td className="px-4 py-3 text-zinc-300">
+                      <td className="px-4 py-3 align-middle text-zinc-300">
                         {task.links.length}件
                       </td>
                     </tr>
@@ -290,6 +303,40 @@ function TaskTabs({ active }: { active: "map" | "projects" }) {
         プロジェクト一覧
       </Link>
     </div>
+  );
+}
+
+function BallBadge({ task }: { task: Task }) {
+  const owner = task.currentBallHolder;
+
+  if (task.status === "done" || owner === "なし") {
+    return (
+      <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-sm font-semibold text-emerald-100">
+        完了
+      </span>
+    );
+  }
+
+  if (owner === "あなた") {
+    return (
+      <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-sky-300/40 bg-sky-300/10 px-3 py-1 text-sm font-semibold text-sky-100">
+        自分
+      </span>
+    );
+  }
+
+  if (owner === "AI") {
+    return (
+      <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-violet-300/35 bg-violet-300/10 px-3 py-1 text-sm font-semibold text-violet-100">
+        AI
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-sm font-semibold text-amber-100">
+      <span className="truncate">{owner === "顧客" ? "相手" : owner}</span>
+    </span>
   );
 }
 
