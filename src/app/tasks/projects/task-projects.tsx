@@ -169,14 +169,24 @@ export default function TaskProjects() {
             key={group.project}
             className="neo-surface rounded-md border"
           >
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-800 px-4 py-4">
-              <div>
-                <h2 className="text-lg font-semibold text-white">
-                  {group.project}
-                </h2>
-                <p className="mt-1 text-sm text-zinc-500">
-                  未着手 {group.todo} / 進行中 {group.doing} / 完了 {group.done}
-                </p>
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4">
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-lg font-semibold text-white">
+                      {group.project}
+                    </h2>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      未着手 {group.todo} / 進行中 {group.doing} / 完了 {group.done}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/tasks/projects/${encodeURIComponent(group.project)}/map?view=map`}
+                    className="flex min-h-12 min-w-[220px] items-center justify-center rounded-md border border-sky-300/45 bg-sky-300/10 px-7 text-sm font-semibold text-sky-50 shadow-lg shadow-sky-950/20 transition hover:bg-sky-300/16"
+                  >
+                    タスクフローマップ
+                  </Link>
+                </div>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 {group.overdue > 0 ? (
@@ -187,12 +197,6 @@ export default function TaskProjects() {
                 <span className="flex min-h-11 items-center rounded-md border border-zinc-700 bg-zinc-950/60 px-3 text-sm font-semibold text-zinc-300">
                   {group.tasks.length}件
                 </span>
-                <Link
-                  href={`/tasks/projects/${encodeURIComponent(group.project)}/map?view=map`}
-                  className="flex min-h-11 items-center rounded-md border border-sky-300/45 bg-sky-300/10 px-5 text-sm font-semibold text-sky-50 shadow-lg shadow-sky-950/20 transition hover:bg-sky-300/16"
-                >
-                  タスクフローマップ
-                </Link>
               </div>
             </div>
 

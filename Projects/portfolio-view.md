@@ -505,6 +505,9 @@ Implemented:
   moving secondary score details to a second row.
 - Task Flow Map fixed ownership zones no longer pan the entire task layer when
   the user drags empty space. Only task cards move when directly dragged.
+- In the schedule project task list, the Task Flow Map action is placed near the
+  project title as a large horizontal primary button, because users open this
+  map frequently from the project summary.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
