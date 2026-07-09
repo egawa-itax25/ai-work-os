@@ -53,6 +53,10 @@ Canvas zoom inside scrollable pages should require an intentional modifier such
 as Shift+scroll. Plain wheel or trackpad scrolling should keep moving the page
 instead of resizing an embedded map.
 
+Project-level and task-level flow maps should share the same basic interaction
+model so the user does not have to relearn pan, zoom, node drag, and map framing
+between layers.
+
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be
 hideable when the user wants the spatial canvas to take the full visual field.

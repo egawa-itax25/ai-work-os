@@ -30,13 +30,16 @@ type DragState = {
   offsetX: number;
   offsetY: number;
 };
+type Point = { x: number; y: number };
+type PanState = { start: Point; origin: Point } | null;
 type BallTransferTarget = "self" | "other" | "ai" | "done";
 type ToastState = { message: string; undo?: () => void } | null;
 
-const cardWidth = 280;
-const cardHeight = 256;
-const boardWidth = 1120;
-const boardHeight = 720;
+const cardWidth = 236;
+const cardHeight = 138;
+const boardWidth = 1240;
+const boardHeight = 620;
+const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
 const ballTransferTargets: {
   id: BallTransferTarget;
   label: string;
@@ -83,6 +86,9 @@ export default function ProjectTaskMap() {
   const [toast, setToast] = useState<ToastState>(null);
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const [isReady, setIsReady] = useState(false);
+  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(0.94);
+  const [panState, setPanState] = useState<PanState>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -159,19 +165,47 @@ export default function ProjectTaskMap() {
     (task) => task.status !== "done" && isOverdue(task.dueDate),
   ).length;
 
+  function getBoardPoint(clientX: number, clientY: number) {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: (clientX - rect.left - rect.width / 2 - pan.x) / zoom + boardWidth / 2,
+      y: (clientY - rect.top - rect.height / 2 - pan.y) / zoom + boardHeight / 2,
+    };
+  }
+
+  function moveCanvas(point: Point) {
+    if (!panState || dragState) {
+      return;
+    }
+
+    setPan({
+      x: panState.origin.x + point.x - panState.start.x,
+      y: panState.origin.y + point.y - panState.start.y,
+    });
+  }
+
+  function updateZoom(nextZoom: number) {
+    setZoom(Math.min(1.25, Math.max(0.72, nextZoom)));
+  }
+
   function moveTask(event: ReactPointerEvent<HTMLDivElement>) {
     if (!dragState || !boardRef.current) {
       return;
     }
 
-    const rect = boardRef.current.getBoundingClientRect();
+    const point = getBoardPoint(event.clientX, event.clientY);
     const x = clamp(
-      event.clientX - rect.left - dragState.offsetX,
+      point.x - dragState.offsetX,
       16,
       boardWidth - cardWidth - 16,
     );
     const y = clamp(
-      event.clientY - rect.top - dragState.offsetY,
+      point.y - dragState.offsetY,
       16,
       boardHeight - cardHeight - 16,
     );
@@ -213,14 +247,14 @@ export default function ProjectTaskMap() {
 
     event.preventDefault();
 
-    const rect = boardRef.current.getBoundingClientRect();
+    const point = getBoardPoint(event.clientX, event.clientY);
     const x = clamp(
-      event.clientX - rect.left - cardWidth / 2,
+      point.x - cardWidth / 2,
       16,
       boardWidth - cardWidth - 16,
     );
     const y = clamp(
-      event.clientY - rect.top - 28,
+      point.y - 28,
       16,
       boardHeight - cardHeight - 16,
     );
@@ -259,11 +293,13 @@ export default function ProjectTaskMap() {
       return;
     }
 
+    const point = getBoardPoint(event.clientX, event.clientY);
+
     setActiveTaskId(task.id);
     setDragState({
       id: task.id,
-      offsetX: event.nativeEvent.offsetX,
-      offsetY: event.nativeEvent.offsetY,
+      offsetX: point.x - task.x,
+      offsetY: point.y - task.y,
     });
     event.currentTarget.setPointerCapture(event.pointerId);
   }
@@ -422,85 +458,138 @@ export default function ProjectTaskMap() {
       </div>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_280px]">
-        <div className="neo-surface overflow-auto rounded-md border">
+        <section className={`${taskFlowViewportHeightClass} flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl`}>
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-white">タスクフローマップ</h2>
+              <p className="mt-1 text-sm text-slate-500">
+                空白をドラッグで移動。ズームはShift+スクロールで操作できます。
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button type="button" onClick={() => updateZoom(zoom - 0.08)} className="h-8 w-8 rounded-md border border-white/10 text-slate-300 transition hover:bg-white/[0.06]" title="縮小">
+                -
+              </button>
+              <span className="w-12 text-center text-xs text-slate-400">{Math.round(zoom * 100)}%</span>
+              <button type="button" onClick={() => updateZoom(zoom + 0.08)} className="h-8 w-8 rounded-md border border-white/10 text-slate-300 transition hover:bg-white/[0.06]" title="拡大">
+                +
+              </button>
+            </div>
+          </div>
           <div
             ref={boardRef}
             onContextMenu={addTaskAtPoint}
             onDoubleClick={addTaskAtPoint}
-            onPointerMove={moveTask}
-            onPointerUp={finishMoving}
-            onPointerCancel={() => setDragState(null)}
-            className="neo-map-grid relative cursor-default"
-            style={{ width: boardWidth, height: boardHeight }}
+            onPointerDown={(event) => {
+              if (event.target instanceof HTMLElement && !event.target.closest("article")) {
+                setPanState({ start: { x: event.clientX, y: event.clientY }, origin: pan });
+              }
+            }}
+            onPointerMove={(event) => {
+              moveCanvas({ x: event.clientX, y: event.clientY });
+              moveTask(event);
+            }}
+            onPointerUp={(event) => {
+              setPanState(null);
+              finishMoving(event);
+            }}
+            onPointerCancel={() => {
+              setPanState(null);
+              setDragState(null);
+            }}
+            onPointerLeave={() => {
+              setPanState(null);
+              setDragState(null);
+            }}
+            onWheel={(event) => {
+              if (event.shiftKey && Math.abs(event.deltaY) > 1) {
+                event.preventDefault();
+                updateZoom(zoom - event.deltaY * 0.001);
+              }
+            }}
+            className={`relative min-h-0 flex-1 overflow-hidden ${panState ? "cursor-grabbing" : "cursor-grab"}`}
           >
-            <svg
-              className="pointer-events-none absolute inset-0"
-              width={boardWidth}
-              height={boardHeight}
-              aria-hidden="true"
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(125,211,252,0.08),transparent_18rem),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,48px_48px,48px_48px]" />
+            <div
+              className={`absolute left-1/2 top-1/2 origin-center ${
+                panState || dragState ? "transition-none" : "transition-transform duration-200"
+              }`}
+              style={{
+                width: boardWidth,
+                height: boardHeight,
+                transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
+              }}
             >
-              <defs>
-                <marker
-                  id="project-arrow"
-                  viewBox="0 0 10 10"
-                  refX="9"
-                  refY="5"
-                  markerWidth="7"
-                  markerHeight="7"
-                  orient="auto-start-reverse"
-                >
-                  <path d="M 0 0 L 10 5 L 0 10 z" fill="#a78bfa" />
-                </marker>
-              </defs>
-              {projectLinks.map(({ source, target }) => {
-                const startX = source.x + cardWidth / 2;
-                const startY = source.y + cardHeight / 2;
-                const endX = target.x + cardWidth / 2;
-                const endY = target.y + cardHeight / 2;
-                const midX = (startX + endX) / 2;
+              <svg
+                className="pointer-events-none absolute inset-0"
+                width={boardWidth}
+                height={boardHeight}
+                aria-hidden="true"
+              >
+                <defs>
+                  <marker
+                    id="project-arrow"
+                    viewBox="0 0 10 10"
+                    refX="9"
+                    refY="5"
+                    markerWidth="7"
+                    markerHeight="7"
+                    orient="auto-start-reverse"
+                  >
+                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8" />
+                  </marker>
+                </defs>
+                {projectLinks.map(({ source, target }) => {
+                  const startX = source.x + cardWidth / 2;
+                  const startY = source.y + cardHeight / 2;
+                  const endX = target.x + cardWidth / 2;
+                  const endY = target.y + cardHeight / 2;
+                  const midX = (startX + endX) / 2;
 
-                return (
-                  <path
-                    key={`${source.id}:${target.id}`}
-                    d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
-                    fill="none"
-                    stroke="#a78bfa"
-                    strokeLinecap="round"
-                    strokeWidth="3"
-                    markerEnd="url(#project-arrow)"
-                  />
-                );
-              })}
-            </svg>
+                  return (
+                    <path
+                      key={`${source.id}:${target.id}`}
+                      d={`M ${startX} ${startY} C ${midX} ${startY}, ${midX} ${endY}, ${endX} ${endY}`}
+                      fill="none"
+                      stroke="rgba(148,163,184,0.32)"
+                      strokeLinecap="round"
+                      strokeWidth="1.5"
+                      markerEnd="url(#project-arrow)"
+                    />
+                  );
+                })}
+              </svg>
 
-            {projectTasks.map((task) => (
-              <TaskNode
-                key={task.id}
-                task={task}
-                active={activeTask?.id === task.id}
-                linking={linkSourceId !== null}
-                dropTarget={dropTargetId === task.id}
-                menuOpen={menuTaskId === task.id}
-                onArchive={(id) => updateTask(id, { status: "archived" })}
-                onComplete={(id) => updateTask(id, { status: "done", progress: 100 })}
-                onDuplicate={duplicateTask}
-                onMenuToggle={(id) => setMenuTaskId((current) => (current === id ? "" : id))}
-                onStartMoving={startMoving}
-                onSelect={setActiveTaskId}
-                onConnectStart={setLinkSourceId}
-                onConnectEnd={() => {
-                  setLinkSourceId(null);
-                  setDropTargetId(null);
-                }}
-                onDropTarget={setDropTargetId}
-                onConnect={connectTasks}
-                onUpdate={(patch) => updateTask(task.id, patch)}
-                onRemove={removeTask}
-                onStatusChange={(status) => updateTask(task.id, { status })}
-              />
-            ))}
+              {projectTasks.map((task) => (
+                <TaskNode
+                  compact
+                  key={task.id}
+                  task={task}
+                  active={activeTask?.id === task.id}
+                  linking={linkSourceId !== null}
+                  dropTarget={dropTargetId === task.id}
+                  menuOpen={menuTaskId === task.id}
+                  onArchive={(id) => updateTask(id, { status: "archived" })}
+                  onComplete={(id) => updateTask(id, { status: "done", progress: 100 })}
+                  onDuplicate={duplicateTask}
+                  onMenuToggle={(id) => setMenuTaskId((current) => (current === id ? "" : id))}
+                  onStartMoving={startMoving}
+                  onSelect={setActiveTaskId}
+                  onConnectStart={setLinkSourceId}
+                  onConnectEnd={() => {
+                    setLinkSourceId(null);
+                    setDropTargetId(null);
+                  }}
+                  onDropTarget={setDropTargetId}
+                  onConnect={connectTasks}
+                  onUpdate={(patch) => updateTask(task.id, patch)}
+                  onRemove={removeTask}
+                  onStatusChange={(status) => updateTask(task.id, { status })}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        </section>
 
         <aside className="neo-surface rounded-md border p-4">
           {activeTask && activeTask.project === projectName ? (
@@ -535,6 +624,7 @@ export default function ProjectTaskMap() {
 }
 
 function TaskNode({
+  compact = false,
   task,
   active,
   linking,
@@ -554,6 +644,7 @@ function TaskNode({
   onRemove,
   onStatusChange,
 }: {
+  compact?: boolean;
   task: Task;
   active: boolean;
   linking: boolean;
@@ -574,6 +665,105 @@ function TaskNode({
   onStatusChange: (status: TaskStatus) => void;
 }) {
   const ballMeta = getTaskBallMeta(task);
+
+  if (compact) {
+    return (
+      <article
+        onPointerDown={(event) => onStartMoving(event, task)}
+        onClick={() => onSelect(task.id)}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          onMenuToggle(task.id);
+        }}
+        onDragOver={(event) => {
+          event.preventDefault();
+          onDropTarget(task.id);
+        }}
+        onDragLeave={() => onDropTarget(null)}
+        onDrop={(event) => {
+          event.preventDefault();
+          const sourceId = event.dataTransfer.getData("application/task-id");
+          onConnect(sourceId, task.id);
+          onConnectEnd();
+        }}
+        className={`absolute w-[236px] rounded-lg border bg-slate-950/88 p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
+          active
+            ? "z-30 border-sky-200/70 ring-2 ring-sky-200/15"
+            : `border-white/12 ${priorityMeta[task.priority].ring}`
+        } ${dropTarget ? "scale-[1.02] border-sky-200 ring-sky-200/40" : ""} ${
+          linking ? "shadow-sky-950/50" : ""
+        }`}
+        style={{
+          minHeight: cardHeight,
+          left: task.x,
+          top: task.y,
+          zIndex: active ? 30 : 10,
+        }}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-slate-500">{statusMeta[task.status].label}</p>
+            <h3 className="mt-1 truncate text-sm font-semibold text-white">{task.title}</h3>
+          </div>
+          <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${priorityMeta[task.priority].badge}`}>
+            {priorityMeta[task.priority].label}
+          </span>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+          <span>進捗 {task.progress}%</span>
+          <span className="truncate">{task.currentBallHolder}</span>
+        </div>
+        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+          <div className="h-full rounded-full bg-sky-200" style={{ width: `${task.progress}%` }} />
+        </div>
+
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${ballMeta.tone}`}>
+            {ballMeta.label}
+          </span>
+          <button
+            type="button"
+            draggable
+            onPointerDown={(event) => event.stopPropagation()}
+            onDragStart={(event) => {
+              event.dataTransfer.setData("application/task-id", task.id);
+              event.dataTransfer.effectAllowed = "link";
+              onConnectStart(task.id);
+            }}
+            onDragEnd={onConnectEnd}
+            className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
+          >
+            つなぐ
+          </button>
+          <button
+            type="button"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => {
+              event.stopPropagation();
+              onMenuToggle(task.id);
+            }}
+            className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-white/[0.06]"
+            title="操作メニュー"
+          >
+            …
+          </button>
+        </div>
+
+        {menuOpen ? (
+          <TaskContextMenu
+            task={task}
+            onArchive={onArchive}
+            onComplete={onComplete}
+            onDuplicate={onDuplicate}
+            onEdit={onSelect}
+            onPassBall={() => onUpdate({ currentBallHolder: "未設定", ballHoldingStartedAt: todayString() })}
+            onClose={() => onMenuToggle(task.id)}
+          />
+        ) : null}
+      </article>
+    );
+  }
 
   return (
     <article

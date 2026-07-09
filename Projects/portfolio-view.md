@@ -370,6 +370,11 @@ Dropping a task onto a destination updates the task's current ball holder and
 shows undo-capable feedback. The dock appears only while dragging so the map
 does not become visually crowded.
 
+Task Flow Map UI should use the same canvas language as Portfolio Project Flow
+Map: quiet dark surface, compact nodes, pan by dragging empty space, zoom
+buttons, and Shift+scroll zoom. The Task Inspector is already useful and should
+remain the detailed editing surface during this map UI polish.
+
 ### Persistence
 
 Minor edits auto-save.
