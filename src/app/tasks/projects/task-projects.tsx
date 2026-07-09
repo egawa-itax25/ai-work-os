@@ -178,20 +178,20 @@ export default function TaskProjects() {
                   未着手 {group.todo} / 進行中 {group.doing} / 完了 {group.done}
                 </p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {group.overdue > 0 ? (
                   <span className="rounded-md border border-red-400/40 bg-red-400/10 px-2 py-1 text-xs font-semibold text-red-200">
                     期限超過 {group.overdue}
                   </span>
                 ) : null}
-                <span className="rounded-md border border-zinc-700 px-2 py-1 text-xs font-semibold text-zinc-300">
+                <span className="flex min-h-11 items-center rounded-md border border-zinc-700 bg-zinc-950/60 px-3 text-sm font-semibold text-zinc-300">
                   {group.tasks.length}件
                 </span>
                 <Link
                   href={`/tasks/projects/${encodeURIComponent(group.project)}/map?view=map`}
-                  className="rounded-md border border-violet-400/40 bg-violet-400/10 px-2 py-1 text-xs font-semibold text-violet-100 hover:bg-violet-400/20"
+                  className="flex min-h-11 items-center rounded-md border border-sky-300/45 bg-sky-300/10 px-5 text-sm font-semibold text-sky-50 shadow-lg shadow-sky-950/20 transition hover:bg-sky-300/16"
                 >
-                  マップ
+                  タスクフローマップ
                 </Link>
               </div>
             </div>

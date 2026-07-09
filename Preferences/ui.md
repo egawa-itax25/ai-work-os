@@ -57,6 +57,10 @@ Project-level and task-level flow maps should share the same basic interaction
 model so the user does not have to relearn pan, zoom, node drag, and map framing
 between layers.
 
+Frequently used map actions should have a comfortable hit target and clear
+label. Ball ownership should be readable at a glance on nodes; use state color
+and subtle accents before adding new controls.
+
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be
 hideable when the user wants the spatial canvas to take the full visual field.

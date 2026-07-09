@@ -375,6 +375,12 @@ Map: quiet dark surface, compact nodes, pan by dragging empty space, zoom
 buttons, and Shift+scroll zoom. The Task Inspector is already useful and should
 remain the detailed editing surface during this map UI polish.
 
+Because users open Task Flow Maps frequently, project task list rows should make
+the map action large enough to tap confidently and easy to scan near the
+project count. Task Flow nodes should make "相手のボール" visible through a
+non-interactive visual signal such as an amber accent rail and waiting tint,
+without changing map operations.
+
 ### Persistence
 
 Minor edits auto-save.

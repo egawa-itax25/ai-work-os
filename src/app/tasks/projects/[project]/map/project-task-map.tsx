@@ -665,6 +665,7 @@ function TaskNode({
   onStatusChange: (status: TaskStatus) => void;
 }) {
   const ballMeta = getTaskBallMeta(task);
+  const isOtherBall = ballMeta.label === "相手のボール";
 
   if (compact) {
     return (
@@ -686,13 +687,15 @@ function TaskNode({
           onConnect(sourceId, task.id);
           onConnectEnd();
         }}
-        className={`absolute w-[236px] rounded-lg border bg-slate-950/88 p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
+        className={`absolute w-[236px] overflow-hidden rounded-lg border p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
           active
             ? "z-30 border-sky-200/70 ring-2 ring-sky-200/15"
-            : `border-white/12 ${priorityMeta[task.priority].ring}`
+            : isOtherBall
+              ? "border-amber-300/45 ring-2 ring-amber-300/15"
+              : `border-white/12 ${priorityMeta[task.priority].ring}`
         } ${dropTarget ? "scale-[1.02] border-sky-200 ring-sky-200/40" : ""} ${
           linking ? "shadow-sky-950/50" : ""
-        }`}
+        } ${isOtherBall ? "bg-amber-300/[0.055]" : "bg-slate-950/88"}`}
         style={{
           minHeight: cardHeight,
           left: task.x,
@@ -700,6 +703,9 @@ function TaskNode({
           zIndex: active ? 30 : 10,
         }}
       >
+        {isOtherBall ? (
+          <div className="absolute inset-y-0 left-0 w-1 bg-amber-300/75" aria-hidden="true" />
+        ) : null}
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-slate-500">{statusMeta[task.status].label}</p>
@@ -719,9 +725,14 @@ function TaskNode({
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${ballMeta.tone}`}>
+          <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${ballMeta.tone} ${isOtherBall ? "shadow-sm shadow-amber-950/40" : ""}`}>
             {ballMeta.label}
           </span>
+          {isOtherBall ? (
+            <span className="min-w-0 truncate text-[11px] font-semibold text-amber-100">
+              {ballMeta.detail}
+            </span>
+          ) : null}
           <button
             type="button"
             draggable
