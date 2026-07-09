@@ -388,6 +388,9 @@ context. A user should not need to discover the Task Inspector to remove a
 connection. The task node context menu should list existing outgoing links and
 provide "解除" for each linked task.
 
+The compact "解除" button should open a small dedicated menu with only:
+解除 and 元に戻す. It must be clickable without being clipped by the task node.
+
 Task Flow Map UI should use the same canvas language as Portfolio Project Flow
 Map: quiet dark surface, compact nodes, pan by dragging empty space, zoom
 buttons, and Shift+scroll zoom. The Task Inspector is already useful and should
@@ -414,6 +417,9 @@ The ownership regions should fill the visible map board instead of appearing as
 small islands in the middle of the canvas. Moving a task into 完了 sets progress
 to 100%. When that task is moved back from 完了 into 自分ボール or 相手ボール, restore
 the progress value it had immediately before completion.
+
+Ownership regions are fixed viewport layers inside the Flow Map panel. They do
+not move when the user pans the task canvas; only task nodes and link paths move.
 
 ### Persistence
 

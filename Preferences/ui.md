@@ -68,6 +68,8 @@ rows rather than squeezing text until it folds.
 Connection creation and removal should be paired in the same task-map context:
 if a user can create a task link with "つなぐ" from a node, they should also be
 able to remove that link from the node menu without leaving the map.
+Small action menus must not be clipped by node boundaries. The compact unlink
+menu should stay simple: 解除 and 元に戻す.
 
 Temporary handoff surfaces should stay focused. The first ball-transfer dock
 should show only 自分, 相手, and 完了 while dragging a task; other destinations can
@@ -79,6 +81,8 @@ obvious than a temporary dock. The regions should be calm and functional:
 These regions should use the full visible board area so the drop targets feel
 easy to hit. Completion should preserve the previous progress value so moving a
 task out of 完了 can restore its pre-completion progress.
+The ownership regions should remain fixed to the visible Flow Map panel while
+the task canvas pans underneath them.
 
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be

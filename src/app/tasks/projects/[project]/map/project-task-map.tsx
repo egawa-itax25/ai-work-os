@@ -285,14 +285,26 @@ export default function ProjectTaskMap() {
     setZoom(Math.min(1.25, Math.max(0.72, nextZoom)));
   }
 
-  function getZoneTarget(point: Point) {
-    return taskFlowZones.find(
-      (zone) =>
-        point.x >= zone.x &&
-        point.x <= zone.x + zone.width &&
-        point.y >= zone.y &&
-        point.y <= zone.y + zone.height,
-    )?.id;
+  function getViewportZoneTarget(clientX: number, clientY: number) {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return undefined;
+    }
+
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const topHeight = rect.height * 0.58;
+
+    if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
+      return undefined;
+    }
+
+    if (y >= topHeight) {
+      return "done";
+    }
+
+    return x < rect.width / 2 ? "self" : "other";
   }
 
   function moveTask(event: ReactPointerEvent<HTMLDivElement>) {
@@ -324,21 +336,7 @@ export default function ProjectTaskMap() {
       return;
     }
 
-    const point = getBoardPoint(event.clientX, event.clientY);
-    const taskX = clamp(
-      point.x - dragState.offsetX,
-      16,
-      boardSize.x - cardWidth - 16,
-    );
-    const taskY = clamp(
-      point.y - dragState.offsetY,
-      16,
-      boardSize.y - cardHeight - 16,
-    );
-    const zoneTarget = getZoneTarget({
-      x: taskX + cardWidth / 2,
-      y: taskY + cardHeight / 2,
-    });
+    const zoneTarget = getViewportZoneTarget(event.clientX, event.clientY);
     const task = tasks.find((item) => item.id === dragState.id);
     const dropTarget = document
       .elementFromPoint(event.clientX, event.clientY)
@@ -448,6 +446,31 @@ export default function ProjectTaskMap() {
       current.map((task) =>
         task.id === sourceId
           ? { ...task, links: task.links.filter((id) => id !== targetId) }
+          : task,
+      ),
+    );
+    setActiveTaskId(sourceId);
+    setToast({
+      message: "つながりを解除しました。",
+      undo: () => {
+        if (beforeTask) {
+          setTasks((current) =>
+            current.map((task) =>
+              task.id === sourceId ? beforeTask : task,
+            ),
+          );
+        }
+      },
+    });
+  }
+
+  function disconnectTaskLinks(sourceId: string, targetIds: string[]) {
+    const beforeTask = tasks.find((task) => task.id === sourceId);
+
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === sourceId
+          ? { ...task, links: task.links.filter((id) => !targetIds.includes(id)) }
           : task,
       ),
     );
@@ -655,8 +678,17 @@ export default function ProjectTaskMap() {
             className={`relative min-h-0 flex-1 overflow-hidden ${panState ? "cursor-grabbing" : "cursor-grab"}`}
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(125,211,252,0.08),transparent_18rem),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,48px_48px,48px_48px]" />
+            <div className="pointer-events-none absolute inset-0 z-0">
+              {taskFlowZones.map((zone) => (
+                <TaskFlowZone
+                  key={zone.id}
+                  count={zoneCounts[zone.id]}
+                  zone={zone}
+                />
+              ))}
+            </div>
             <div
-              className={`absolute left-1/2 top-1/2 origin-center ${
+              className={`absolute left-1/2 top-1/2 z-10 origin-center ${
                 panState || dragState ? "transition-none" : "transition-transform duration-200"
               }`}
               style={{
@@ -665,13 +697,6 @@ export default function ProjectTaskMap() {
                 transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
               }}
             >
-              {taskFlowZones.map((zone) => (
-                <TaskFlowZone
-                  key={zone.id}
-                  count={zoneCounts[zone.id]}
-                  zone={zone}
-                />
-              ))}
               <svg
                 className="pointer-events-none absolute inset-0"
                 width={boardSize.x}
@@ -738,6 +763,7 @@ export default function ProjectTaskMap() {
                   onDropTarget={setDropTargetId}
                   onConnect={connectTasks}
                   onDisconnect={disconnectTask}
+                  onDisconnectLinks={disconnectTaskLinks}
                   onUpdate={(patch) => updateTask(task.id, patch)}
                   onRemove={removeTask}
                   onStatusChange={(status) => updateTask(task.id, { status })}
@@ -797,6 +823,7 @@ function TaskNode({
   onDropTarget,
   onConnect,
   onDisconnect,
+  onDisconnectLinks,
   onUpdate,
   onRemove,
   onStatusChange,
@@ -819,12 +846,14 @@ function TaskNode({
   onDropTarget: (id: string | null) => void;
   onConnect: (sourceId: string, targetId: string) => void;
   onDisconnect: (sourceId: string, targetId: string) => void;
+  onDisconnectLinks: (sourceId: string, targetIds: string[]) => void;
   onUpdate: (patch: Partial<Task>) => void;
   onRemove: (id: string) => void;
   onStatusChange: (status: TaskStatus) => void;
 }) {
   const ballMeta = getTaskBallMeta(task);
   const isOtherBall = ballMeta.label === "相手のボール";
+  const [unlinkMenuOpen, setUnlinkMenuOpen] = useState(false);
 
   if (compact) {
     return (
@@ -846,7 +875,7 @@ function TaskNode({
           onConnect(sourceId, task.id);
           onConnectEnd();
         }}
-        className={`absolute w-[236px] overflow-hidden rounded-lg border p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
+        className={`absolute w-[236px] overflow-visible rounded-lg border p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
           active
             ? "z-30 border-sky-200/70 ring-2 ring-sky-200/15"
             : isOtherBall
@@ -915,10 +944,10 @@ function TaskNode({
               onPointerDown={(event) => event.stopPropagation()}
               onClick={(event) => {
                 event.stopPropagation();
-                onMenuToggle(task.id);
+                setUnlinkMenuOpen((current) => !current);
               }}
               className="whitespace-nowrap rounded-md border border-slate-500/35 bg-slate-200/[0.04] px-2 py-1 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08]"
-              title="メニューでつながりを解除"
+              title="つながりを解除"
             >
               解除{linkedTasks.length > 1 ? ` ${linkedTasks.length}` : ""}
             </button>
@@ -936,6 +965,32 @@ function TaskNode({
             …
           </button>
         </div>
+
+        {unlinkMenuOpen ? (
+          <div
+            className="absolute left-4 top-[calc(100%-0.35rem)] z-50 w-36 rounded-lg border border-slate-700 bg-slate-950/95 p-1 shadow-2xl shadow-black/50 backdrop-blur-xl"
+            onPointerDown={(event) => event.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => {
+                onDisconnectLinks(task.id, linkedTasks.map((linkedTask) => linkedTask.id));
+                setUnlinkMenuOpen(false);
+              }}
+              className="block w-full rounded-md px-3 py-2 text-left text-sm font-semibold text-slate-100 hover:bg-white/[0.07]"
+            >
+              解除
+            </button>
+            <button
+              type="button"
+              onClick={() => setUnlinkMenuOpen(false)}
+              className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-300 hover:bg-white/[0.07]"
+            >
+              元に戻す
+            </button>
+          </div>
+        ) : null}
 
         {menuOpen ? (
           <TaskContextMenu
@@ -1293,16 +1348,17 @@ function TaskFlowZone({
   count: number;
 }) {
   const statusLabel = zone.id === "done" ? "完了" : "進行中";
+  const fixedStyle =
+    zone.id === "self"
+      ? { left: 0, top: 0, width: "50%", height: "58%" }
+      : zone.id === "other"
+        ? { left: "50%", top: 0, width: "50%", height: "58%" }
+        : { left: 0, top: "58%", width: "100%", height: "42%" };
 
   return (
     <section
       className={`pointer-events-none absolute rounded-2xl border border-dashed p-7 shadow-2xl ${zone.tone}`}
-      style={{
-        left: zone.x,
-        top: zone.y,
-        width: zone.width,
-        height: zone.height,
-      }}
+      style={fixedStyle}
       aria-hidden="true"
     >
       <div className="flex items-start justify-between gap-4">
