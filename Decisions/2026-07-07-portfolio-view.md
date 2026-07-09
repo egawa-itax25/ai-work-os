@@ -98,3 +98,20 @@ like a different product area when the user is comparing or reviewing projects.
 
 The single-project spatial task map remains available through explicit actions
 such as "このプロジェクトをマップで見る" or each project's compact "マップ" action.
+
+## Follow-up Decision: Task Map Handoff And Unlinking
+
+The task-level Flow Map should keep ball handoff deliberately simple:
+dragging a task shows a temporary dock with only 自分, 相手, and 完了. AI can
+remain visible as task state, but it is not a drop target until AI queue
+operations are implemented.
+
+Task connections created by "つなぐ" need a nearby removal path. Existing links
+should be removable from the task node context menu so users can fix the map
+without leaving the canvas.
+
+## Reason
+
+The map is used frequently, so its primary operations must be reversible and
+obvious. Three handoff destinations match the user's current mental model:
+my side, the other side, or finished.

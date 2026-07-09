@@ -363,12 +363,21 @@ temporary "ボールを渡す" dock appears with these initial destinations:
 
 - 自分
 - 相手
-- AI
 - 完了
 
 Dropping a task onto a destination updates the task's current ball holder and
 shows undo-capable feedback. The dock appears only while dragging so the map
 does not become visually crowded.
+
+AI processing can still exist as task data, but it should not be a primary
+handoff target until the AI work queue is a real operation surface. Keeping the
+transfer dock to 自分, 相手, and 完了 makes the handoff operation easier to
+understand while dragging.
+
+Task links created by "つなぐ" must have a matching unlink path in the same map
+context. A user should not need to discover the Task Inspector to remove a
+connection. The task node context menu should list existing outgoing links and
+provide "解除" for each linked task.
 
 Task Flow Map UI should use the same canvas language as Portfolio Project Flow
 Map: quiet dark surface, compact nodes, pan by dragging empty space, zoom

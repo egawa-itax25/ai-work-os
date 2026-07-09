@@ -32,7 +32,7 @@ type DragState = {
 };
 type Point = { x: number; y: number };
 type PanState = { start: Point; origin: Point } | null;
-type BallTransferTarget = "self" | "other" | "ai" | "done";
+type BallTransferTarget = "self" | "other" | "done";
 type ToastState = { message: string; undo?: () => void } | null;
 
 const cardWidth = 236;
@@ -57,12 +57,6 @@ const ballTransferTargets: {
     label: "相手",
     description: "回答・確認待ち",
     tone: "border-amber-300/40 bg-amber-300/10 text-amber-100",
-  },
-  {
-    id: "ai",
-    label: "AI",
-    description: "AIが処理中",
-    tone: "border-violet-300/40 bg-violet-300/10 text-violet-100",
   },
   {
     id: "done",
@@ -319,6 +313,31 @@ export default function ProjectTaskMap() {
       }),
     );
     setActiveTaskId(targetId);
+  }
+
+  function disconnectTask(sourceId: string, targetId: string) {
+    const beforeTask = tasks.find((task) => task.id === sourceId);
+
+    setTasks((current) =>
+      current.map((task) =>
+        task.id === sourceId
+          ? { ...task, links: task.links.filter((id) => id !== targetId) }
+          : task,
+      ),
+    );
+    setActiveTaskId(sourceId);
+    setToast({
+      message: "つながりを解除しました。",
+      undo: () => {
+        if (beforeTask) {
+          setTasks((current) =>
+            current.map((task) =>
+              task.id === sourceId ? beforeTask : task,
+            ),
+          );
+        }
+      },
+    });
   }
 
   function updateTask(id: string, patch: Partial<Task>) {
@@ -580,8 +599,12 @@ export default function ProjectTaskMap() {
                     setLinkSourceId(null);
                     setDropTargetId(null);
                   }}
+                  linkedTasks={task.links
+                    .map((targetId) => taskMap.get(targetId))
+                    .filter((target): target is Task => Boolean(target))}
                   onDropTarget={setDropTargetId}
                   onConnect={connectTasks}
+                  onDisconnect={disconnectTask}
                   onUpdate={(patch) => updateTask(task.id, patch)}
                   onRemove={removeTask}
                   onStatusChange={(status) => updateTask(task.id, { status })}
@@ -638,8 +661,10 @@ function TaskNode({
   onArchive,
   onConnectStart,
   onConnectEnd,
+  linkedTasks,
   onDropTarget,
   onConnect,
+  onDisconnect,
   onUpdate,
   onRemove,
   onStatusChange,
@@ -658,8 +683,10 @@ function TaskNode({
   onArchive: (id: string) => void;
   onConnectStart: (id: string) => void;
   onConnectEnd: () => void;
+  linkedTasks: Task[];
   onDropTarget: (id: string | null) => void;
   onConnect: (sourceId: string, targetId: string) => void;
+  onDisconnect: (sourceId: string, targetId: string) => void;
   onUpdate: (patch: Partial<Task>) => void;
   onRemove: (id: string) => void;
   onStatusChange: (status: TaskStatus) => void;
@@ -747,6 +774,20 @@ function TaskNode({
           >
             つなぐ
           </button>
+          {linkedTasks.length > 0 ? (
+            <button
+              type="button"
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={(event) => {
+                event.stopPropagation();
+                onMenuToggle(task.id);
+              }}
+              className="rounded-md border border-slate-500/35 bg-slate-200/[0.04] px-2 py-1 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+              title="メニューでつながりを解除"
+            >
+              解除{linkedTasks.length > 1 ? ` ${linkedTasks.length}` : ""}
+            </button>
+          ) : null}
           <button
             type="button"
             onPointerDown={(event) => event.stopPropagation()}
@@ -764,8 +805,10 @@ function TaskNode({
         {menuOpen ? (
           <TaskContextMenu
             task={task}
+            linkedTasks={linkedTasks}
             onArchive={onArchive}
             onComplete={onComplete}
+            onDisconnect={onDisconnect}
             onDuplicate={onDuplicate}
             onEdit={onSelect}
             onPassBall={() => onUpdate({ currentBallHolder: "未設定", ballHoldingStartedAt: todayString() })}
@@ -951,8 +994,10 @@ function TaskNode({
       {menuOpen ? (
         <TaskContextMenu
           task={task}
+          linkedTasks={linkedTasks}
           onArchive={onArchive}
           onComplete={onComplete}
+          onDisconnect={onDisconnect}
           onDuplicate={onDuplicate}
           onEdit={onSelect}
           onPassBall={() => onUpdate({ currentBallHolder: "未設定", ballHoldingStartedAt: todayString() })}
@@ -1121,13 +1166,13 @@ function BallTransferDock({ visible }: { visible: boolean }) {
         <div className="flex items-center justify-between gap-3 px-2 pb-3">
           <div>
             <p className="text-sm font-semibold text-white">ボールを渡す</p>
-            <p className="text-xs text-zinc-500">タスクを置くと、現在のボールが切り替わります。</p>
+            <p className="text-xs text-zinc-500">タスクをここへドロップすると、現在のボールが切り替わります。</p>
           </div>
           <span className="hidden rounded-full border border-zinc-700 px-3 py-1 text-xs text-zinc-400 sm:inline">
             ドラッグ中
           </span>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {ballTransferTargets.map((target) => (
             <div
               key={target.id}
@@ -1136,6 +1181,7 @@ function BallTransferDock({ visible }: { visible: boolean }) {
             >
               <p className="text-sm font-semibold">{target.label}</p>
               <p className="mt-1 text-[11px] opacity-75">{target.description}</p>
+              <p className="mt-2 text-[10px] font-semibold opacity-60">ここへドロップ</p>
             </div>
           ))}
         </div>
@@ -1196,28 +1242,54 @@ function CreateTaskDrawer({
 
 function TaskContextMenu({
   task,
+  linkedTasks,
   onEdit,
   onDuplicate,
+  onDisconnect,
   onPassBall,
   onComplete,
   onArchive,
   onClose,
 }: {
   task: Task;
+  linkedTasks: Task[];
   onEdit: (id: string) => void;
   onDuplicate: (task: Task) => void;
+  onDisconnect: (sourceId: string, targetId: string) => void;
   onPassBall: () => void;
   onComplete: (id: string) => void;
   onArchive: (id: string) => void;
   onClose: () => void;
 }) {
   return (
-    <div className="absolute left-2 top-11 z-50 w-40 rounded-lg border border-zinc-700 bg-zinc-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
+    <div className="absolute left-2 top-11 z-50 w-56 rounded-lg border border-zinc-700 bg-zinc-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <button type="button" onClick={() => { onEdit(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">開く</button>
       <button type="button" onClick={() => { onEdit(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onDuplicate(task); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">複製</button>
       <button type="button" onClick={() => { onPassBall(); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">ボールを渡す</button>
       <button type="button" onClick={() => { onComplete(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">完了</button>
+      {linkedTasks.length > 0 ? (
+        <div className="mt-1 border-t border-white/10 pt-1">
+          <p className="px-3 py-1 text-[11px] font-semibold text-slate-500">
+            つながりを解除
+          </p>
+          {linkedTasks.map((target) => (
+            <button
+              key={target.id}
+              type="button"
+              onClick={() => {
+                onDisconnect(task.id, target.id);
+                onClose();
+              }}
+              className="block w-full rounded-md px-3 py-2 text-left text-xs text-slate-200 hover:bg-white/[0.06]"
+              title={`${target.title} へのつながりを解除`}
+            >
+              <span className="block truncate">→ {target.title}</span>
+              <span className="text-[10px] text-slate-500">解除</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
       <button type="button" onClick={() => { onArchive(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">アーカイブ</button>
     </div>
   );
@@ -1395,14 +1467,6 @@ function getBallTransferPatch(target: BallTransferTarget): Partial<Task> {
       currentBallHolder: "相手",
       ballHoldingStartedAt: todayString(),
       status: "todo",
-    };
-  }
-
-  if (target === "ai") {
-    return {
-      currentBallHolder: "AI",
-      ballHoldingStartedAt: todayString(),
-      status: "doing",
     };
   }
 

@@ -61,6 +61,14 @@ Frequently used map actions should have a comfortable hit target and clear
 label. Ball ownership should be readable at a glance on nodes; use state color
 and subtle accents before adding new controls.
 
+Connection creation and removal should be paired in the same task-map context:
+if a user can create a task link with "つなぐ" from a node, they should also be
+able to remove that link from the node menu without leaving the map.
+
+Temporary handoff surfaces should stay focused. The first ball-transfer dock
+should show only 自分, 相手, and 完了 while dragging a task; other destinations can
+be added later when they represent a concrete workflow.
+
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be
 hideable when the user wants the spatial canvas to take the full visual field.
