@@ -510,6 +510,8 @@ Implemented:
 - Task Flow Map automatically fits the selected project's task bounds after the
   panel is resized or the project is opened, so tasks placed near an edge on a
   wide screen remain visible on narrower screens.
+- Task Flow Map auto-fit must not fight user operation. It should run only on
+  actual viewport resize or project open, not after manual zoom or task drag.
 - In the schedule project task list, the Task Flow Map action is placed near the
   project title as a large horizontal primary button, because users open this
   map frequently from the project summary.

@@ -171,6 +171,11 @@ export default function ProjectTaskMap() {
   const projectName = decodeURIComponent(params.project);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const projectTasksRef = useRef<Task[]>([]);
+  const boardSizeRef = useRef<Point>({
+    x: minimumBoardSize.width,
+    y: minimumBoardSize.height,
+  });
+  const zoomRef = useRef(0.94);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTaskId, setActiveTaskId] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -188,6 +193,7 @@ export default function ProjectTaskMap() {
     x: minimumBoardSize.width,
     y: minimumBoardSize.height,
   });
+  const [viewportSize, setViewportSize] = useState<Point>({ x: 0, y: 0 });
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -226,6 +232,30 @@ export default function ProjectTaskMap() {
   }, [toast]);
 
   useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  useEffect(() => {
+    boardSizeRef.current = boardSize;
+  }, [boardSize]);
+
+  useEffect(() => {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    const nextBoardSize = {
+      x: Math.max(minimumBoardSize.width, rect.width / zoom),
+      y: Math.max(minimumBoardSize.height, rect.height / zoom),
+    };
+
+    boardSizeRef.current = nextBoardSize;
+    setBoardSize(nextBoardSize);
+  }, [zoom]);
+
+  useEffect(() => {
     const currentBoard = boardRef.current;
 
     if (!currentBoard) {
@@ -236,11 +266,14 @@ export default function ProjectTaskMap() {
 
     function syncBoardSize() {
       const rect = observedBoard.getBoundingClientRect();
+      const nextBoardSize = {
+        x: Math.max(minimumBoardSize.width, rect.width / zoomRef.current),
+        y: Math.max(minimumBoardSize.height, rect.height / zoomRef.current),
+      };
 
-      setBoardSize({
-        x: Math.max(minimumBoardSize.width, rect.width / zoom),
-        y: Math.max(minimumBoardSize.height, rect.height / zoom),
-      });
+      boardSizeRef.current = nextBoardSize;
+      setBoardSize(nextBoardSize);
+      setViewportSize({ x: rect.width, y: rect.height });
     }
 
     syncBoardSize();
@@ -248,7 +281,7 @@ export default function ProjectTaskMap() {
     observer.observe(observedBoard);
 
     return () => observer.disconnect();
-  }, [zoom]);
+  }, []);
 
   const projectTasks = useMemo(() => {
     return tasks.filter((task) => task.project === projectName);
@@ -259,7 +292,12 @@ export default function ProjectTaskMap() {
   }, [projectTasks]);
 
   useEffect(() => {
-    if (!isReady || dragState || projectTasksRef.current.length === 0) {
+    if (
+      !isReady ||
+      viewportSize.x === 0 ||
+      viewportSize.y === 0 ||
+      projectTasksRef.current.length === 0
+    ) {
       return;
     }
 
@@ -270,13 +308,13 @@ export default function ProjectTaskMap() {
     }
 
     const nextFrame = getTaskFitFrame({
-      boardSize,
-      currentZoom: zoom,
+      boardSize: boardSizeRef.current,
+      currentZoom: zoomRef.current,
       tasks: projectTasksRef.current,
       viewport: rect,
     });
 
-    if (Math.abs(nextFrame.zoom - zoom) > 0.01) {
+    if (Math.abs(nextFrame.zoom - zoomRef.current) > 0.01) {
       setZoom(nextFrame.zoom);
     }
 
@@ -290,7 +328,7 @@ export default function ProjectTaskMap() {
 
       return nextFrame.pan;
     });
-  }, [boardSize, dragState, isReady, projectName, zoom]);
+  }, [isReady, projectName, viewportSize.x, viewportSize.y]);
 
   const taskMap = useMemo(() => {
     return new Map(tasks.map((task) => [task.id, task]));

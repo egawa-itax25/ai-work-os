@@ -73,3 +73,11 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Fixed-zone Task Flow Maps should auto-fit the current project's
   task bounds after panel resize or project load, reducing zoom and recentering
   the task layer when needed.
+
+### 2026-07-10 - Task map auto-fit fought user interaction
+
+- Mistake: Task Flow Map auto-fit could run after zoom or drag state changes,
+  recentering the task layer while the user was trying to operate the map.
+- Prevention: Auto-fit should run only for project load and actual viewport
+  resize. Manual zoom, task drag, and other map operations must remain under the
+  user's control.
