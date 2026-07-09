@@ -752,7 +752,7 @@ function TaskNode({
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-2">
-          <span className={`rounded-md border px-2 py-1 text-[11px] font-semibold ${ballMeta.tone} ${isOtherBall ? "shadow-sm shadow-amber-950/40" : ""}`}>
+          <span className={`shrink-0 whitespace-nowrap rounded-md border px-2 py-1 text-[11px] font-semibold ${ballMeta.tone} ${isOtherBall ? "shadow-sm shadow-amber-950/40" : ""}`}>
             {ballMeta.label}
           </span>
           {isOtherBall ? (
@@ -760,6 +760,9 @@ function TaskNode({
               {ballMeta.detail}
             </span>
           ) : null}
+        </div>
+
+        <div className="mt-2 flex items-center justify-end gap-2">
           <button
             type="button"
             draggable
@@ -770,7 +773,7 @@ function TaskNode({
               onConnectStart(task.id);
             }}
             onDragEnd={onConnectEnd}
-            className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
+            className="whitespace-nowrap rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
           >
             つなぐ
           </button>
@@ -782,7 +785,7 @@ function TaskNode({
                 event.stopPropagation();
                 onMenuToggle(task.id);
               }}
-              className="rounded-md border border-slate-500/35 bg-slate-200/[0.04] px-2 py-1 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08]"
+              className="whitespace-nowrap rounded-md border border-slate-500/35 bg-slate-200/[0.04] px-2 py-1 text-[11px] font-semibold text-slate-200 transition hover:bg-white/[0.08]"
               title="メニューでつながりを解除"
             >
               解除{linkedTasks.length > 1 ? ` ${linkedTasks.length}` : ""}
@@ -795,7 +798,7 @@ function TaskNode({
               event.stopPropagation();
               onMenuToggle(task.id);
             }}
-            className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-white/[0.06]"
+            className="whitespace-nowrap rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-white/[0.06]"
             title="操作メニュー"
           >
             …

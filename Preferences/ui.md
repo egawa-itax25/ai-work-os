@@ -61,6 +61,10 @@ Frequently used map actions should have a comfortable hit target and clear
 label. Ball ownership should be readable at a glance on nodes; use state color
 and subtle accents before adding new controls.
 
+Short Japanese labels inside node controls should not wrap character-by-character.
+When a compact node has too many controls, split state and actions into separate
+rows rather than squeezing text until it folds.
+
 Connection creation and removal should be paired in the same task-map context:
 if a user can create a task link with "つなぐ" from a node, they should also be
 able to remove that link from the node menu without leaving the map.

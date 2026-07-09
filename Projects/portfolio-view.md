@@ -390,6 +390,11 @@ project count. Task Flow nodes should make "相手のボール" visible through 
 non-interactive visual signal such as an amber accent rail and waiting tint,
 without changing map operations.
 
+Compact Task Flow nodes should not wrap short operation labels such as
+"自分のボール", "つなぐ", or "解除". If the node needs both state and actions, use
+separate rows so the label remains readable instead of folding characters into
+multiple lines.
+
 ### Persistence
 
 Minor edits auto-save.
