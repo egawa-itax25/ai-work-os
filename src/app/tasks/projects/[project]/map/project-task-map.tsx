@@ -37,10 +37,9 @@ type ToastState = { message: string; undo?: () => void } | null;
 
 const cardWidth = 236;
 const cardHeight = 138;
-const boardWidth = 1240;
-const boardHeight = 620;
+const minimumBoardSize = { width: 1240, height: 620 };
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
-const taskFlowZones: {
+type TaskFlowZoneDefinition = {
   id: BallTransferTarget;
   label: string;
   description: string;
@@ -50,41 +49,7 @@ const taskFlowZones: {
   height: number;
   icon: string;
   tone: string;
-}[] = [
-  {
-    id: "self",
-    label: "自分ボール",
-    description: "あなたが対応すべきタスク",
-    x: 0,
-    y: 0,
-    width: 620,
-    height: 340,
-    icon: "●",
-    tone: "border-sky-300/55 bg-sky-400/[0.055] text-sky-100 shadow-sky-950/25",
-  },
-  {
-    id: "other",
-    label: "相手ボール",
-    description: "相手に対応してもらうタスク",
-    x: 620,
-    y: 0,
-    width: 620,
-    height: 340,
-    icon: "●",
-    tone: "border-amber-300/60 bg-amber-300/[0.06] text-amber-100 shadow-amber-950/25",
-  },
-  {
-    id: "done",
-    label: "完了",
-    description: "完了したタスク",
-    x: 0,
-    y: 340,
-    width: 1240,
-    height: 280,
-    icon: "✓",
-    tone: "border-emerald-300/45 bg-emerald-300/[0.045] text-emerald-100 shadow-emerald-950/20",
-  },
-];
+};
 const ballTransferTargets: {
   id: BallTransferTarget;
   label: string;
@@ -111,6 +76,48 @@ const ballTransferTargets: {
   },
 ];
 
+function createTaskFlowZones(boardSize: Point): TaskFlowZoneDefinition[] {
+  const topHeight = Math.max(320, Math.round(boardSize.y * 0.58));
+  const doneHeight = Math.max(220, boardSize.y - topHeight);
+  const halfWidth = boardSize.x / 2;
+
+  return [
+    {
+      id: "self",
+      label: "自分ボール",
+      description: "あなたが対応すべきタスク",
+      x: 0,
+      y: 0,
+      width: halfWidth,
+      height: topHeight,
+      icon: "●",
+      tone: "border-sky-300/55 bg-sky-400/[0.055] text-sky-100 shadow-sky-950/25",
+    },
+    {
+      id: "other",
+      label: "相手ボール",
+      description: "相手に対応してもらうタスク",
+      x: halfWidth,
+      y: 0,
+      width: halfWidth,
+      height: topHeight,
+      icon: "●",
+      tone: "border-amber-300/60 bg-amber-300/[0.06] text-amber-100 shadow-amber-950/25",
+    },
+    {
+      id: "done",
+      label: "完了",
+      description: "完了したタスク",
+      x: 0,
+      y: topHeight,
+      width: boardSize.x,
+      height: doneHeight,
+      icon: "✓",
+      tone: "border-emerald-300/45 bg-emerald-300/[0.045] text-emerald-100 shadow-emerald-950/20",
+    },
+  ];
+}
+
 export default function ProjectTaskMap() {
   const params = useParams<{ project: string }>();
   const projectName = decodeURIComponent(params.project);
@@ -128,6 +135,10 @@ export default function ProjectTaskMap() {
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(0.94);
   const [panState, setPanState] = useState<PanState>(null);
+  const [boardSize, setBoardSize] = useState<Point>({
+    x: minimumBoardSize.width,
+    y: minimumBoardSize.height,
+  });
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -165,6 +176,31 @@ export default function ProjectTaskMap() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  useEffect(() => {
+    const currentBoard = boardRef.current;
+
+    if (!currentBoard) {
+      return;
+    }
+
+    const observedBoard = currentBoard;
+
+    function syncBoardSize() {
+      const rect = observedBoard.getBoundingClientRect();
+
+      setBoardSize({
+        x: Math.max(minimumBoardSize.width, rect.width / zoom),
+        y: Math.max(minimumBoardSize.height, rect.height / zoom),
+      });
+    }
+
+    syncBoardSize();
+    const observer = new ResizeObserver(syncBoardSize);
+    observer.observe(observedBoard);
+
+    return () => observer.disconnect();
+  }, [zoom]);
+
   const projectTasks = useMemo(() => {
     return tasks.filter((task) => task.project === projectName);
   }, [projectName, tasks]);
@@ -198,6 +234,11 @@ export default function ProjectTaskMap() {
     );
   }, [projectName, projectTasks, taskMap]);
 
+  const taskFlowZones = useMemo(
+    () => createTaskFlowZones(boardSize),
+    [boardSize],
+  );
+
   const zoneCounts = useMemo(() => {
     return taskFlowZones.reduce<Record<BallTransferTarget, number>>(
       (counts, zone) => {
@@ -208,7 +249,7 @@ export default function ProjectTaskMap() {
       },
       { self: 0, other: 0, done: 0 },
     );
-  }, [projectTasks]);
+  }, [projectTasks, taskFlowZones]);
 
   const activeTask =
     taskMap.get(activeTaskId) ?? projectTasks[0] ?? tasks[0] ?? null;
@@ -224,8 +265,8 @@ export default function ProjectTaskMap() {
     }
 
     return {
-      x: (clientX - rect.left - rect.width / 2 - pan.x) / zoom + boardWidth / 2,
-      y: (clientY - rect.top - rect.height / 2 - pan.y) / zoom + boardHeight / 2,
+      x: (clientX - rect.left - rect.width / 2 - pan.x) / zoom + boardSize.x / 2,
+      y: (clientY - rect.top - rect.height / 2 - pan.y) / zoom + boardSize.y / 2,
     };
   }
 
@@ -263,12 +304,12 @@ export default function ProjectTaskMap() {
     const x = clamp(
       point.x - dragState.offsetX,
       16,
-      boardWidth - cardWidth - 16,
+      boardSize.x - cardWidth - 16,
     );
     const y = clamp(
       point.y - dragState.offsetY,
       16,
-      boardHeight - cardHeight - 16,
+      boardSize.y - cardHeight - 16,
     );
 
     setTasks((current) =>
@@ -287,12 +328,12 @@ export default function ProjectTaskMap() {
     const taskX = clamp(
       point.x - dragState.offsetX,
       16,
-      boardWidth - cardWidth - 16,
+      boardSize.x - cardWidth - 16,
     );
     const taskY = clamp(
       point.y - dragState.offsetY,
       16,
-      boardHeight - cardHeight - 16,
+      boardSize.y - cardHeight - 16,
     );
     const zoneTarget = getZoneTarget({
       x: taskX + cardWidth / 2,
@@ -330,12 +371,12 @@ export default function ProjectTaskMap() {
     const x = clamp(
       point.x - cardWidth / 2,
       16,
-      boardWidth - cardWidth - 16,
+      boardSize.x - cardWidth - 16,
     );
     const y = clamp(
       point.y - 28,
       16,
-      boardHeight - cardHeight - 16,
+      boardSize.y - cardHeight - 16,
     );
     const newTask: Task = {
       id: crypto.randomUUID(),
@@ -497,8 +538,8 @@ export default function ProjectTaskMap() {
       ...task,
       id: crypto.randomUUID(),
       title: `${task.title} の複製`,
-      x: clamp(task.x + 36, 16, boardWidth - cardWidth - 16),
-      y: clamp(task.y + 36, 16, boardHeight - cardHeight - 16),
+      x: clamp(task.x + 36, 16, boardSize.x - cardWidth - 16),
+      y: clamp(task.y + 36, 16, boardSize.y - cardHeight - 16),
       links: [],
       createdAt: new Date().toISOString(),
     };
@@ -619,8 +660,8 @@ export default function ProjectTaskMap() {
                 panState || dragState ? "transition-none" : "transition-transform duration-200"
               }`}
               style={{
-                width: boardWidth,
-                height: boardHeight,
+                width: boardSize.x,
+                height: boardSize.y,
                 transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
               }}
             >
@@ -633,8 +674,8 @@ export default function ProjectTaskMap() {
               ))}
               <svg
                 className="pointer-events-none absolute inset-0"
-                width={boardWidth}
-                height={boardHeight}
+                width={boardSize.x}
+                height={boardSize.y}
                 aria-hidden="true"
               >
                 <defs>
@@ -1248,7 +1289,7 @@ function TaskFlowZone({
   zone,
   count,
 }: {
-  zone: (typeof taskFlowZones)[number];
+  zone: TaskFlowZoneDefinition;
   count: number;
 }) {
   const statusLabel = zone.id === "done" ? "完了" : "進行中";

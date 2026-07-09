@@ -38,12 +38,14 @@ the single-project task Flow experience.
 
 ## Layout
 
-Use four calm regions:
+Use three calm regions:
 
 - Left: project comparison list.
-- Center: Project Flow Map for multiple project nodes.
-- Right: AI priority, Priority Score, insight, and risk.
+- Right: Project Inspector, AI priority, Priority Score, insight, and risk.
 - Bottom: today's focus, stalled projects, and weekly progress summary.
+
+The Portfolio View no longer includes a project-level Flow Map. Spatial flow
+mapping belongs to the task-level Flow Map for a selected project.
 
 Keep the default surface quiet. Show deeper details only when selected or
 expanded.
@@ -107,7 +109,10 @@ Filtering and AI analysis must not treat these as the same value.
 
 ## Project Flow Map
 
-Projects are compact nodes on a canvas.
+Deprecated: the project-level Flow Map has been removed from the active product
+surface. Portfolio should compare projects through list ranking and Inspector
+details, then open the selected project's task-level Flow Map when spatial work
+is needed.
 
 Each node should show:
 
@@ -125,9 +130,13 @@ State expression:
 - AI processing: subtle AI mark.
 - Done: semi-transparent.
 
-The map should support pan and zoom. Mouse wheel zoom must only run while Shift
-is pressed, so normal page scrolling does not accidentally resize the map.
-Clicking a project opens that project's Project Flow screen.
+The task-level Flow Map keeps pan, zoom, drag, and spatial ownership behavior.
+
+Any older requirements in this note that mention Portfolio project nodes,
+project-node drag, or a Portfolio Project Flow Map are legacy notes and are no
+longer active requirements. Current Portfolio operations should use project
+rows, filters, and the Project Inspector, with explicit links into each
+project's task list or task-level Flow Map.
 
 The Portfolio project list and Project Flow Map should share a viewport-aware
 height. They should not use a fixed maximum height that creates a large empty

@@ -131,6 +131,10 @@ The order is a personal UI preference and should be persisted in localStorage,
 not treated as project data or Vault content. Reordering the navigation must not
 change the destination route of each item.
 
+The desktop left navigation should stay focused on active work. Remove these
+tabs from the primary navigation until they become daily-use surfaces:
+司令室, 分析, AI頭脳, 受信箱, 知識.
+
 ## Portfolio View
 
 Portfolio-level screens should be calmer than the single-project cockpit.

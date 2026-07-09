@@ -1,11 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -32,14 +30,6 @@ import {
   type TaskPriority,
 } from "@/app/tasks/task-data";
 
-type Point = { x: number; y: number };
-type PanState = { start: Point; origin: Point } | null;
-type NodePositions = Record<string, Point>;
-type NodeDragState = {
-  id: string;
-  start: Point;
-  origin: Point;
-} | null;
 type DrawerState =
   | { type: "project" }
   | { type: "task"; projectName?: string }
@@ -47,9 +37,6 @@ type DrawerState =
 type ToastState = { message: string; undo?: () => void } | null;
 type ProjectConnection = { sourceId: string; targetId: string };
 
-const boardSize = { width: 1240, height: 620 };
-const nodeSize = { width: 236, height: 120 };
-const layoutStorageKey = "ai-work-os:portfolio-node-layout:v1";
 const viewStorageKey = "ai-work-os:portfolio-view-state:v1";
 const connectionStorageKey = "ai-work-os:portfolio-connections:v1";
 const portfolioViewportHeightClass = "h-[max(560px,calc(100vh-12rem))]";
@@ -68,18 +55,6 @@ export default function PortfolioView({
   const filter = initialFilter;
   const [projects, setProjects] = useState<PortfolioProject[]>(portfolioProjects);
   const [selectedId, setSelectedId] = useState(portfolioProjects[0]?.id ?? "");
-  const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(0.94);
-  const [panState, setPanState] = useState<PanState>(null);
-  const [nodeDragState, setNodeDragState] = useState<NodeDragState>(null);
-  const [nodePositions, setNodePositions] = useState<NodePositions>(() =>
-    Object.fromEntries(
-      portfolioProjects.map((project) => [
-        project.id,
-        { x: project.x, y: project.y },
-      ]),
-    ),
-  );
   const [expandedScoreId, setExpandedScoreId] = useState(portfolioProjects[0]?.id ?? "");
   const [drawer, setDrawer] = useState<DrawerState>(null);
   const [toast, setToast] = useState<ToastState>(null);
@@ -87,12 +62,9 @@ export default function PortfolioView({
   const [highlightId, setHighlightId] = useState("");
   const [menuProjectId, setMenuProjectId] = useState("");
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
-  const panAnimationFrameRef = useRef<number | null>(null);
-  const pendingPanRef = useRef<Point | null>(null);
 
   useEffect(() => {
     const savedProjects = window.localStorage.getItem(portfolioStorageKey);
-    const savedLayout = window.localStorage.getItem(layoutStorageKey);
     const savedView = window.localStorage.getItem(viewStorageKey);
     const savedConnections = window.localStorage.getItem(connectionStorageKey);
 
@@ -104,33 +76,15 @@ export default function PortfolioView({
       }
     }
 
-    if (savedLayout) {
-      try {
-        setNodePositions((current) => ({ ...current, ...JSON.parse(savedLayout) }));
-      } catch {
-        window.localStorage.removeItem(layoutStorageKey);
-      }
-    }
-
     if (savedView) {
       try {
         const parsed = JSON.parse(savedView) as {
           selectedId?: string;
-          pan?: Point;
-          zoom?: number;
           scrollY?: number;
         };
 
         if (parsed.selectedId) {
           setSelectedId(parsed.selectedId);
-        }
-
-        if (parsed.pan) {
-          setPan(parsed.pan);
-        }
-
-        if (parsed.zoom) {
-          setZoom(parsed.zoom);
         }
 
         if (typeof parsed.scrollY === "number") {
@@ -150,14 +104,6 @@ export default function PortfolioView({
         window.localStorage.removeItem(connectionStorageKey);
       }
     }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (panAnimationFrameRef.current !== null) {
-        window.cancelAnimationFrame(panAnimationFrameRef.current);
-      }
-    };
   }, []);
 
   useEffect(() => {
@@ -189,10 +135,6 @@ export default function PortfolioView({
   }, [projects]);
 
   useEffect(() => {
-    window.localStorage.setItem(layoutStorageKey, JSON.stringify(nodePositions));
-  }, [nodePositions]);
-
-  useEffect(() => {
     window.localStorage.setItem(connectionStorageKey, JSON.stringify(projectConnections));
   }, [projectConnections]);
 
@@ -200,7 +142,7 @@ export default function PortfolioView({
     const saveView = () => {
       window.localStorage.setItem(
         viewStorageKey,
-        JSON.stringify({ selectedId, pan, zoom, scrollY: window.scrollY }),
+        JSON.stringify({ selectedId, scrollY: window.scrollY }),
       );
     };
 
@@ -212,7 +154,7 @@ export default function PortfolioView({
       window.removeEventListener("beforeunload", saveView);
       window.removeEventListener("scroll", saveView);
     };
-  }, [pan, selectedId, zoom]);
+  }, [selectedId]);
 
   useEffect(() => {
     if (!highlightId) {
@@ -305,10 +247,6 @@ export default function PortfolioView({
     };
 
     setProjects((current) => [nextProject, ...current]);
-    setNodePositions((current) => ({
-      ...current,
-      [nextProject.id]: { x: nextProject.x, y: nextProject.y },
-    }));
     setSelectedId(nextProject.id);
     setHighlightId(nextProject.id);
     setDrawer(null);
@@ -383,51 +321,6 @@ export default function PortfolioView({
     );
   }
 
-  function moveCanvas(point: Point) {
-    if (!panState || nodeDragState) {
-      return;
-    }
-
-    pendingPanRef.current = {
-      x: panState.origin.x + point.x - panState.start.x,
-      y: panState.origin.y + point.y - panState.start.y,
-    };
-
-    if (panAnimationFrameRef.current !== null) {
-      return;
-    }
-
-    panAnimationFrameRef.current = window.requestAnimationFrame(() => {
-      if (pendingPanRef.current) {
-        setPan(pendingPanRef.current);
-      }
-
-      pendingPanRef.current = null;
-      panAnimationFrameRef.current = null;
-    });
-  }
-
-  function moveNode(point: Point) {
-    if (!nodeDragState) {
-      return;
-    }
-
-    const dx = (point.x - nodeDragState.start.x) / zoom;
-    const dy = (point.y - nodeDragState.start.y) / zoom;
-
-    setNodePositions((current) => ({
-      ...current,
-      [nodeDragState.id]: {
-        x: clamp(nodeDragState.origin.x + dx, 16, boardSize.width - nodeSize.width - 16),
-        y: clamp(nodeDragState.origin.y + dy, 16, boardSize.height - nodeSize.height - 16),
-      },
-    }));
-  }
-
-  function updateZoom(nextZoom: number) {
-    setZoom(Math.min(1.25, Math.max(0.72, nextZoom)));
-  }
-
   return (
     <section className="min-h-screen space-y-5 text-slate-100">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -456,7 +349,7 @@ export default function PortfolioView({
 
       <FilterBar active={filter} />
 
-      <div className="grid gap-5 xl:grid-cols-[360px_minmax(0,1fr)_320px]">
+      <div className="grid gap-5 xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
         <ProjectList
           expandedScoreId={expandedScoreId}
           highlightId={highlightId}
@@ -469,36 +362,6 @@ export default function PortfolioView({
           onExpandScore={setExpandedScoreId}
           onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
           onSelect={setSelectedId}
-        />
-
-        <ProjectFlowMap
-          highlightId={highlightId}
-          menuProjectId={menuProjectId}
-          nodeDragState={nodeDragState}
-          nodePositions={nodePositions}
-          pan={pan}
-          panState={panState}
-          projectConnections={projectConnections}
-          projects={visibleProjects}
-          selectedId={selectedProject?.id}
-          zoom={zoom}
-          onArchive={archiveProject}
-          onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
-          onDuplicate={duplicateProject}
-          onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
-          onMoveCanvas={moveCanvas}
-          onMoveNode={moveNode}
-          onNodeDragEnd={() => setNodeDragState(null)}
-          onNodeDragStart={(id, point) => {
-            const origin = nodePositions[id] ?? { x: 0, y: 0 };
-
-            setSelectedId(id);
-            setNodeDragState({ id, start: point, origin });
-          }}
-          onPanEnd={() => setPanState(null)}
-          onPanStart={(point) => setPanState({ start: point, origin: pan })}
-          onSelect={setSelectedId}
-          onZoom={updateZoom}
         />
 
         <ProjectInspector
@@ -686,290 +549,6 @@ function ProjectList({
         ) : null}
       </div>
     </aside>
-  );
-}
-
-function ProjectFlowMap({
-  projects,
-  selectedId,
-  pan,
-  zoom,
-  panState,
-  nodeDragState,
-  nodePositions,
-  projectConnections,
-  highlightId,
-  menuProjectId,
-  onPanStart,
-  onPanEnd,
-  onMoveCanvas,
-  onMoveNode,
-  onNodeDragStart,
-  onNodeDragEnd,
-  onSelect,
-  onZoom,
-  onMenuToggle,
-  onCreateTask,
-  onDuplicate,
-  onArchive,
-}: {
-  projects: PortfolioProject[];
-  selectedId?: string;
-  pan: Point;
-  zoom: number;
-  panState: PanState;
-  nodeDragState: NodeDragState;
-  nodePositions: NodePositions;
-  projectConnections: ProjectConnection[];
-  highlightId: string;
-  menuProjectId: string;
-  onPanStart: (point: Point) => void;
-  onPanEnd: () => void;
-  onMoveCanvas: (point: Point) => void;
-  onMoveNode: (point: Point) => void;
-  onNodeDragStart: (id: string, point: Point) => void;
-  onNodeDragEnd: () => void;
-  onSelect: (id: string) => void;
-  onZoom: (zoom: number) => void;
-  onMenuToggle: (id: string) => void;
-  onCreateTask: (project: PortfolioProject) => void;
-  onDuplicate: (project: PortfolioProject) => void;
-  onArchive: (project: PortfolioProject) => void;
-}) {
-  return (
-    <section className={`${portfolioViewportHeightClass} flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl`}>
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
-        <div>
-          <h2 className="text-base font-semibold text-white">プロジェクトフローマップ</h2>
-          <p className="mt-1 text-sm text-slate-500">
-            空白をドラッグで移動。ズームはShift+スクロールで操作できます。
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => onZoom(zoom - 0.08)} className="h-8 w-8 rounded-md border border-white/10 text-slate-300 transition hover:bg-white/[0.06]" title="縮小">
-            -
-          </button>
-          <span className="w-12 text-center text-xs text-slate-400">{Math.round(zoom * 100)}%</span>
-          <button type="button" onClick={() => onZoom(zoom + 0.08)} className="h-8 w-8 rounded-md border border-white/10 text-slate-300 transition hover:bg-white/[0.06]" title="拡大">
-            +
-          </button>
-        </div>
-      </div>
-
-      <div
-        className={`relative min-h-0 flex-1 overflow-hidden ${panState ? "cursor-grabbing" : "cursor-grab"}`}
-        onPointerDown={(event) => {
-          if (event.target instanceof HTMLElement && !event.target.closest("article")) {
-            onPanStart({ x: event.clientX, y: event.clientY });
-          }
-        }}
-        onPointerMove={(event) => {
-          onMoveCanvas({ x: event.clientX, y: event.clientY });
-          onMoveNode({ x: event.clientX, y: event.clientY });
-        }}
-        onPointerUp={() => {
-          onPanEnd();
-          onNodeDragEnd();
-        }}
-        onPointerCancel={() => {
-          onPanEnd();
-          onNodeDragEnd();
-        }}
-        onPointerLeave={() => {
-          onPanEnd();
-          onNodeDragEnd();
-        }}
-        onWheel={(event) => {
-          if (event.shiftKey && Math.abs(event.deltaY) > 1) {
-            event.preventDefault();
-            onZoom(zoom - event.deltaY * 0.001);
-          }
-        }}
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(125,211,252,0.08),transparent_18rem),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,48px_48px,48px_48px]" />
-        <div
-          className={`absolute left-1/2 top-1/2 origin-center ${
-            panState || nodeDragState ? "transition-none" : "transition-transform duration-200"
-          }`}
-          style={{
-            width: boardSize.width,
-            height: boardSize.height,
-            transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
-          }}
-        >
-          <svg className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden="true">
-            {projectConnections.map((connection) => {
-              const sourceProject = projects.find((project) => project.id === connection.sourceId);
-              const targetProject = projects.find((project) => project.id === connection.targetId);
-
-              if (!sourceProject || !targetProject) {
-                return null;
-              }
-
-              const source = nodePositions[sourceProject.id] ?? sourceProject;
-              const target = nodePositions[targetProject.id] ?? targetProject;
-              const x1 = source.x + nodeSize.width / 2;
-              const y1 = source.y + nodeSize.height / 2;
-              const x2 = target.x + nodeSize.width / 2;
-              const y2 = target.y + nodeSize.height / 2;
-              const midX = (x1 + x2) / 2;
-
-              return (
-                <path key={`${connection.sourceId}-${connection.targetId}`} d={`M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}`} fill="none" stroke="rgba(148,163,184,0.22)" strokeLinecap="round" strokeWidth="1.5" />
-              );
-            })}
-          </svg>
-
-          {projects.map((project, index) => (
-            <ProjectNode
-              dragging={nodeDragState?.id === project.id}
-              highlight={project.id === highlightId}
-              index={index}
-              key={project.id}
-              menuOpen={project.id === menuProjectId}
-              onArchive={onArchive}
-              onCreateTask={onCreateTask}
-              onDragEnd={onNodeDragEnd}
-              onDragStart={onNodeDragStart}
-              onDuplicate={onDuplicate}
-              onMenuToggle={onMenuToggle}
-              onSelect={onSelect}
-              position={nodePositions[project.id] ?? { x: project.x, y: project.y }}
-              project={project}
-              selected={project.id === selectedId}
-            />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProjectNode({
-  project,
-  selected,
-  dragging,
-  highlight,
-  menuOpen,
-  index,
-  position,
-  onSelect,
-  onDragStart,
-  onDragEnd,
-  onMenuToggle,
-  onCreateTask,
-  onDuplicate,
-  onArchive,
-}: {
-  project: PortfolioProject;
-  selected: boolean;
-  dragging: boolean;
-  highlight: boolean;
-  menuOpen: boolean;
-  index: number;
-  position: Point;
-  onSelect: (id: string) => void;
-  onDragStart: (id: string, point: Point) => void;
-  onDragEnd: () => void;
-  onMenuToggle: (id: string) => void;
-  onCreateTask: (project: PortfolioProject) => void;
-  onDuplicate: (project: PortfolioProject) => void;
-  onArchive: (project: PortfolioProject) => void;
-}) {
-  const router = useRouter();
-  const score = getPriorityScore(project);
-  const stateClass = project.status === "done" ? "opacity-45" : project.status === "waiting" ? "opacity-75" : "";
-
-  function openProjectTasks() {
-    router.push(projectScheduleHref(project));
-  }
-
-  return (
-    <article
-      onContextMenu={(event) => {
-        event.preventDefault();
-        onMenuToggle(project.id);
-      }}
-      onPointerDown={(event) => {
-        if (!(event.target instanceof HTMLElement) || event.target.closest("a, button")) {
-          return;
-        }
-
-        event.stopPropagation();
-        event.currentTarget.setPointerCapture(event.pointerId);
-        onDragStart(project.id, { x: event.clientX, y: event.clientY });
-      }}
-      onPointerUp={() => onDragEnd()}
-      onClick={() => onSelect(project.id)}
-      className={`absolute w-[236px] rounded-lg border bg-slate-950/88 p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
-        dragging ? "z-40 cursor-grabbing scale-[1.02] shadow-sky-950/30 transition-none" : "cursor-grab"
-      } ${
-        highlight
-          ? "border-sky-200/80 ring-2 ring-sky-200/25"
-          : selected
-            ? "border-sky-200/70 ring-2 ring-sky-200/15"
-            : index === 0
-              ? "border-sky-200/45"
-              : "border-white/12"
-      } ${stateClass}`}
-      style={{ left: position.x, top: position.y }}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-xs text-slate-500">{String(index + 1).padStart(2, "0")}</p>
-          <h3 className="mt-1 truncate text-sm font-semibold text-white">{project.name}</h3>
-        </div>
-        <span className="text-lg font-semibold text-sky-100">{score}</span>
-      </div>
-      <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
-        <span>進捗 {project.progress}%</span>
-        <span>{project.currentBallHolder}</span>
-      </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-sky-200" style={{ width: `${project.progress}%` }} />
-      </div>
-      <div className="mt-3 flex items-center justify-between gap-2">
-        <StatusPill project={project} />
-        <button
-          type="button"
-          onPointerDown={(event) => {
-            event.stopPropagation();
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-            openProjectTasks();
-          }}
-          className="rounded-md border border-white/10 px-2 py-1 text-[11px] font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100"
-        >
-          開く
-        </button>
-        <Link
-          href={projectTaskMapHref(project)}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-          }}
-          onClick={(event) => {
-            event.stopPropagation();
-          }}
-          className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
-        >
-          マップ
-        </Link>
-        <button type="button" onClick={() => onMenuToggle(project.id)} className="rounded-md border border-white/10 px-2 py-1 text-[11px] text-slate-400 transition hover:bg-white/[0.06]" title="操作メニュー">
-          …
-        </button>
-      </div>
-      {menuOpen ? (
-        <ProjectContextMenu
-          project={project}
-          onArchive={onArchive}
-          onCreateTask={onCreateTask}
-          onDuplicate={onDuplicate}
-          onEdit={() => onSelect(project.id)}
-          onClose={() => onMenuToggle(project.id)}
-        />
-      ) : null}
-    </article>
   );
 }
 

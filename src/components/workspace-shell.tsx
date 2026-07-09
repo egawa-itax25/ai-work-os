@@ -18,6 +18,7 @@ const defaultNavItems = [
 ];
 
 const navOrderStorageKey = "ai-work-os:navigation-order";
+const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics", "ai"]);
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -29,7 +30,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const showDesktopNavigation = !navigationCollapsed;
   const navItems = orderedNavIds
     .map((id) => defaultNavItems.find((item) => item.id === id))
-    .filter((item): item is (typeof defaultNavItems)[number] => Boolean(item));
+    .filter((item): item is (typeof defaultNavItems)[number] => Boolean(item))
+    .filter((item) => !hiddenPrimaryNavIds.has(item.id));
 
   useEffect(() => {
     const saved = window.localStorage.getItem("ai-work-os:navigation-collapsed");
