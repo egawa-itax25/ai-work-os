@@ -39,7 +39,6 @@ type ProjectConnection = { sourceId: string; targetId: string };
 
 const viewStorageKey = "ai-work-os:portfolio-view-state:v1";
 const connectionStorageKey = "ai-work-os:portfolio-connections:v1";
-const portfolioViewportHeightClass = "h-[max(560px,calc(100vh-12rem))]";
 const defaultProjectConnections: ProjectConnection[] = portfolioProjects
   .slice(0, -1)
   .map((project, index) => ({
@@ -62,6 +61,7 @@ export default function PortfolioView({
   const [highlightId, setHighlightId] = useState("");
   const [menuProjectId, setMenuProjectId] = useState("");
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
+  const [portfolioTasks, setPortfolioTasks] = useState<Task[]>(initialTasks);
 
   useEffect(() => {
     const savedProjects = window.localStorage.getItem(portfolioStorageKey);
@@ -103,6 +103,13 @@ export default function PortfolioView({
       } catch {
         window.localStorage.removeItem(connectionStorageKey);
       }
+    }
+
+    try {
+      setPortfolioTasks(readTasks());
+    } catch {
+      window.localStorage.removeItem(taskStorageKey);
+      setPortfolioTasks(initialTasks);
     }
   }, []);
 
@@ -190,6 +197,13 @@ export default function PortfolioView({
     rankedProjects.find((project) => project.id === selectedId) ??
     visibleProjects[0] ??
     rankedProjects[0];
+  const selectedProjectTasks = useMemo(
+    () =>
+      selectedProject
+        ? portfolioTasks.filter((task) => task.project === selectedProject.name)
+        : [],
+    [portfolioTasks, selectedProject],
+  );
   const actionableProjects = rankedProjects.filter(
     (project) => project.ballHolderType === "self" && project.status !== "done",
   );
@@ -275,9 +289,14 @@ export default function PortfolioView({
       createdAt: new Date().toISOString(),
     };
 
-    writeTasks([nextTask, ...beforeTasks]);
+    const nextTasks = [nextTask, ...beforeTasks];
+    writeTasks(nextTasks);
+    setPortfolioTasks(nextTasks);
     setDrawer(null);
-    notify("タスクを作成しました。", () => writeTasks(beforeTasks));
+    notify("タスクを作成しました。", () => {
+      writeTasks(beforeTasks);
+      setPortfolioTasks(beforeTasks);
+    });
   }
 
   function duplicateProject(project: PortfolioProject) {
@@ -349,20 +368,35 @@ export default function PortfolioView({
 
       <FilterBar active={filter} />
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
-        <ProjectList
-          expandedScoreId={expandedScoreId}
-          highlightId={highlightId}
-          menuProjectId={menuProjectId}
-          projects={visibleProjects}
-          selectedId={selectedProject?.id}
-          onArchive={archiveProject}
-          onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
-          onDuplicate={duplicateProject}
-          onExpandScore={setExpandedScoreId}
-          onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
-          onSelect={setSelectedId}
-        />
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0 space-y-5">
+          <ProjectList
+            expandedScoreId={expandedScoreId}
+            highlightId={highlightId}
+            menuProjectId={menuProjectId}
+            projects={visibleProjects}
+            selectedId={selectedProject?.id}
+            onArchive={archiveProject}
+            onCreateProject={() => setDrawer({ type: "project" })}
+            onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
+            onDuplicate={duplicateProject}
+            onExpandScore={setExpandedScoreId}
+            onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
+            onSelect={setSelectedId}
+          />
+
+          <SelectedProjectWorkspace
+            project={selectedProject}
+            tasks={selectedProjectTasks}
+            onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
+          />
+
+          <BottomSummary
+            actionableProjects={actionableProjects}
+            stalledProjects={stalledProjects}
+            weeklyProgress={weeklyProgress}
+          />
+        </div>
 
         <ProjectInspector
           project={selectedProject}
@@ -376,12 +410,6 @@ export default function PortfolioView({
           onUpdate={updateProject}
         />
       </div>
-
-      <BottomSummary
-        actionableProjects={actionableProjects}
-        stalledProjects={stalledProjects}
-        weeklyProgress={weeklyProgress}
-      />
 
       {drawer?.type === "project" ? (
         <CreateProjectDrawer onClose={() => setDrawer(null)} onCreate={createProject} />
@@ -432,6 +460,7 @@ function ProjectList({
   onSelect,
   onExpandScore,
   onMenuToggle,
+  onCreateProject,
   onCreateTask,
   onDuplicate,
   onArchive,
@@ -444,17 +473,46 @@ function ProjectList({
   onSelect: (id: string) => void;
   onExpandScore: (id: string) => void;
   onMenuToggle: (id: string) => void;
+  onCreateProject: () => void;
   onCreateTask: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
   onArchive: (project: PortfolioProject) => void;
 }) {
   return (
-    <aside className={`${portfolioViewportHeightClass} flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl`}>
-      <div className="border-b border-white/10 px-4 py-4">
-        <h2 className="text-base font-semibold text-white">プロジェクト一覧</h2>
-        <p className="mt-1 text-sm text-slate-500">選択すると右側のInspectorで編集できます。</p>
+    <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl">
+      <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <h2 className="text-base font-semibold text-white">プロジェクト一覧</h2>
+          <p className="mt-1 text-sm text-slate-500">プロジェクトを選択して、下の作業領域と右側のInspectorで確認できます。</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
+            一覧
+          </button>
+          <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
+            カード
+          </button>
+          <select className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 outline-none focus:border-sky-200/60">
+            <option>優先度順</option>
+            <option>更新日順</option>
+          </select>
+          <input
+            type="search"
+            placeholder="検索..."
+            className="w-40 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 outline-none placeholder:text-slate-600 focus:border-sky-200/60"
+          />
+        </div>
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <div className="grid gap-3 overflow-x-auto p-3 sm:grid-cols-2 xl:grid-cols-[220px_repeat(3,minmax(0,1fr))] 2xl:grid-cols-[220px_repeat(5,minmax(0,1fr))]">
+        <button
+          type="button"
+          onClick={onCreateProject}
+          className="flex min-h-[190px] flex-col items-center justify-center rounded-lg border border-dashed border-white/15 bg-white/[0.025] p-4 text-center transition duration-200 hover:border-sky-200/40 hover:bg-sky-200/[0.06]"
+        >
+          <span className="text-3xl font-light text-slate-300">＋</span>
+          <span className="mt-3 text-sm font-semibold text-white">新しいプロジェクト</span>
+          <span className="mt-2 text-xs text-slate-500">プロジェクトを追加</span>
+        </button>
         {projects.map((project, index) => {
           const score = getPriorityScore(project);
           const isSelected = project.id === selectedId;
@@ -468,7 +526,7 @@ function ProjectList({
                 event.preventDefault();
                 onMenuToggle(project.id);
               }}
-              className={`relative rounded-lg border p-3 transition duration-200 ${
+              className={`relative min-h-[190px] rounded-lg border p-4 transition duration-200 ${
                 project.id === highlightId
                   ? "border-sky-200/75 bg-sky-200/[0.12]"
                   : isSelected
@@ -496,7 +554,7 @@ function ProjectList({
                   </div>
                 </div>
 
-                <div className="mt-3">
+                <div className="mt-6">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span>進捗 {project.progress}%</span>
                     <StatusPill project={project} />
@@ -506,13 +564,13 @@ function ProjectList({
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                   <Info label="担当者" value={project.owner} />
                   <Info label="現在のボール" value={`${project.currentBallHolder} / ${project.ballHoldingDays}日`} />
                 </div>
               </button>
 
-              <div className="mt-3 flex items-center justify-between gap-2">
+              <div className="mt-4 flex items-center justify-between gap-2">
                 <Link href={projectScheduleHref(project)} className="rounded-md border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
                   開く
                 </Link>
@@ -548,8 +606,173 @@ function ProjectList({
           </p>
         ) : null}
       </div>
-    </aside>
+    </section>
   );
+}
+
+function SelectedProjectWorkspace({
+  project,
+  tasks,
+  onCreateTask,
+}: {
+  project?: PortfolioProject;
+  tasks: Task[];
+  onCreateTask: (project: PortfolioProject) => void;
+}) {
+  if (!project) {
+    return null;
+  }
+
+  const activeTasks = tasks.filter((task) => task.status !== "archived");
+  const selfTasks = activeTasks.filter(
+    (task) =>
+      task.status !== "done" &&
+      (task.currentBallHolder === "あなた" ||
+        task.currentBallHolder === project.owner ||
+        task.currentBallHolder === "自分"),
+  );
+  const doneTasks = activeTasks.filter((task) => task.status === "done");
+  const otherTasks = activeTasks.filter(
+    (task) => task.status !== "done" && !selfTasks.includes(task),
+  );
+
+  return (
+    <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl">
+      <div className="flex flex-col gap-4 border-b border-white/10 px-4 py-4 lg:flex-row lg:items-end lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-xl font-semibold text-white">{project.name}</h2>
+            <span className="rounded-md border border-sky-200/25 bg-sky-200/[0.08] px-2 py-1 text-xs font-semibold text-sky-100">
+              進捗 {project.progress}%
+            </span>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-500">
+            <span>自分ボール {selfTasks.length}</span>
+            <span>相手ボール {otherTasks.length}</span>
+            <span>完了 {doneTasks.length}</span>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {["フローマップ", "タスク一覧", "ドキュメント", "メモ", "履歴"].map((tab, index) => (
+            <button
+              key={tab}
+              type="button"
+              className={`rounded-md border px-3 py-2 text-sm transition ${
+                index === 0
+                  ? "border-sky-200/50 bg-sky-200/[0.08] text-sky-50"
+                  : "border-transparent text-slate-500 hover:border-white/10 hover:bg-white/[0.05] hover:text-slate-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => onCreateTask(project)}
+            className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
+          >
+            ＋ タスクを追加
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 p-4 lg:grid-cols-3">
+        <TaskLane title="自分ボール" description="あなたが対応するタスク" tasks={selfTasks} tone="self" />
+        <TaskLane title="相手ボール" description="相手の回答や作業待ち" tasks={otherTasks} tone="other" />
+        <TaskLane title="完了" description="流れ終わったタスク" tasks={doneTasks} tone="done" />
+      </div>
+    </section>
+  );
+}
+
+function TaskLane({
+  title,
+  description,
+  tasks,
+  tone,
+}: {
+  title: string;
+  description: string;
+  tasks: Task[];
+  tone: "self" | "other" | "done";
+}) {
+  const toneClass =
+    tone === "self"
+      ? "border-sky-200/45 bg-sky-200/[0.055]"
+      : tone === "other"
+        ? "border-amber-300/35 bg-amber-300/[0.045]"
+        : "border-emerald-300/30 bg-emerald-300/[0.045]";
+  const dotClass =
+    tone === "self"
+      ? "bg-sky-300"
+      : tone === "other"
+        ? "bg-amber-300"
+        : "bg-emerald-300";
+
+  return (
+    <div className={`min-h-[260px] rounded-lg border p-4 ${toneClass}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className={`h-2.5 w-2.5 rounded-full ${dotClass}`} />
+            <h3 className="text-sm font-semibold text-white">{title}</h3>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{description}</p>
+        </div>
+        <span className="rounded-full border border-white/10 bg-black/18 px-2 py-1 text-xs font-semibold text-slate-300">
+          {tasks.length}
+        </span>
+      </div>
+      <div className="mt-4 space-y-3">
+        {tasks.slice(0, 4).map((task) => (
+          <div key={task.id} className="rounded-md border border-white/10 bg-slate-950/55 p-3 shadow-lg shadow-black/20">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-white">{task.title}</p>
+                <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-500">{task.nextAction || task.description}</p>
+              </div>
+              <PriorityBadge priority={task.priority} />
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+              <span className="truncate">{task.owner}</span>
+              <span>{formatDateLabel(task.dueDate)}</span>
+            </div>
+          </div>
+        ))}
+        {tasks.length === 0 ? (
+          <p className="rounded-md border border-dashed border-white/10 px-3 py-8 text-center text-sm text-slate-500">
+            タスクはありません
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function PriorityBadge({ priority }: { priority: TaskPriority }) {
+  const label = priority === "high" ? "高" : priority === "medium" ? "中" : "低";
+  const tone =
+    priority === "high"
+      ? "border-red-300/35 bg-red-300/10 text-red-100"
+      : priority === "medium"
+        ? "border-violet-300/30 bg-violet-300/10 text-violet-100"
+        : "border-white/10 bg-white/[0.045] text-slate-300";
+
+  return <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${tone}`}>{label}</span>;
+}
+
+function formatDateLabel(value: string) {
+  if (!value) {
+    return "期限なし";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
 function ProjectInspector({

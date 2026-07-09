@@ -10,6 +10,23 @@ related:
 
 # Portfolio View
 
+## Follow-up Decision: Project List Workbench Structure
+
+Portfolio should present the project list as a top comparison strip or grid,
+then show the selected project's task workspace directly below it while keeping
+Project Inspector on the right.
+
+This replaces the previous left-column project list structure. The color system
+does not change: project cards continue to use the existing quiet dark surface,
+pale-blue selection, and restrained status colors.
+
+## Reason
+
+The user wants the project list to behave like the entry point into daily work:
+compare projects first, then immediately operate on the selected project's
+tasks in the same context. A top project strip with a lower task workspace keeps
+the view and operation areas connected without adding another management page.
+
 ## Context
 
 The existing cockpit focuses on the flow inside one project. Users also need a

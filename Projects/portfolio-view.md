@@ -40,15 +40,26 @@ the single-project task Flow experience.
 
 Use three calm regions:
 
-- Left: project comparison list.
+- Top: project comparison cards with a new-project entry point, compact search/sort
+  controls, progress, current ball, and Priority Score.
+- Center: the selected project's work area. It should open with a task-oriented
+  workspace that includes tabs such as Flow Map, task list, documents, memo, and
+  history.
 - Right: Project Inspector, AI priority, Priority Score, insight, and risk.
-- Bottom: today's focus, stalled projects, and weekly progress summary.
+- Bottom or secondary region: today's focus, stalled projects, and weekly
+  progress summary when space allows.
 
 The Portfolio View no longer includes a project-level Flow Map. Spatial flow
 mapping belongs to the task-level Flow Map for a selected project.
 
 Keep the default surface quiet. Show deeper details only when selected or
 expanded.
+
+The project comparison area should follow the same structure as a calm product
+workspace rather than a dashboard: select a project at the top, then operate on
+that project's tasks directly below while the Inspector remains visible on the
+right. Preserve the existing dark navy, pale-blue, gray, and state-color palette;
+this change is structural, not a new visual theme.
 
 ## Operation Hub
 
@@ -486,6 +497,9 @@ Initial implementation is available at `/portfolio`.
 Implemented:
 
 - Multi-project comparison list.
+- Portfolio project list is moving from a left vertical list to a top project
+  card strip/grid with a selected-project workspace below it and Project
+  Inspector on the right.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

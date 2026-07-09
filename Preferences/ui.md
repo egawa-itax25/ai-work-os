@@ -8,6 +8,16 @@ related:
 
 # UI Preferences
 
+## Portfolio Project List Structure
+
+The Portfolio project list should use a top card-strip or grid structure when
+the user is comparing projects. The selected project should expand into a work
+area below the cards, with the Project Inspector on the right.
+
+Keep the existing dark navy, pale-blue, gray, and restrained state-color system.
+This preference is a structure change only; do not introduce project-specific
+palettes or decorative colors for the project cards.
+
 ## Japanese First
 
 Visible product UI should be Japanese-first for this project.
