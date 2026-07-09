@@ -55,10 +55,10 @@ const taskFlowZones: {
     id: "self",
     label: "自分ボール",
     description: "あなたが対応すべきタスク",
-    x: 24,
-    y: 26,
-    width: 570,
-    height: 330,
+    x: 0,
+    y: 0,
+    width: 620,
+    height: 340,
     icon: "●",
     tone: "border-sky-300/55 bg-sky-400/[0.055] text-sky-100 shadow-sky-950/25",
   },
@@ -66,10 +66,10 @@ const taskFlowZones: {
     id: "other",
     label: "相手ボール",
     description: "相手に対応してもらうタスク",
-    x: 646,
-    y: 26,
-    width: 570,
-    height: 330,
+    x: 620,
+    y: 0,
+    width: 620,
+    height: 340,
     icon: "●",
     tone: "border-amber-300/60 bg-amber-300/[0.06] text-amber-100 shadow-amber-950/25",
   },
@@ -77,10 +77,10 @@ const taskFlowZones: {
     id: "done",
     label: "完了",
     description: "完了したタスク",
-    x: 24,
-    y: 392,
-    width: 1192,
-    height: 198,
+    x: 0,
+    y: 340,
+    width: 1240,
+    height: 280,
     icon: "✓",
     tone: "border-emerald-300/45 bg-emerald-300/[0.045] text-emerald-100 shadow-emerald-950/20",
   },
@@ -450,7 +450,7 @@ export default function ProjectTaskMap() {
       return;
     }
 
-    const patch = getBallTransferPatch(target);
+    const patch = getBallTransferPatch(target, beforeTask);
 
     setTasks((current) =>
       current.map((task) => (task.id === id ? { ...task, ...patch } : task)),
@@ -1576,12 +1576,20 @@ function DetailRow({
   );
 }
 
-function getBallTransferPatch(target: BallTransferTarget): Partial<Task> {
+function getBallTransferPatch(
+  target: BallTransferTarget,
+  task: Task,
+): Partial<Task> {
+  const restoredProgress =
+    task.status === "done" ? task.previousProgress ?? 0 : task.progress;
+
   if (target === "self") {
     return {
       currentBallHolder: "あなた",
       ballHoldingStartedAt: todayString(),
       status: "doing",
+      progress: restoredProgress,
+      previousProgress: undefined,
     };
   }
 
@@ -1590,6 +1598,8 @@ function getBallTransferPatch(target: BallTransferTarget): Partial<Task> {
       currentBallHolder: "相手",
       ballHoldingStartedAt: todayString(),
       status: "todo",
+      progress: restoredProgress,
+      previousProgress: undefined,
     };
   }
 
@@ -1597,6 +1607,8 @@ function getBallTransferPatch(target: BallTransferTarget): Partial<Task> {
     currentBallHolder: "なし",
     ballHoldingStartedAt: todayString(),
     status: "done",
+    previousProgress:
+      task.status === "done" ? task.previousProgress : task.progress,
     progress: 100,
   };
 }

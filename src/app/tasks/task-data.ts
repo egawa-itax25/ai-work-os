@@ -13,6 +13,7 @@ export type Task = {
   status: TaskStatus;
   priority: TaskPriority;
   progress: number;
+  previousProgress?: number;
   nextAction: string;
   x: number;
   y: number;
@@ -357,6 +358,10 @@ export function normalizeTasks(tasks: StoredTask[]): Task[] {
     status: task.status ?? "todo",
     priority: task.priority ?? "medium",
     progress: Math.min(Math.max(task.progress ?? 0, 0), 100),
+    previousProgress:
+      typeof task.previousProgress === "number"
+        ? Math.min(Math.max(task.previousProgress, 0), 100)
+        : undefined,
     nextAction: task.nextAction ?? "",
     x: task.x ?? 80 + ((index * 72) % 620),
     y: task.y ?? 120 + ((index * 96) % 340),

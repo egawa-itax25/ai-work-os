@@ -76,6 +76,9 @@ be added later when they represent a concrete workflow.
 Task Flow Maps can use persistent drop regions when they make ownership more
 obvious than a temporary dock. The regions should be calm and functional:
 自分ボール, 相手ボール, and 完了, with automatic status updates on drop.
+These regions should use the full visible board area so the drop targets feel
+easy to hit. Completion should preserve the previous progress value so moving a
+task out of 完了 can restore its pre-completion progress.
 
 Desktop navigation should remain available in the cockpit by default so the
 user can move between major views without losing context. It should also be

@@ -401,6 +401,11 @@ the task's current ball/status automatically. The regions should be visible but
 quiet, using blue for self, amber for waiting on others, and green only for
 completed work.
 
+The ownership regions should fill the visible map board instead of appearing as
+small islands in the middle of the canvas. Moving a task into 完了 sets progress
+to 100%. When that task is moved back from 完了 into 自分ボール or 相手ボール, restore
+the progress value it had immediately before completion.
+
 ### Persistence
 
 Minor edits auto-save.
