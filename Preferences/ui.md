@@ -46,7 +46,8 @@ ends.
 
 For split views that pair a list with a canvas, the list and canvas should use
 the same viewport-aware height so their scroll ranges feel connected to the
-current display size.
+current display size. Avoid fixed maximum heights that leave unused space below
+the main working surface on desktop.
 
 Canvas zoom inside scrollable pages should require an intentional modifier such
 as Shift+scroll. Plain wheel or trackpad scrolling should keep moving the page

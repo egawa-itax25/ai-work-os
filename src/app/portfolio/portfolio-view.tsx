@@ -52,7 +52,7 @@ const nodeSize = { width: 236, height: 120 };
 const layoutStorageKey = "ai-work-os:portfolio-node-layout:v1";
 const viewStorageKey = "ai-work-os:portfolio-view-state:v1";
 const connectionStorageKey = "ai-work-os:portfolio-connections:v1";
-const portfolioViewportHeightClass = "h-[clamp(460px,calc(100vh-18rem),720px)]";
+const portfolioViewportHeightClass = "h-[max(560px,calc(100vh-12rem))]";
 const defaultProjectConnections: ProjectConnection[] = portfolioProjects
   .slice(0, -1)
   .map((project, index) => ({

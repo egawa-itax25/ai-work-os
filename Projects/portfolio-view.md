@@ -130,10 +130,10 @@ is pressed, so normal page scrolling does not accidentally resize the map.
 Clicking a project opens that project's Project Flow screen.
 
 The Portfolio project list and Project Flow Map should share a viewport-aware
-height. They should not use a fixed scroll range that creates a large empty
-region on tall screens or clips the map on smaller screens. The visible map
-area should clamp between a compact working height and a comfortable desktop
-height based on `100vh`.
+height. They should not use a fixed maximum height that creates a large empty
+region on tall screens or stops the user before the visible bottom of the
+workspace. The visible map area should stretch toward the bottom of the current
+viewport while keeping a minimum working height on smaller screens.
 
 ### Drag And Drop Layout
 
