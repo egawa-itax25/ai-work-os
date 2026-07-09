@@ -129,6 +129,12 @@ The map should support pan and zoom. Mouse wheel zoom must only run while Shift
 is pressed, so normal page scrolling does not accidentally resize the map.
 Clicking a project opens that project's Project Flow screen.
 
+The Portfolio project list and Project Flow Map should share a viewport-aware
+height. They should not use a fixed scroll range that creates a large empty
+region on tall screens or clips the map on smaller screens. The visible map
+area should clamp between a compact working height and a comfortable desktop
+height based on `100vh`.
+
 ### Drag And Drop Layout
 
 Portfolio project nodes can be moved by drag and drop.

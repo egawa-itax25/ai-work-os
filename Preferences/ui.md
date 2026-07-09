@@ -44,6 +44,10 @@ While a canvas is actively being panned, remove transform transitions that make
 the surface trail behind the pointer. Transitions can return after the drag
 ends.
 
+For split views that pair a list with a canvas, the list and canvas should use
+the same viewport-aware height so their scroll ranges feel connected to the
+current display size.
+
 Canvas zoom inside scrollable pages should require an intentional modifier such
 as Shift+scroll. Plain wheel or trackpad scrolling should keep moving the page
 instead of resizing an embedded map.

@@ -52,6 +52,7 @@ const nodeSize = { width: 236, height: 120 };
 const layoutStorageKey = "ai-work-os:portfolio-node-layout:v1";
 const viewStorageKey = "ai-work-os:portfolio-view-state:v1";
 const connectionStorageKey = "ai-work-os:portfolio-connections:v1";
+const portfolioViewportHeightClass = "h-[clamp(460px,calc(100vh-18rem),720px)]";
 const defaultProjectConnections: ProjectConnection[] = portfolioProjects
   .slice(0, -1)
   .map((project, index) => ({
@@ -585,12 +586,12 @@ function ProjectList({
   onArchive: (project: PortfolioProject) => void;
 }) {
   return (
-    <aside className="rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl">
+    <aside className={`${portfolioViewportHeightClass} flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl`}>
       <div className="border-b border-white/10 px-4 py-4">
         <h2 className="text-base font-semibold text-white">プロジェクト一覧</h2>
         <p className="mt-1 text-sm text-slate-500">選択すると右側のInspectorで編集できます。</p>
       </div>
-      <div className="max-h-[660px] space-y-2 overflow-y-auto p-3">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {projects.map((project, index) => {
           const score = getPriorityScore(project);
           const isSelected = project.id === selectedId;
@@ -736,7 +737,7 @@ function ProjectFlowMap({
   onArchive: (project: PortfolioProject) => void;
 }) {
   return (
-    <section className="rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl">
+    <section className={`${portfolioViewportHeightClass} flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl`}>
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
         <div>
           <h2 className="text-base font-semibold text-white">プロジェクトフローマップ</h2>
@@ -756,7 +757,7 @@ function ProjectFlowMap({
       </div>
 
       <div
-        className={`relative h-[660px] overflow-hidden ${panState ? "cursor-grabbing" : "cursor-grab"}`}
+        className={`relative min-h-0 flex-1 overflow-hidden ${panState ? "cursor-grabbing" : "cursor-grab"}`}
         onPointerDown={(event) => {
           if (event.target instanceof HTMLElement && !event.target.closest("article")) {
             onPanStart({ x: event.clientX, y: event.clientY });
