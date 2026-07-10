@@ -1518,7 +1518,6 @@ function TaskNode({
             onDisconnect={onDisconnect}
             onDuplicate={onDuplicate}
             onEdit={onSelect}
-            onPassBall={() => onUpdate({ currentBallHolder: "未設定", ballHoldingStartedAt: todayString() })}
             onClose={() => onMenuToggle(task.id)}
           />
         ) : null}
@@ -1721,7 +1720,6 @@ function TaskNode({
           onDisconnect={onDisconnect}
           onDuplicate={onDuplicate}
           onEdit={onSelect}
-          onPassBall={() => onUpdate({ currentBallHolder: "未設定", ballHoldingStartedAt: todayString() })}
           onClose={() => onMenuToggle(task.id)}
         />
       ) : null}
@@ -1999,7 +1997,6 @@ function TaskContextMenu({
   onEdit,
   onDuplicate,
   onDisconnect,
-  onPassBall,
   onComplete,
   onArchive,
   onClose,
@@ -2009,17 +2006,14 @@ function TaskContextMenu({
   onEdit: (id: string) => void;
   onDuplicate: (task: Task) => void;
   onDisconnect: (sourceId: string, targetId: string) => void;
-  onPassBall: () => void;
   onComplete: (id: string) => void;
   onArchive: (id: string) => void;
   onClose: () => void;
 }) {
   return (
     <div data-task-menu-root className="absolute left-2 top-11 z-50 w-56 rounded-lg border border-zinc-700 bg-zinc-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
-      <button type="button" onClick={() => { onEdit(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">開く</button>
       <button type="button" onClick={() => { onEdit(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onDuplicate(task); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">複製</button>
-      <button type="button" onClick={() => { onPassBall(); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">ボールを渡す</button>
       <button type="button" onClick={() => { onComplete(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">完了</button>
       {linkedTasks.length > 0 ? (
         <div className="mt-1 border-t border-white/10 pt-1">

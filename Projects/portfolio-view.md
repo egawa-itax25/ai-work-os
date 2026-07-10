@@ -566,6 +566,9 @@ Implemented:
 - Inline editing controls stop pointer and click propagation so typing,
   selecting priority, or dragging the progress bar does not trigger node drag,
   card selection, or navigation.
+- Task node context menus should stay minimal. Remove redundant "開く" because
+  clicking the node already selects it, and remove "ボールを渡す" because ball
+  transfer is handled by dragging tasks between the visible ball regions.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
