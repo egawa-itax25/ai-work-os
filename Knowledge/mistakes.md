@@ -117,6 +117,24 @@ Use this note only when the user gives an explicit correction and both are true:
   region bounds, then convert the final clamped position back to board
   coordinates.
 
+### 2026-07-10 - Drag movement still used internal board bounds
+
+- Mistake: Even after fixing drop snap, active dragging still clamped task cards
+  to the internal board size. On smaller screens, the transformed board could
+  sit lower than the visible fixed zones, preventing cards from reaching the top
+  of the map.
+- Prevention: During drag, clamp the card's viewport top-left inside the visible
+  map panel, then convert that clamped viewport position back to board
+  coordinates for storage.
+
+### 2026-07-10 - Old task map viewport state preserved broken layouts
+
+- Mistake: Browser localStorage could keep old pan/zoom values from previous
+  buggy versions, making new viewport fixes appear ineffective after deployment.
+- Prevention: When changing task-map coordinate semantics, version the viewport
+  storage key and lightly reconcile existing task cards into their visible
+  ownership regions on project open or viewport resize.
+
 ### 2026-07-10 - Task node menu stayed open
 
 - Mistake: Task node context menus only toggled from their own button, so they

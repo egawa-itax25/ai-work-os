@@ -46,7 +46,7 @@ const taskMapDefaultZoom = 0.94;
 const taskMapMinZoom = 0.84;
 const taskMapMaxZoom = 1.25;
 const taskMapTopZoneRatio = 0.76;
-const taskMapViewStoragePrefix = "ai-work-os:task-map-view:";
+const taskMapViewStoragePrefix = "ai-work-os:task-map-view:v2:";
 type TaskFlowZoneDefinition = {
   id: BallTransferTarget;
   label: string;
@@ -179,6 +179,7 @@ export default function ProjectTaskMap() {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const projectTasksRef = useRef<Task[]>([]);
   const dragStateRef = useRef<DragState | null>(null);
+  const reconciledViewportKeyRef = useRef("");
   const restoredViewportSizeRef = useRef<Point | null>(null);
   const boardSizeRef = useRef<Point>({
     x: minimumBoardSize.width,
@@ -595,6 +596,32 @@ export default function ProjectTaskMap() {
     return getBoardPoint(clampedViewportPoint.x, clampedViewportPoint.y);
   }
 
+  function getTaskPointFromPointer(clientX: number, clientY: number, drag: DragState) {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return { x: drag.x, y: drag.y };
+    }
+
+    const gap = 16;
+    const cardViewportWidth = cardWidth * zoom;
+    const cardViewportHeight = cardHeight * zoom;
+    const viewportX = clientX - drag.offsetX * zoom;
+    const viewportY = clientY - drag.offsetY * zoom;
+    const clampedViewportX = clamp(
+      viewportX,
+      rect.left + gap,
+      Math.max(rect.left + gap, rect.right - cardViewportWidth - gap),
+    );
+    const clampedViewportY = clamp(
+      viewportY,
+      rect.top + gap,
+      Math.max(rect.top + gap, rect.bottom - cardViewportHeight - gap),
+    );
+
+    return getBoardPoint(clampedViewportX, clampedViewportY);
+  }
+
   function moveTask(event: ReactPointerEvent<HTMLElement>) {
     const currentDragState = dragStateRef.current;
 
@@ -602,17 +629,12 @@ export default function ProjectTaskMap() {
       return;
     }
 
-    const point = getBoardPoint(event.clientX, event.clientY);
-    const x = clamp(
-      point.x - currentDragState.offsetX,
-      16,
-      boardSize.x - cardWidth - 16,
+    const point = getTaskPointFromPointer(
+      event.clientX,
+      event.clientY,
+      currentDragState,
     );
-    const y = clamp(
-      point.y - currentDragState.offsetY,
-      16,
-      boardSize.y - cardHeight - 16,
-    );
+    const { x, y } = point;
     const nextDragState = { ...currentDragState, x, y };
 
     dragStateRef.current = nextDragState;
@@ -906,6 +928,136 @@ export default function ProjectTaskMap() {
     );
   }
 
+  useEffect(() => {
+    if (
+      !isReady ||
+      dragStateRef.current ||
+      viewportSize.x === 0 ||
+      viewportSize.y === 0 ||
+      projectTasks.length === 0
+    ) {
+      return;
+    }
+
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return;
+    }
+
+    const viewportKey = `${projectName}:${Math.round(viewportSize.x)}:${Math.round(
+      viewportSize.y,
+    )}:${Math.round(zoom * 100)}:${Math.round(pan.x)}:${Math.round(
+      pan.y,
+    )}:${Math.round(boardSize.x)}:${Math.round(boardSize.y)}`;
+
+    if (reconciledViewportKeyRef.current === viewportKey) {
+      return;
+    }
+
+    reconciledViewportKeyRef.current = viewportKey;
+
+    const gap = 16;
+    const cardViewportWidth = cardWidth * zoom;
+    const cardViewportHeight = cardHeight * zoom;
+    const topHeight = rect.height * taskMapTopZoneRatio;
+    const topMinY = rect.top + gap;
+    const topMaxY = Math.max(
+      topMinY,
+      rect.top + topHeight - cardViewportHeight - gap,
+    );
+    const doneMinY = Math.min(
+      Math.max(rect.top + gap, rect.top + topHeight + gap),
+      rect.bottom - cardViewportHeight - gap,
+    );
+    const doneMaxY = Math.max(doneMinY, rect.bottom - cardViewportHeight - gap);
+    const leftMinX = rect.left + gap;
+    const leftMaxX = Math.max(
+      leftMinX,
+      rect.left + rect.width / 2 - cardViewportWidth - gap,
+    );
+    const rightMinX = Math.min(
+      Math.max(leftMinX, rect.left + rect.width / 2 + gap),
+      rect.right - cardViewportWidth - gap,
+    );
+    const rightMaxX = Math.max(rightMinX, rect.right - cardViewportWidth - gap);
+    const toViewport = (point: Point) => ({
+      x: rect.left + rect.width / 2 + pan.x + (point.x - boardSize.x / 2) * zoom,
+      y: rect.top + rect.height / 2 + pan.y + (point.y - boardSize.y / 2) * zoom,
+    });
+    const toBoard = (x: number, y: number) => ({
+      x: (x - rect.left - rect.width / 2 - pan.x) / zoom + boardSize.x / 2,
+      y: (y - rect.top - rect.height / 2 - pan.y) / zoom + boardSize.y / 2,
+    });
+    const getBounds = (target: BallTransferTarget) => {
+      if (target === "self") {
+        return { minX: leftMinX, maxX: leftMaxX, minY: topMinY, maxY: topMaxY };
+      }
+
+      if (target === "other") {
+        return { minX: rightMinX, maxX: rightMaxX, minY: topMinY, maxY: topMaxY };
+      }
+
+      return {
+        minX: leftMinX,
+        maxX: Math.max(leftMinX, rect.right - cardViewportWidth - gap),
+        minY: doneMinY,
+        maxY: doneMaxY,
+      };
+    };
+
+    setTasks((current) => {
+      let changed = false;
+
+      const nextTasks = current.map((task) => {
+        if (task.project !== projectName) {
+          return task;
+        }
+
+        const target = getTaskTransferTarget(task);
+        const bounds = getBounds(target);
+        const viewportPoint = toViewport({ x: task.x, y: task.y });
+        const isInside =
+          viewportPoint.x >= bounds.minX &&
+          viewportPoint.x <= bounds.maxX &&
+          viewportPoint.y >= bounds.minY &&
+          viewportPoint.y <= bounds.maxY;
+
+        if (isInside) {
+          return task;
+        }
+
+        const snappedPoint = toBoard(
+          clamp(viewportPoint.x, bounds.minX, bounds.maxX),
+          clamp(viewportPoint.y, bounds.minY, bounds.maxY),
+        );
+
+        if (
+          Math.abs(snappedPoint.x - task.x) < 0.5 &&
+          Math.abs(snappedPoint.y - task.y) < 0.5
+        ) {
+          return task;
+        }
+
+        changed = true;
+        return { ...task, x: snappedPoint.x, y: snappedPoint.y };
+      });
+
+      return changed ? nextTasks : current;
+    });
+  }, [
+    boardSize.x,
+    boardSize.y,
+    isReady,
+    pan.x,
+    pan.y,
+    projectName,
+    projectTasks,
+    viewportSize.x,
+    viewportSize.y,
+    zoom,
+  ]);
+
   return (
     <div className="neo-shell space-y-5 text-zinc-100">
       <section className="grid gap-4 lg:grid-cols-[1fr_auto]">
@@ -1020,7 +1172,7 @@ export default function ProjectTaskMap() {
               }}
             >
               <svg
-                className="pointer-events-none absolute inset-0"
+                className="pointer-events-none absolute inset-0 overflow-visible"
                 width={boardSize.x}
                 height={boardSize.y}
                 aria-hidden="true"

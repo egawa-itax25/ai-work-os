@@ -538,6 +538,14 @@ Implemented:
   snap correction must use the visible viewport bounds of those regions. Do not
   compare against only the internal board coordinate system, because pan, zoom,
   and screen size can make those coordinates diverge from what the user sees.
+- Task dragging itself must also use visible viewport bounds. Do not clamp
+  moving task cards to the internal board size while fixed ownership regions
+  are viewport-based; otherwise small screens can prevent cards from reaching
+  the top of the visible map.
+- On project open or viewport resize, task cards should be lightly reconciled
+  into the visible region matching their current ball/status. This should only
+  correct cards that would otherwise sit outside their visible ownership region,
+  so user placement inside a region is preserved.
 - Task Flow Map should preserve each project's pan and zoom across reloads.
   Auto-fit may provide the first view, but it should not override a saved
   viewport and make task cards appear to shift after reload.
