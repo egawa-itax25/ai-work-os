@@ -40,7 +40,7 @@ const cardHeight = 138;
 const minimumBoardSize = { width: 1240, height: 620 };
 const taskFitPadding = 96;
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
-const taskMapTopZoneRatio = 0.68;
+const taskMapTopZoneRatio = 0.76;
 const taskMapViewStoragePrefix = "ai-work-os:task-map-view:";
 type TaskFlowZoneDefinition = {
   id: BallTransferTarget;

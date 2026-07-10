@@ -139,9 +139,9 @@ The task-level Flow Map should preserve its viewport per project. Once a user
 has a pan and zoom state, reloading the page should restore that state instead
 of re-running auto-fit and making task cards appear to move.
 
-The self and other drop regions should also occupy a larger top area than the
-completed region, because active work is dropped there more often than into
-done.
+The self and other drop regions should also occupy a clearly dominant top area,
+roughly three quarters of the board height, because active work is dropped
+there more often than into done.
 
 ## Reason
 

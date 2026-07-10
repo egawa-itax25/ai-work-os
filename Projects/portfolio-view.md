@@ -520,6 +520,9 @@ Implemented:
 - Task Flow Map top ownership regions should be generous enough for comfortable
   dropping. The upper self/other regions should use a larger share of the
   visible board than the lower done region.
+- The top self/other regions should feel clearly dominant in the visible map,
+  roughly three quarters of the board height, so users can drop active work
+  without aiming at a narrow band.
 - Task Flow Map should preserve each project's pan and zoom across reloads.
   Auto-fit may provide the first view, but it should not override a saved
   viewport and make task cards appear to shift after reload.
