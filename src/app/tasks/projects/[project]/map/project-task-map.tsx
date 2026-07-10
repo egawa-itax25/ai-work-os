@@ -278,6 +278,37 @@ export default function ProjectTaskMap() {
   }, [toast]);
 
   useEffect(() => {
+    if (!menuTaskId) {
+      return;
+    }
+
+    function closeTaskMenu(event: PointerEvent) {
+      if (
+        event.target instanceof HTMLElement &&
+        event.target.closest("[data-task-menu-root]")
+      ) {
+        return;
+      }
+
+      setMenuTaskId("");
+    }
+
+    function closeTaskMenuWithEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuTaskId("");
+      }
+    }
+
+    window.addEventListener("pointerdown", closeTaskMenu);
+    window.addEventListener("keydown", closeTaskMenuWithEscape);
+
+    return () => {
+      window.removeEventListener("pointerdown", closeTaskMenu);
+      window.removeEventListener("keydown", closeTaskMenuWithEscape);
+    };
+  }, [menuTaskId]);
+
+  useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
 
@@ -696,6 +727,7 @@ export default function ProjectTaskMap() {
     const point = getBoardPoint(event.clientX, event.clientY);
 
     setActiveTaskId(task.id);
+    setMenuTaskId("");
     const nextDragState = {
       id: task.id,
       offsetX: point.x - task.x,
@@ -1041,7 +1073,10 @@ export default function ProjectTaskMap() {
                   onDuplicate={duplicateTask}
                   onMenuToggle={(id) => setMenuTaskId((current) => (current === id ? "" : id))}
                   onStartMoving={startMoving}
-                  onSelect={setActiveTaskId}
+                  onSelect={(id) => {
+                    setActiveTaskId(id);
+                    setMenuTaskId("");
+                  }}
                   onConnectStart={setLinkSourceId}
                   onConnectEnd={() => {
                     setLinkSourceId(null);
@@ -1263,6 +1298,7 @@ function TaskNode({
           ) : null}
           <button
             type="button"
+            data-task-menu-root
             onPointerDown={(event) => event.stopPropagation()}
             onClick={(event) => {
               event.stopPropagation();
@@ -1366,6 +1402,7 @@ function TaskNode({
     >
       <button
         type="button"
+        data-task-menu-root
         onClick={() => onMenuToggle(task.id)}
         className="absolute left-2 top-2 flex h-8 w-8 items-center justify-center rounded-md border border-zinc-700 bg-black/40 text-zinc-300 hover:bg-zinc-900"
         aria-label={`${task.title} の操作メニュー`}
@@ -1806,7 +1843,7 @@ function TaskContextMenu({
   onClose: () => void;
 }) {
   return (
-    <div className="absolute left-2 top-11 z-50 w-56 rounded-lg border border-zinc-700 bg-zinc-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
+    <div data-task-menu-root className="absolute left-2 top-11 z-50 w-56 rounded-lg border border-zinc-700 bg-zinc-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <button type="button" onClick={() => { onEdit(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">開く</button>
       <button type="button" onClick={() => { onEdit(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onDuplicate(task); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">複製</button>

@@ -407,6 +407,10 @@ provide "解除" for each linked task.
 The compact "解除" button should open a small dedicated menu with only:
 解除 and 元に戻す. It must be clickable without being clipped by the task node.
 
+Task node menus must not trap the user. A menu should close when the user
+clicks outside it, presses Escape, selects another task, starts dragging a task,
+or chooses a menu action.
+
 Task Flow Map UI should use the same canvas language as Portfolio Project Flow
 Map: quiet dark surface, compact nodes, pan by dragging empty space, zoom
 buttons, and Shift+scroll zoom. The Task Inspector is already useful and should

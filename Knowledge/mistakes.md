@@ -116,3 +116,10 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: For fixed-zone maps, classify and snap against viewport-space
   region bounds, then convert the final clamped position back to board
   coordinates.
+
+### 2026-07-10 - Task node menu stayed open
+
+- Mistake: Task node context menus only toggled from their own button, so they
+  could stay open after the user clicked elsewhere on the map.
+- Prevention: Context menus on the canvas must close on outside pointerdown,
+  Escape, task selection, drag start, and menu action selection.
