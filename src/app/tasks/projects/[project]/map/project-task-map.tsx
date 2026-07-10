@@ -42,6 +42,9 @@ const cardHeight = 138;
 const minimumBoardSize = { width: 1240, height: 620 };
 const taskFitPadding = 96;
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
+const taskMapDefaultZoom = 0.94;
+const taskMapMinZoom = 0.84;
+const taskMapMaxZoom = 1.25;
 const taskMapTopZoneRatio = 0.76;
 const taskMapViewStoragePrefix = "ai-work-os:task-map-view:";
 type TaskFlowZoneDefinition = {
@@ -157,7 +160,7 @@ function getTaskFitFrame({
     availableWidth / contentWidth,
     availableHeight / contentHeight,
   );
-  const nextZoom = clamp(fitZoom, 0.72, 1.25);
+  const nextZoom = clamp(fitZoom, taskMapMinZoom, taskMapMaxZoom);
   const centerX = (bounds.minX + bounds.maxX) / 2;
   const centerY = (bounds.minY + bounds.maxY) / 2;
 
@@ -181,7 +184,7 @@ export default function ProjectTaskMap() {
     x: minimumBoardSize.width,
     y: minimumBoardSize.height,
   });
-  const zoomRef = useRef(0.94);
+  const zoomRef = useRef(taskMapDefaultZoom);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTaskId, setActiveTaskId] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -193,7 +196,7 @@ export default function ProjectTaskMap() {
   const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
   const [isReady, setIsReady] = useState(false);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(0.94);
+  const [zoom, setZoom] = useState(taskMapDefaultZoom);
   const [panState, setPanState] = useState<PanState>(null);
   const [boardSize, setBoardSize] = useState<Point>({
     x: minimumBoardSize.width,
@@ -226,7 +229,11 @@ export default function ProjectTaskMap() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved) as Partial<{ pan: Point; zoom: number }>;
-        const savedZoom = clamp(Number(parsed.zoom ?? 0.94), 0.72, 1.25);
+        const savedZoom = clamp(
+          Number(parsed.zoom ?? taskMapDefaultZoom),
+          taskMapMinZoom,
+          taskMapMaxZoom,
+        );
         const savedPan = {
           x: Number(parsed.pan?.x ?? 0),
           y: Number(parsed.pan?.y ?? 0),
@@ -242,8 +249,8 @@ export default function ProjectTaskMap() {
       }
     }
 
-    zoomRef.current = 0.94;
-    setZoom(0.94);
+    zoomRef.current = taskMapDefaultZoom;
+    setZoom(taskMapDefaultZoom);
     setPan({ x: 0, y: 0 });
     setViewportRestore({ projectName, hasSavedView: false });
   }, [projectName]);
@@ -462,6 +469,19 @@ export default function ProjectTaskMap() {
     };
   }
 
+  function getViewportPointFromBoard(point: Point) {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return { x: 0, y: 0 };
+    }
+
+    return {
+      x: rect.left + rect.width / 2 + pan.x + (point.x - boardSize.x / 2) * zoom,
+      y: rect.top + rect.height / 2 + pan.y + (point.y - boardSize.y / 2) * zoom,
+    };
+  }
+
   function moveCanvas(point: Point) {
     if (!panState || dragStateRef.current) {
       return;
@@ -474,55 +494,74 @@ export default function ProjectTaskMap() {
   }
 
   function updateZoom(nextZoom: number) {
-    setZoom(Math.min(1.25, Math.max(0.72, nextZoom)));
+    setZoom(clamp(nextZoom, taskMapMinZoom, taskMapMaxZoom));
   }
 
-  function getBoardZoneTarget(point: Point): BallTransferTarget {
-    const topHeight = boardSize.y * taskMapTopZoneRatio;
+  function getViewportZoneTarget(point: Point): BallTransferTarget {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return "self";
+    }
+
+    const topHeight = rect.top + rect.height * taskMapTopZoneRatio;
 
     if (point.y >= topHeight) {
       return "done";
     }
 
-    return point.x < boardSize.x / 2 ? "self" : "other";
+    return point.x < rect.left + rect.width / 2 ? "self" : "other";
   }
 
-  function clampTaskIntoZone(x: number, y: number, target: BallTransferTarget) {
-    const topHeight = boardSize.y * taskMapTopZoneRatio;
+  function clampTaskIntoViewportZone(x: number, y: number, target: BallTransferTarget) {
+    const rect = boardRef.current?.getBoundingClientRect();
+
+    if (!rect) {
+      return { x, y };
+    }
+
+    const topHeight = rect.height * taskMapTopZoneRatio;
+    const cardViewportWidth = cardWidth * zoom;
+    const cardViewportHeight = cardHeight * zoom;
     const gap = 16;
-    const topMinY = gap;
-    const topMaxY = Math.max(topMinY, topHeight - cardHeight - gap);
+    const topMinY = rect.top + gap;
+    const topMaxY = Math.max(
+      topMinY,
+      rect.top + topHeight - cardViewportHeight - gap,
+    );
     const doneMinY = Math.min(
-      Math.max(gap, topHeight + gap),
-      boardSize.y - cardHeight - gap,
+      Math.max(rect.top + gap, rect.top + topHeight + gap),
+      rect.bottom - cardViewportHeight - gap,
     );
-    const doneMaxY = Math.max(doneMinY, boardSize.y - cardHeight - gap);
-    const leftMinX = gap;
-    const leftMaxX = Math.max(leftMinX, boardSize.x / 2 - cardWidth - gap);
+    const doneMaxY = Math.max(doneMinY, rect.bottom - cardViewportHeight - gap);
+    const leftMinX = rect.left + gap;
+    const leftMaxX = Math.max(
+      leftMinX,
+      rect.left + rect.width / 2 - cardViewportWidth - gap,
+    );
     const rightMinX = Math.min(
-      Math.max(leftMinX, boardSize.x / 2 + gap),
-      boardSize.x - cardWidth - gap,
+      Math.max(leftMinX, rect.left + rect.width / 2 + gap),
+      rect.right - cardViewportWidth - gap,
     );
-    const rightMaxX = Math.max(rightMinX, boardSize.x - cardWidth - gap);
+    const rightMaxX = Math.max(rightMinX, rect.right - cardViewportWidth - gap);
+    const viewportPoint = getViewportPointFromBoard({ x, y });
+    const clampedViewportPoint =
+      target === "self"
+        ? {
+            x: clamp(viewportPoint.x, leftMinX, leftMaxX),
+            y: clamp(viewportPoint.y, topMinY, topMaxY),
+          }
+        : target === "other"
+          ? {
+              x: clamp(viewportPoint.x, rightMinX, rightMaxX),
+              y: clamp(viewportPoint.y, topMinY, topMaxY),
+            }
+          : {
+              x: clamp(viewportPoint.x, leftMinX, rect.right - cardViewportWidth - gap),
+              y: clamp(viewportPoint.y, doneMinY, doneMaxY),
+            };
 
-    if (target === "self") {
-      return {
-        x: clamp(x, leftMinX, leftMaxX),
-        y: clamp(y, topMinY, topMaxY),
-      };
-    }
-
-    if (target === "other") {
-      return {
-        x: clamp(x, rightMinX, rightMaxX),
-        y: clamp(y, topMinY, topMaxY),
-      };
-    }
-
-    return {
-      x: clamp(x, leftMinX, boardSize.x - cardWidth - gap),
-      y: clamp(y, doneMinY, doneMaxY),
-    };
+    return getBoardPoint(clampedViewportPoint.x, clampedViewportPoint.y);
   }
 
   function moveTask(event: ReactPointerEvent<HTMLElement>) {
@@ -566,7 +605,7 @@ export default function ProjectTaskMap() {
       x: currentDragState.x + cardWidth / 2,
       y: currentDragState.y + cardHeight / 2,
     };
-    const zoneTarget = getBoardZoneTarget(taskCenter);
+    const zoneTarget = getViewportZoneTarget(getViewportPointFromBoard(taskCenter));
     const task = tasks.find((item) => item.id === currentDragState.id);
     const dropTarget = document
       .elementFromPoint(event.clientX, event.clientY)
@@ -575,7 +614,7 @@ export default function ProjectTaskMap() {
       dropTarget?.dataset.ballTarget
         ? (dropTarget.dataset.ballTarget as BallTransferTarget)
         : zoneTarget;
-    const snappedPoint = clampTaskIntoZone(
+    const snappedPoint = clampTaskIntoViewportZone(
       currentDragState.x,
       currentDragState.y,
       finalTarget,

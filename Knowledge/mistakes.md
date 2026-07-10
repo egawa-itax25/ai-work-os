@@ -106,3 +106,13 @@ Use this note only when the user gives an explicit correction and both are true:
   card could visually remain across a border while its ball/status changed.
 - Prevention: Classify drops by the card center and clamp the card into the
   target region after release so visual placement and task state match.
+
+### 2026-07-10 - Fixed zones and board coordinates diverged on resize
+
+- Mistake: Task Flow Map ownership zones were fixed to the visible viewport,
+  but drop classification and snap correction used the internal board
+  coordinate system. Pan, zoom, and viewport size could make the state disagree
+  with the visible region.
+- Prevention: For fixed-zone maps, classify and snap against viewport-space
+  region bounds, then convert the final clamped position back to board
+  coordinates.

@@ -530,6 +530,10 @@ Implemented:
 - Task drop classification should be based on the task card center, not only on
   the pointer position. After a drop, the card should be clamped into the target
   region so the visual location and the ball/status state agree.
+- Because ownership regions are fixed viewport layers, drop classification and
+  snap correction must use the visible viewport bounds of those regions. Do not
+  compare against only the internal board coordinate system, because pan, zoom,
+  and screen size can make those coordinates diverge from what the user sees.
 - Task Flow Map should preserve each project's pan and zoom across reloads.
   Auto-fit may provide the first view, but it should not override a saved
   viewport and make task cards appear to shift after reload.
