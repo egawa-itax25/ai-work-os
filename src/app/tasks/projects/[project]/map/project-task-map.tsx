@@ -734,7 +734,7 @@ export default function ProjectTaskMap() {
 
     setTasks((current) => [newTask, ...current]);
     setActiveTaskId(newTask.id);
-    setToast({ message: "タスクを作成しました。", undo: () => removeTask(newTask.id) });
+    setToast({ message: "タスクを作成しました。", undo: () => removeTask(newTask.id, false) });
   }
 
   function startMoving(event: ReactPointerEvent<HTMLElement>, task: Task) {
@@ -895,7 +895,7 @@ export default function ProjectTaskMap() {
     setTasks((current) => [newTask, ...current]);
     setActiveTaskId(newTask.id);
     setDrawerOpen(false);
-    setToast({ message: "タスクを作成しました。", undo: () => removeTask(newTask.id) });
+    setToast({ message: "タスクを作成しました。", undo: () => removeTask(newTask.id, false) });
   }
 
   function duplicateTask(task: Task) {
@@ -911,10 +911,11 @@ export default function ProjectTaskMap() {
 
     setTasks((current) => [copy, ...current]);
     setActiveTaskId(copy.id);
-    setToast({ message: "タスクを複製しました。", undo: () => removeTask(copy.id) });
+    setToast({ message: "タスクを複製しました。", undo: () => removeTask(copy.id, false) });
   }
 
-  function removeTask(id: string) {
+  function removeTask(id: string, showToast = true) {
+    const beforeTasks = tasks;
     const remainingTasks = tasks.filter((task) => task.id !== id);
 
     setTasks(
@@ -926,6 +927,10 @@ export default function ProjectTaskMap() {
     setActiveTaskId(
       remainingTasks.find((task) => task.project === projectName)?.id ?? "",
     );
+
+    if (showToast) {
+      setToast({ message: "タスクを削除しました。", undo: () => setTasks(beforeTasks) });
+    }
   }
 
   useEffect(() => {
@@ -1518,6 +1523,7 @@ function TaskNode({
             onDisconnect={onDisconnect}
             onDuplicate={onDuplicate}
             onEdit={onSelect}
+            onRemove={onRemove}
             onClose={() => onMenuToggle(task.id)}
           />
         ) : null}
@@ -1720,6 +1726,7 @@ function TaskNode({
           onDisconnect={onDisconnect}
           onDuplicate={onDuplicate}
           onEdit={onSelect}
+          onRemove={onRemove}
           onClose={() => onMenuToggle(task.id)}
         />
       ) : null}
@@ -1997,6 +2004,7 @@ function TaskContextMenu({
   onEdit,
   onDuplicate,
   onDisconnect,
+  onRemove,
   onComplete,
   onArchive,
   onClose,
@@ -2006,6 +2014,7 @@ function TaskContextMenu({
   onEdit: (id: string) => void;
   onDuplicate: (task: Task) => void;
   onDisconnect: (sourceId: string, targetId: string) => void;
+  onRemove: (id: string) => void;
   onComplete: (id: string) => void;
   onArchive: (id: string) => void;
   onClose: () => void;
@@ -2038,6 +2047,7 @@ function TaskContextMenu({
         </div>
       ) : null}
       <button type="button" onClick={() => { onArchive(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">アーカイブ</button>
+      <button type="button" onClick={() => { onRemove(task.id); onClose(); }} className="mt-1 block w-full rounded-md border-t border-white/10 px-3 py-2 text-left text-sm text-red-200 hover:bg-red-400/10">削除</button>
     </div>
   );
 }

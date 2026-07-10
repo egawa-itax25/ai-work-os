@@ -572,6 +572,11 @@ Implemented:
 - Compact Task Flow node titles should prioritize readability. The priority
   control belongs in the upper-right corner, while the task title should use the
   available node width and wrap onto multiple lines instead of being truncated.
+- Project and task context menus should close when the user clicks outside the
+  menu or presses Escape.
+- Project and task context menus should expose an explicit "削除" action.
+  Deletion should be undo-capable where possible, while archive remains a
+  separate non-destructive action.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

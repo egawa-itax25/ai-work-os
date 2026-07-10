@@ -183,6 +183,37 @@ export default function PortfolioView({
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
+  useEffect(() => {
+    if (!menuProjectId) {
+      return;
+    }
+
+    function closeProjectMenu(event: PointerEvent) {
+      if (
+        event.target instanceof HTMLElement &&
+        event.target.closest("[data-project-menu-root], [data-project-menu-trigger]")
+      ) {
+        return;
+      }
+
+      setMenuProjectId("");
+    }
+
+    function closeProjectMenuWithEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setMenuProjectId("");
+      }
+    }
+
+    window.addEventListener("pointerdown", closeProjectMenu);
+    window.addEventListener("keydown", closeProjectMenuWithEscape);
+
+    return () => {
+      window.removeEventListener("pointerdown", closeProjectMenu);
+      window.removeEventListener("keydown", closeProjectMenuWithEscape);
+    };
+  }, [menuProjectId]);
+
   const rankedProjects = useMemo(
     () =>
       [...projects].sort((a, b) => getPriorityScore(b) - getPriorityScore(a)),
@@ -356,6 +387,34 @@ export default function PortfolioView({
     });
   }
 
+  function deleteProject(project: PortfolioProject) {
+    const beforeProjects = projects;
+    const beforeTasks = portfolioTasks;
+    const beforeConnections = projectConnections;
+    const nextProjects = projects.filter((item) => item.id !== project.id);
+    const nextTasks = portfolioTasks.filter((task) => task.project !== project.name);
+    const nextConnections = projectConnections.filter(
+      (connection) =>
+        connection.sourceId !== project.id && connection.targetId !== project.id,
+    );
+
+    setProjects(nextProjects);
+    setPortfolioTasks(nextTasks);
+    setProjectConnections(nextConnections);
+    writeTasks(nextTasks);
+
+    if (selectedId === project.id) {
+      setSelectedId(nextProjects[0]?.id ?? "");
+    }
+
+    notify("プロジェクトを削除しました。", () => {
+      setProjects(beforeProjects);
+      setPortfolioTasks(beforeTasks);
+      setProjectConnections(beforeConnections);
+      writeTasks(beforeTasks);
+    });
+  }
+
   function addProjectConnection(sourceId: string, targetId: string) {
     if (!sourceId || !targetId || sourceId === targetId) {
       return;
@@ -418,6 +477,7 @@ export default function PortfolioView({
             onArchive={archiveProject}
             onCreateProject={() => setDrawer({ type: "project" })}
             onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
+            onDelete={deleteProject}
             onDuplicate={duplicateProject}
             onExpandScore={setExpandedScoreId}
             onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
@@ -502,6 +562,7 @@ function ProjectList({
   onMenuToggle,
   onCreateProject,
   onCreateTask,
+  onDelete,
   onDuplicate,
   onArchive,
   onUpdate,
@@ -516,6 +577,7 @@ function ProjectList({
   onMenuToggle: (id: string) => void;
   onCreateProject: () => void;
   onCreateTask: (project: PortfolioProject) => void;
+  onDelete: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
   onArchive: (project: PortfolioProject) => void;
   onUpdate: (id: string, patch: Partial<PortfolioProject>) => void;
@@ -680,7 +742,7 @@ function ProjectList({
                 <Link href={projectTaskMapHref(project)} className="whitespace-nowrap rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-center text-xs font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]">
                   タスクフローマップ
                 </Link>
-                <button type="button" onClick={() => onMenuToggle(project.id)} className="whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100" title="操作メニュー">
+                <button type="button" data-project-menu-trigger onClick={() => onMenuToggle(project.id)} className="whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100" title="操作メニュー">
                   …
                 </button>
                 <button type="button" onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="col-span-3 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
@@ -693,6 +755,7 @@ function ProjectList({
                   project={project}
                   onArchive={onArchive}
                   onCreateTask={onCreateTask}
+                  onDelete={onDelete}
                   onDuplicate={onDuplicate}
                   onEdit={() => onSelect(project.id)}
                   onClose={() => onMenuToggle(project.id)}
@@ -1221,6 +1284,7 @@ function ProjectContextMenu({
   project,
   onEdit,
   onCreateTask,
+  onDelete,
   onDuplicate,
   onArchive,
   onClose,
@@ -1228,18 +1292,19 @@ function ProjectContextMenu({
   project: PortfolioProject;
   onEdit: () => void;
   onCreateTask: (project: PortfolioProject) => void;
+  onDelete: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
   onArchive: (project: PortfolioProject) => void;
   onClose: () => void;
 }) {
   return (
-    <div className="absolute right-3 top-12 z-50 w-40 rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
-      <Link href={projectScheduleHref(project)} className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.06]">開く</Link>
+    <div data-project-menu-root className="absolute right-3 top-12 z-50 w-40 rounded-lg border border-white/10 bg-slate-950/95 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
       <Link href={projectTaskMapHref(project)} className="block rounded-md px-3 py-2 text-sm text-slate-200 hover:bg-white/[0.06]">タスクフローマップ</Link>
       <button type="button" onClick={() => { onEdit(); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onCreateTask(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">タスクを追加</button>
       <button type="button" onClick={() => { onDuplicate(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">複製</button>
       <button type="button" onClick={() => { onArchive(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">アーカイブ</button>
+      <button type="button" onClick={() => { onDelete(project); onClose(); }} className="mt-1 block w-full rounded-md border-t border-white/10 px-3 py-2 text-left text-sm text-red-200 hover:bg-red-400/10">削除</button>
     </div>
   );
 }
