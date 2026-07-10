@@ -29,6 +29,7 @@ import {
   type Task,
   type TaskPriority,
 } from "@/app/tasks/task-data";
+import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
 
 type DrawerState =
   | { type: "project" }
@@ -378,19 +379,16 @@ export default function PortfolioView({
     });
   }
 
-  function archiveProject(project: PortfolioProject) {
-    updateProject(project.id, {
-      status: "done",
-      progress: 100,
-      currentBallHolder: "なし",
-      ballHolderType: "none",
-    });
-  }
-
   function deleteProject(project: PortfolioProject) {
     const beforeProjects = projects;
     const beforeTasks = portfolioTasks;
     const beforeConnections = projectConnections;
+    const trashId = `trash-project-${project.id}-${Date.now()}`;
+    const projectTasks = portfolioTasks.filter((task) => task.project === project.name);
+    const projectConnectionsToKeep = projectConnections.filter(
+      (connection) =>
+        connection.sourceId === project.id || connection.targetId === project.id,
+    );
     const nextProjects = projects.filter((item) => item.id !== project.id);
     const nextTasks = portfolioTasks.filter((task) => task.project !== project.name);
     const nextConnections = projectConnections.filter(
@@ -398,6 +396,14 @@ export default function PortfolioView({
         connection.sourceId !== project.id && connection.targetId !== project.id,
     );
 
+    addTrashItem({
+      id: trashId,
+      kind: "project",
+      ...createTrashDates(),
+      project,
+      tasks: projectTasks,
+      connections: projectConnectionsToKeep,
+    });
     setProjects(nextProjects);
     setPortfolioTasks(nextTasks);
     setProjectConnections(nextConnections);
@@ -408,6 +414,7 @@ export default function PortfolioView({
     }
 
     notify("プロジェクトを削除しました。", () => {
+      removeTrashItem(trashId);
       setProjects(beforeProjects);
       setPortfolioTasks(beforeTasks);
       setProjectConnections(beforeConnections);
@@ -474,7 +481,6 @@ export default function PortfolioView({
             menuProjectId={menuProjectId}
             projects={visibleProjects}
             selectedId={selectedProject?.id}
-            onArchive={archiveProject}
             onCreateProject={() => setDrawer({ type: "project" })}
             onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
             onDelete={deleteProject}
@@ -564,7 +570,6 @@ function ProjectList({
   onCreateTask,
   onDelete,
   onDuplicate,
-  onArchive,
   onUpdate,
 }: {
   projects: PortfolioProject[];
@@ -579,7 +584,6 @@ function ProjectList({
   onCreateTask: (project: PortfolioProject) => void;
   onDelete: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
-  onArchive: (project: PortfolioProject) => void;
   onUpdate: (id: string, patch: Partial<PortfolioProject>) => void;
 }) {
   return (
@@ -753,7 +757,6 @@ function ProjectList({
               {menuOpen ? (
                 <ProjectContextMenu
                   project={project}
-                  onArchive={onArchive}
                   onCreateTask={onCreateTask}
                   onDelete={onDelete}
                   onDuplicate={onDuplicate}
@@ -1286,7 +1289,6 @@ function ProjectContextMenu({
   onCreateTask,
   onDelete,
   onDuplicate,
-  onArchive,
   onClose,
 }: {
   project: PortfolioProject;
@@ -1294,7 +1296,6 @@ function ProjectContextMenu({
   onCreateTask: (project: PortfolioProject) => void;
   onDelete: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
-  onArchive: (project: PortfolioProject) => void;
   onClose: () => void;
 }) {
   return (
@@ -1303,7 +1304,6 @@ function ProjectContextMenu({
       <button type="button" onClick={() => { onEdit(); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">編集</button>
       <button type="button" onClick={() => { onCreateTask(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">タスクを追加</button>
       <button type="button" onClick={() => { onDuplicate(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">複製</button>
-      <button type="button" onClick={() => { onArchive(project); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-slate-200 hover:bg-white/[0.06]">アーカイブ</button>
       <button type="button" onClick={() => { onDelete(project); onClose(); }} className="mt-1 block w-full rounded-md border-t border-white/10 px-3 py-2 text-left text-sm text-red-200 hover:bg-red-400/10">削除</button>
     </div>
   );

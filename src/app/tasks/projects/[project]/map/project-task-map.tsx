@@ -24,6 +24,7 @@ import {
   storageKey,
   todayOffset,
 } from "../../../task-data";
+import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
 
 type DragState = {
   id: string;
@@ -916,7 +917,18 @@ export default function ProjectTaskMap() {
 
   function removeTask(id: string, showToast = true) {
     const beforeTasks = tasks;
+    const deletedTask = tasks.find((task) => task.id === id);
+    const trashId = deletedTask ? `trash-task-${deletedTask.id}-${Date.now()}` : "";
     const remainingTasks = tasks.filter((task) => task.id !== id);
+
+    if (showToast && deletedTask) {
+      addTrashItem({
+        id: trashId,
+        kind: "task",
+        ...createTrashDates(),
+        task: deletedTask,
+      });
+    }
 
     setTasks(
       remainingTasks.map((task) => ({
@@ -929,7 +941,15 @@ export default function ProjectTaskMap() {
     );
 
     if (showToast) {
-      setToast({ message: "タスクを削除しました。", undo: () => setTasks(beforeTasks) });
+      setToast({
+        message: "タスクを削除しました。",
+        undo: () => {
+          if (trashId) {
+            removeTrashItem(trashId);
+          }
+          setTasks(beforeTasks);
+        },
+      });
     }
   }
 
@@ -1225,7 +1245,6 @@ export default function ProjectTaskMap() {
                   linking={linkSourceId !== null}
                   dropTarget={dropTargetId === task.id}
                   menuOpen={menuTaskId === task.id}
-                  onArchive={(id) => updateTask(id, { status: "archived" })}
                   onComplete={(id) => updateTask(id, { status: "done", progress: 100 })}
                   onDuplicate={duplicateTask}
                   onMenuToggle={(id) => setMenuTaskId((current) => (current === id ? "" : id))}
@@ -1300,7 +1319,6 @@ function TaskNode({
   onMenuToggle,
   onDuplicate,
   onComplete,
-  onArchive,
   onConnectStart,
   onConnectEnd,
   linkedTasks,
@@ -1325,7 +1343,6 @@ function TaskNode({
   onMenuToggle: (id: string) => void;
   onDuplicate: (task: Task) => void;
   onComplete: (id: string) => void;
-  onArchive: (id: string) => void;
   onConnectStart: (id: string) => void;
   onConnectEnd: () => void;
   linkedTasks: Task[];
@@ -1518,7 +1535,6 @@ function TaskNode({
           <TaskContextMenu
             task={task}
             linkedTasks={linkedTasks}
-            onArchive={onArchive}
             onComplete={onComplete}
             onDisconnect={onDisconnect}
             onDuplicate={onDuplicate}
@@ -1721,7 +1737,6 @@ function TaskNode({
         <TaskContextMenu
           task={task}
           linkedTasks={linkedTasks}
-          onArchive={onArchive}
           onComplete={onComplete}
           onDisconnect={onDisconnect}
           onDuplicate={onDuplicate}
@@ -1802,8 +1817,8 @@ function TaskInspector({
 
       <div>
         <p className="text-sm font-semibold text-zinc-200">状態</p>
-        <div className="mt-2 grid grid-cols-4 gap-2">
-          {(["todo", "doing", "done", "archived"] as TaskStatus[]).map((status) => (
+        <div className="mt-2 grid grid-cols-3 gap-2">
+          {(["todo", "doing", "done"] as TaskStatus[]).map((status) => (
             <button
               key={status}
               type="button"
@@ -2006,7 +2021,6 @@ function TaskContextMenu({
   onDisconnect,
   onRemove,
   onComplete,
-  onArchive,
   onClose,
 }: {
   task: Task;
@@ -2016,7 +2030,6 @@ function TaskContextMenu({
   onDisconnect: (sourceId: string, targetId: string) => void;
   onRemove: (id: string) => void;
   onComplete: (id: string) => void;
-  onArchive: (id: string) => void;
   onClose: () => void;
 }) {
   return (
@@ -2046,7 +2059,6 @@ function TaskContextMenu({
           ))}
         </div>
       ) : null}
-      <button type="button" onClick={() => { onArchive(task.id); onClose(); }} className="block w-full rounded-md px-3 py-2 text-left text-sm text-zinc-200 hover:bg-white/[0.06]">アーカイブ</button>
       <button type="button" onClick={() => { onRemove(task.id); onClose(); }} className="mt-1 block w-full rounded-md border-t border-white/10 px-3 py-2 text-left text-sm text-red-200 hover:bg-red-400/10">削除</button>
     </div>
   );

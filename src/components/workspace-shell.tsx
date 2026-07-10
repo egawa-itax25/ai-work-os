@@ -12,6 +12,7 @@ const defaultNavItems = [
   { id: "projects", href: "/projects", label: "プロジェクト" },
   { id: "knowledge", href: "/knowledge", label: "知識" },
   { id: "calendar", href: "/tasks/projects", label: "予定" },
+  { id: "trash", href: "/trash", label: "削除済み" },
   { id: "analytics", href: "/analytics", label: "分析" },
   { id: "ai", href: "/ai", label: "AI頭脳" },
   { id: "settings", href: "/settings", label: "設定" },
@@ -137,83 +138,87 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     <body>
       <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(20,184,166,0.22),transparent_28rem),radial-gradient(circle_at_85%_15%,rgba(244,63,94,0.14),transparent_24rem),linear-gradient(135deg,#09090b_0%,#111827_48%,#030712_100%)] text-slate-100">
         <div className="fixed inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:64px_64px]" />
-        {showDesktopNavigation ? <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100vh-2rem)] w-64 rounded-lg border border-white/10 bg-white/[0.055] p-4 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:block">
-          <Link href="/" className="block rounded-md border border-white/10 bg-black/20 p-4">
-            <span className="text-xs font-semibold tracking-[0.16em] text-teal-200">
-              流れの司令室
-            </span>
-            <span className="mt-1 block text-xl font-semibold leading-7 text-white">
-              AI仕事基盤
-            </span>
-          </Link>
+        {showDesktopNavigation ? (
+          <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100vh-2rem)] w-64 rounded-lg border border-white/10 bg-white/[0.055] p-4 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:block">
+            <Link href="/" className="block rounded-md border border-white/10 bg-black/20 p-4">
+              <span className="text-xs font-semibold tracking-[0.16em] text-teal-200">
+                流れの司令室
+              </span>
+              <span className="mt-1 block text-xl font-semibold leading-7 text-white">
+                AI仕事基盤
+              </span>
+            </Link>
 
-          <button
-            type="button"
-            onClick={() => setDesktopNavigationCollapsed(true)}
-            className="mt-3 w-full rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-teal-200/30 hover:bg-white/[0.06] hover:text-white"
-            title="メニューを隠す"
-          >
-            メニューを隠す
-          </button>
+            <button
+              type="button"
+              onClick={() => setDesktopNavigationCollapsed(true)}
+              className="mt-3 w-full rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-teal-200/30 hover:bg-white/[0.06] hover:text-white"
+              title="メニューを隠す"
+            >
+              メニューを隠す
+            </button>
 
-          <nav className="mt-6 space-y-2" aria-label="主要メニュー">
-            {navItems.map((item) => {
-              const isActive = isNavActive(item.href);
-              const isDragging = draggingNavId === item.id;
+            <nav className="mt-6 space-y-2" aria-label="主要メニュー">
+              {navItems.map((item) => {
+                const isActive = isNavActive(item.href);
+                const isDragging = draggingNavId === item.id;
 
-              return (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  draggable
-                  onDragStart={(event) => {
-                    setDraggingNavId(item.id);
-                    event.dataTransfer.effectAllowed = "move";
-                    event.dataTransfer.setData("text/plain", item.id);
-                  }}
-                  onDragEnd={() => setDraggingNavId(null)}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = "move";
-                  }}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    const sourceId = event.dataTransfer.getData("text/plain");
-                    moveNavigationItem(sourceId, item.id);
-                    setDraggingNavId(null);
-                  }}
-                  className={`flex cursor-grab items-center justify-between rounded-md border px-3 py-3 text-[13px] font-medium leading-5 transition active:cursor-grabbing ${
-                    isActive
-                      ? "border-teal-300/40 bg-teal-300/12 text-white shadow-lg shadow-teal-950/30"
-                      : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.055] hover:text-white"
-                  } ${isDragging ? "scale-[0.98] opacity-55" : ""}`}
-                  title="ドラッグで並び替え"
-                >
-                  {item.label}
-                  <span className="flex items-center gap-2">
-                    <span className="text-[11px] text-slate-600">⋮⋮</span>
-                    <span className="h-2 w-2 rounded-full bg-current opacity-60" />
-                  </span>
-                </Link>
-              );
-            })}
-          </nav>
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    draggable
+                    onDragStart={(event) => {
+                      setDraggingNavId(item.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", item.id);
+                    }}
+                    onDragEnd={() => setDraggingNavId(null)}
+                    onDragOver={(event) => {
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const sourceId = event.dataTransfer.getData("text/plain");
+                      moveNavigationItem(sourceId, item.id);
+                      setDraggingNavId(null);
+                    }}
+                    className={`flex cursor-grab items-center justify-between rounded-md border px-3 py-3 text-[13px] font-medium leading-5 transition active:cursor-grabbing ${
+                      isActive
+                        ? "border-teal-300/40 bg-teal-300/12 text-white shadow-lg shadow-teal-950/30"
+                        : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.055] hover:text-white"
+                    } ${isDragging ? "scale-[0.98] opacity-55" : ""}`}
+                    title="ドラッグで並び替え"
+                  >
+                    {item.label}
+                    <span className="flex items-center gap-2">
+                      <span className="text-[11px] text-slate-600">⋮⋮</span>
+                      <span className="h-2 w-2 rounded-full bg-current opacity-60" />
+                    </span>
+                  </Link>
+                );
+              })}
+            </nav>
 
-          <button
-            type="button"
-            onClick={resetNavigationOrder}
-            className="mt-3 w-full rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-500 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-slate-300"
-          >
-            並び順をリセット
-          </button>
+            <button
+              type="button"
+              onClick={resetNavigationOrder}
+              className="mt-3 w-full rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-500 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-slate-300"
+            >
+              並び順をリセット
+            </button>
 
-          <div className="absolute bottom-4 left-4 right-4 rounded-md border border-white/10 bg-black/20 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-              情報源
-            </p>
-            <p className="mt-2 text-sm leading-6 text-slate-300">知識庫を仕事の記憶として扱います</p>
-          </div>
-        </aside> : null}
+            <div className="absolute bottom-4 left-4 right-4 rounded-md border border-white/10 bg-black/20 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                情報源
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-300">
+                知識庫を仕事の記録として扱います。
+              </p>
+            </div>
+          </aside>
+        ) : null}
 
         {!showDesktopNavigation ? (
           <button
@@ -226,24 +231,26 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </button>
         ) : null}
 
-        {!isCockpit ? <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-2xl lg:hidden">
-          <div className="flex items-center justify-between gap-3 px-4 py-4">
-            <Link href="/" className="shrink-0 whitespace-nowrap text-base font-semibold text-white">
-              AI仕事基盤
-            </Link>
-            <nav className="flex gap-2 overflow-x-auto text-[13px] text-slate-400">
-              {navItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className="shrink-0 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 hover:bg-white/10 hover:text-white"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </header> : null}
+        {!isCockpit ? (
+          <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-2xl lg:hidden">
+            <div className="flex items-center justify-between gap-3 px-4 py-4">
+              <Link href="/" className="shrink-0 whitespace-nowrap text-base font-semibold text-white">
+                AI仕事基盤
+              </Link>
+              <nav className="flex gap-2 overflow-x-auto text-[13px] text-slate-400">
+                {navItems.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    className="shrink-0 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 hover:bg-white/10 hover:text-white"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          </header>
+        ) : null}
 
         {!isCockpit ? (
           <div className="fixed right-4 top-4 z-40 hidden lg:block">

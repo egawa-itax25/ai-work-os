@@ -577,6 +577,11 @@ Implemented:
 - Project and task context menus should expose an explicit "削除" action.
   Deletion should be undo-capable where possible, while archive remains a
   separate non-destructive action.
+- "削除" should move projects and tasks to a "削除済み" area instead of
+  immediately discarding them. Deleted items are retained for 30 days and can be
+  restored from that area.
+- The visible archive action should be removed from project and task menus
+  because the 30-day trash area now covers the reversible removal use case.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
