@@ -220,19 +220,58 @@ export default function PortfolioView({
   }
 
   function updateProject(id: string, patch: Partial<PortfolioProject>) {
-    const before = projects;
+    const beforeProjects = projects;
+    const beforeTasks = portfolioTasks;
+    const targetProject = projects.find((project) => project.id === id);
+    const nextProgress =
+      typeof patch.progress === "number" ? clamp(patch.progress, 0, 100) : undefined;
+    const nextName =
+      typeof patch.name === "string" ? patch.name.trim() || undefined : undefined;
+
+    if (targetProject) {
+      let tasksChanged = false;
+      const nextTasks = portfolioTasks.map((task) => {
+        if (task.project !== targetProject.name) {
+          return task;
+        }
+
+        const renamedTask =
+          nextName && nextName !== targetProject.name
+            ? { ...task, project: nextName }
+            : task;
+        const progressedTask =
+          nextProgress === 100 ? { ...renamedTask, progress: 100 } : renamedTask;
+
+        if (progressedTask !== task) {
+          tasksChanged = true;
+        }
+
+        return progressedTask;
+      });
+
+      if (tasksChanged) {
+        writeTasks(nextTasks);
+        setPortfolioTasks(nextTasks);
+      }
+    }
+
     setProjects((current) =>
       current.map((project) =>
         project.id === id
           ? {
               ...project,
               ...patch,
-              progress: clamp(patch.progress ?? project.progress, 0, 100),
+              name: nextName ?? project.name,
+              progress: nextProgress ?? project.progress,
             }
           : project,
       ),
     );
-    notify("変更を保存しました。", () => setProjects(before));
+    notify("変更を保存しました。", () => {
+      writeTasks(beforeTasks);
+      setPortfolioTasks(beforeTasks);
+      setProjects(beforeProjects);
+    });
   }
 
   function createProject(input: CreateProjectInput) {
@@ -383,6 +422,7 @@ export default function PortfolioView({
             onExpandScore={setExpandedScoreId}
             onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
             onSelect={setSelectedId}
+            onUpdate={updateProject}
           />
 
           <SelectedProjectWorkspace
@@ -464,6 +504,7 @@ function ProjectList({
   onCreateTask,
   onDuplicate,
   onArchive,
+  onUpdate,
 }: {
   projects: PortfolioProject[];
   selectedId?: string;
@@ -477,6 +518,7 @@ function ProjectList({
   onCreateTask: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
   onArchive: (project: PortfolioProject) => void;
+  onUpdate: (id: string, patch: Partial<PortfolioProject>) => void;
 }) {
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl">
@@ -534,19 +576,42 @@ function ProjectList({
                     : "border-white/10 bg-white/[0.035] hover:border-white/20 hover:bg-white/[0.055]"
               }`}
             >
-              <button
-                type="button"
+              <div
+                role="button"
+                tabIndex={0}
                 className="w-full text-left"
                 onClick={() => onSelect(project.id)}
+                onKeyDown={(event) => {
+                  const target = event.target;
+
+                  if (
+                    target instanceof HTMLInputElement ||
+                    target instanceof HTMLSelectElement ||
+                    target instanceof HTMLButtonElement ||
+                    target instanceof HTMLAnchorElement
+                  ) {
+                    return;
+                  }
+
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onSelect(project.id);
+                  }
+                }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs text-slate-500">
                       {String(index + 1).padStart(2, "0")}
                     </p>
-                    <h3 className="mt-1 truncate text-sm font-semibold text-white">
-                      {project.name}
-                    </h3>
+                    <input
+                      value={project.name}
+                      onChange={(event) => onUpdate(project.id, { name: event.target.value })}
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      className="mt-1 w-full rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold text-white outline-none transition placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/55 focus:bg-sky-200/[0.06]"
+                      aria-label={`${project.name} のタイトル`}
+                    />
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-slate-500">優先スコア</p>
@@ -554,21 +619,59 @@ function ProjectList({
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-2">
+                  <label className="min-w-0 text-xs text-slate-500">
+                    優先度
+                    <select
+                      value={getProjectPriorityLevel(project)}
+                      onChange={(event) =>
+                        onUpdate(project.id, {
+                          businessImportance:
+                            event.target.value === "high"
+                              ? 15
+                              : event.target.value === "medium"
+                                ? 8
+                                : 4,
+                        })
+                      }
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      className="mt-1 w-full rounded-md border border-white/10 bg-slate-950/80 px-2 py-1.5 text-xs font-semibold text-slate-100 outline-none focus:border-sky-200/60"
+                    >
+                      <option value="high">高</option>
+                      <option value="medium">中</option>
+                      <option value="low">低</option>
+                    </select>
+                  </label>
+                  <StatusPill project={project} />
+                </div>
+
+                <div className="mt-4">
                   <div className="flex items-center justify-between text-xs text-slate-400">
                     <span>進捗 {project.progress}%</span>
-                    <StatusPill project={project} />
+                    <span className="text-slate-500">バーで変更</span>
                   </div>
                   <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
                     <div className="h-full rounded-full bg-sky-200 transition-all duration-300" style={{ width: `${project.progress}%` }} />
                   </div>
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={project.progress}
+                    onChange={(event) => onUpdate(project.id, { progress: Number(event.target.value) })}
+                    onClick={(event) => event.stopPropagation()}
+                    onPointerDown={(event) => event.stopPropagation()}
+                    className="mt-2 h-2 w-full cursor-pointer accent-sky-200"
+                    aria-label={`${project.name} の進捗`}
+                  />
                 </div>
 
                 <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
                   <Info label="担当者" value={project.owner} />
                   <Info label="現在のボール" value={`${project.currentBallHolder} / ${project.ballHoldingDays}日`} />
                 </div>
-              </button>
+              </div>
 
               <div className="mt-4 grid grid-cols-[auto_minmax(7.75rem,1fr)_auto] gap-2">
                 <Link href={projectScheduleHref(project)} className="whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-center text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
@@ -759,6 +862,18 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
         : "border-white/10 bg-white/[0.045] text-slate-300";
 
   return <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${tone}`}>{label}</span>;
+}
+
+function getProjectPriorityLevel(project: PortfolioProject) {
+  if (project.businessImportance >= 13) {
+    return "high";
+  }
+
+  if (project.businessImportance >= 8) {
+    return "medium";
+  }
+
+  return "low";
 }
 
 function formatDateLabel(value: string) {

@@ -1393,11 +1393,31 @@ function TaskNode({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs text-slate-500">{statusMeta[task.status].label}</p>
-            <h3 className="mt-1 truncate text-sm font-semibold text-white">{task.title}</h3>
+            <input
+              value={task.title}
+              onChange={(event) => onUpdate({ title: event.target.value })}
+              onClick={(event) => event.stopPropagation()}
+              onPointerDown={(event) => event.stopPropagation()}
+              onFocus={() => onSelect(task.id)}
+              className="mt-1 w-full rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold text-white outline-none transition hover:border-white/10 focus:border-sky-200/60 focus:bg-sky-200/[0.06]"
+              aria-label={`${task.title} のタイトル`}
+            />
           </div>
-          <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${priorityMeta[task.priority].badge}`}>
-            {priorityMeta[task.priority].label}
-          </span>
+          <select
+            value={task.priority}
+            onChange={(event) =>
+              onUpdate({ priority: event.target.value as Task["priority"] })
+            }
+            onClick={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+            onFocus={() => onSelect(task.id)}
+            className={`rounded-md border px-2 py-1 text-xs font-semibold outline-none ${priorityMeta[task.priority].badge}`}
+            aria-label={`${task.title} の優先度`}
+          >
+            <option value="high">高</option>
+            <option value="medium">中</option>
+            <option value="low">低</option>
+          </select>
         </div>
 
         <div className="mt-4 flex items-center justify-between text-xs text-slate-400">

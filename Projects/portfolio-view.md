@@ -556,6 +556,16 @@ Implemented:
   status, priority, owner, due date, and related counts align vertically across
   project sections. It also shows the current ball as a dedicated column before
   status.
+- Project cards support inline editing for title and progress so users can
+  update common project fields without leaving Portfolio View.
+- Project progress uses a bar-style range control. Setting project progress to
+  100% also sets all tasks in that project to 100%; setting project progress
+  below 100% does not rewrite task progress.
+- Task Flow nodes support inline editing for title and priority so users can
+  adjust the task without opening a separate screen.
+- Inline editing controls stop pointer and click propagation so typing,
+  selecting priority, or dragging the progress bar does not trigger node drag,
+  card selection, or navigation.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
