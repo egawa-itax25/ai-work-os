@@ -38,7 +38,7 @@ type BallTransferTarget = "self" | "other" | "done";
 type ToastState = { message: string; undo?: () => void } | null;
 
 const cardWidth = 236;
-const cardHeight = 138;
+const cardHeight = 156;
 const minimumBoardSize = { width: 1240, height: 620 };
 const taskFitPadding = 96;
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
@@ -1390,37 +1390,37 @@ function TaskNode({
         {isOtherBall ? (
           <div className="absolute inset-y-0 left-0 w-1 bg-amber-300/75" aria-hidden="true" />
         ) : null}
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-slate-500">{statusMeta[task.status].label}</p>
-            <input
-              value={task.title}
-              onChange={(event) => onUpdate({ title: event.target.value })}
-              onClick={(event) => event.stopPropagation()}
-              onPointerDown={(event) => event.stopPropagation()}
-              onFocus={() => onSelect(task.id)}
-              className="mt-1 w-full rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold text-white outline-none transition hover:border-white/10 focus:border-sky-200/60 focus:bg-sky-200/[0.06]"
-              aria-label={`${task.title} のタイトル`}
-            />
-          </div>
-          <select
-            value={task.priority}
-            onChange={(event) =>
-              onUpdate({ priority: event.target.value as Task["priority"] })
-            }
+        <select
+          value={task.priority}
+          onChange={(event) =>
+            onUpdate({ priority: event.target.value as Task["priority"] })
+          }
+          onClick={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+          onFocus={() => onSelect(task.id)}
+          className={`absolute right-3 top-3 rounded-md border px-2 py-1 text-xs font-semibold outline-none ${priorityMeta[task.priority].badge}`}
+          aria-label={`${task.title} の優先度`}
+        >
+          <option value="high">高</option>
+          <option value="medium">中</option>
+          <option value="low">低</option>
+        </select>
+
+        <div className="pr-12">
+          <p className="text-xs text-slate-500">{statusMeta[task.status].label}</p>
+          <textarea
+            value={task.title}
+            rows={2}
+            onChange={(event) => onUpdate({ title: event.target.value })}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
             onFocus={() => onSelect(task.id)}
-            className={`rounded-md border px-2 py-1 text-xs font-semibold outline-none ${priorityMeta[task.priority].badge}`}
-            aria-label={`${task.title} の優先度`}
-          >
-            <option value="high">高</option>
-            <option value="medium">中</option>
-            <option value="low">低</option>
-          </select>
+            className="mt-1 min-h-12 w-full resize-none rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold leading-5 text-white outline-none transition placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/60 focus:bg-sky-200/[0.06]"
+            aria-label={`${task.title} のタイトル`}
+          />
         </div>
 
-        <div className="mt-4 flex items-center justify-between text-xs text-slate-400">
+        <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
           <span>進捗 {task.progress}%</span>
           <span className="truncate">{task.currentBallHolder}</span>
         </div>

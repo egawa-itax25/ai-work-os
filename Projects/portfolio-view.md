@@ -569,6 +569,9 @@ Implemented:
 - Task node context menus should stay minimal. Remove redundant "開く" because
   clicking the node already selects it, and remove "ボールを渡す" because ball
   transfer is handled by dragging tasks between the visible ball regions.
+- Compact Task Flow node titles should prioritize readability. The priority
+  control belongs in the upper-right corner, while the task title should use the
+  available node width and wrap onto multiple lines instead of being truncated.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
