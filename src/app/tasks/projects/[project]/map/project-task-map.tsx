@@ -40,6 +40,8 @@ const cardHeight = 138;
 const minimumBoardSize = { width: 1240, height: 620 };
 const taskFitPadding = 96;
 const taskFlowViewportHeightClass = "h-[max(560px,calc(100vh-18rem))]";
+const taskMapTopZoneRatio = 0.68;
+const taskMapViewStoragePrefix = "ai-work-os:task-map-view:";
 type TaskFlowZoneDefinition = {
   id: BallTransferTarget;
   label: string;
@@ -78,7 +80,7 @@ const ballTransferTargets: {
 ];
 
 function createTaskFlowZones(boardSize: Point): TaskFlowZoneDefinition[] {
-  const topHeight = Math.max(320, Math.round(boardSize.y * 0.58));
+  const topHeight = Math.max(360, Math.round(boardSize.y * taskMapTopZoneRatio));
   const doneHeight = Math.max(220, boardSize.y - topHeight);
   const halfWidth = boardSize.x / 2;
 
@@ -171,6 +173,7 @@ export default function ProjectTaskMap() {
   const projectName = decodeURIComponent(params.project);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const projectTasksRef = useRef<Task[]>([]);
+  const restoredViewportSizeRef = useRef<Point | null>(null);
   const boardSizeRef = useRef<Point>({
     x: minimumBoardSize.width,
     y: minimumBoardSize.height,
@@ -194,6 +197,10 @@ export default function ProjectTaskMap() {
     y: minimumBoardSize.height,
   });
   const [viewportSize, setViewportSize] = useState<Point>({ x: 0, y: 0 });
+  const [viewportRestore, setViewportRestore] = useState<{
+    projectName: string;
+    hasSavedView: boolean;
+  } | null>(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -207,6 +214,35 @@ export default function ProjectTaskMap() {
     setTasks(mergedTasks);
     setActiveTaskId(firstProjectTask?.id ?? "");
     setIsReady(true);
+  }, [projectName]);
+
+  useEffect(() => {
+    restoredViewportSizeRef.current = null;
+    const saved = window.localStorage.getItem(getTaskMapViewStorageKey(projectName));
+
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as Partial<{ pan: Point; zoom: number }>;
+        const savedZoom = clamp(Number(parsed.zoom ?? 0.94), 0.72, 1.25);
+        const savedPan = {
+          x: Number(parsed.pan?.x ?? 0),
+          y: Number(parsed.pan?.y ?? 0),
+        };
+
+        zoomRef.current = savedZoom;
+        setZoom(savedZoom);
+        setPan(savedPan);
+        setViewportRestore({ projectName, hasSavedView: true });
+        return;
+      } catch {
+        window.localStorage.removeItem(getTaskMapViewStorageKey(projectName));
+      }
+    }
+
+    zoomRef.current = 0.94;
+    setZoom(0.94);
+    setPan({ x: 0, y: 0 });
+    setViewportRestore({ projectName, hasSavedView: false });
   }, [projectName]);
 
   useEffect(() => {
@@ -234,6 +270,17 @@ export default function ProjectTaskMap() {
   useEffect(() => {
     zoomRef.current = zoom;
   }, [zoom]);
+
+  useEffect(() => {
+    if (!isReady || viewportRestore?.projectName !== projectName) {
+      return;
+    }
+
+    window.localStorage.setItem(
+      getTaskMapViewStorageKey(projectName),
+      JSON.stringify({ pan, zoom }),
+    );
+  }, [isReady, pan, projectName, viewportRestore, zoom]);
 
   useEffect(() => {
     boardSizeRef.current = boardSize;
@@ -294,6 +341,7 @@ export default function ProjectTaskMap() {
   useEffect(() => {
     if (
       !isReady ||
+      viewportRestore?.projectName !== projectName ||
       viewportSize.x === 0 ||
       viewportSize.y === 0 ||
       projectTasksRef.current.length === 0
@@ -305,6 +353,22 @@ export default function ProjectTaskMap() {
 
     if (!rect) {
       return;
+    }
+
+    if (viewportRestore.hasSavedView) {
+      const restoredViewportSize = restoredViewportSizeRef.current;
+
+      if (!restoredViewportSize) {
+        restoredViewportSizeRef.current = { x: viewportSize.x, y: viewportSize.y };
+        return;
+      }
+
+      if (
+        Math.abs(restoredViewportSize.x - viewportSize.x) < 2 &&
+        Math.abs(restoredViewportSize.y - viewportSize.y) < 2
+      ) {
+        return;
+      }
     }
 
     const nextFrame = getTaskFitFrame({
@@ -328,7 +392,7 @@ export default function ProjectTaskMap() {
 
       return nextFrame.pan;
     });
-  }, [isReady, projectName, viewportSize.x, viewportSize.y]);
+  }, [isReady, projectName, viewportRestore, viewportSize.x, viewportSize.y]);
 
   const taskMap = useMemo(() => {
     return new Map(tasks.map((task) => [task.id, task]));
@@ -419,7 +483,7 @@ export default function ProjectTaskMap() {
 
     const x = clientX - rect.left;
     const y = clientY - rect.top;
-    const topHeight = rect.height * 0.58;
+    const topHeight = rect.height * taskMapTopZoneRatio;
 
     if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
       return undefined;
@@ -1473,12 +1537,14 @@ function TaskFlowZone({
   count: number;
 }) {
   const statusLabel = zone.id === "done" ? "完了" : "進行中";
+  const topHeight = `${taskMapTopZoneRatio * 100}%`;
+  const doneHeight = `${(1 - taskMapTopZoneRatio) * 100}%`;
   const fixedStyle =
     zone.id === "self"
-      ? { left: 0, top: 0, width: "50%", height: "58%" }
+      ? { left: 0, top: 0, width: "50%", height: topHeight }
       : zone.id === "other"
-        ? { left: "50%", top: 0, width: "50%", height: "58%" }
-        : { left: 0, top: "58%", width: "100%", height: "42%" };
+        ? { left: "50%", top: 0, width: "50%", height: topHeight }
+        : { left: 0, top: topHeight, width: "100%", height: doneHeight };
 
   return (
     <section
@@ -1850,6 +1916,10 @@ function getTaskTransferTarget(task: Task): BallTransferTarget {
   }
 
   return "other";
+}
+
+function getTaskMapViewStorageKey(projectName: string) {
+  return `${taskMapViewStoragePrefix}${encodeURIComponent(projectName)}`;
 }
 
 function getTaskBallMeta(task: Task) {

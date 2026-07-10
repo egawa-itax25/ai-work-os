@@ -517,6 +517,12 @@ Implemented:
   wide screen remain visible on narrower screens.
 - Task Flow Map auto-fit must not fight user operation. It should run only on
   actual viewport resize or project open, not after manual zoom or task drag.
+- Task Flow Map top ownership regions should be generous enough for comfortable
+  dropping. The upper self/other regions should use a larger share of the
+  visible board than the lower done region.
+- Task Flow Map should preserve each project's pan and zoom across reloads.
+  Auto-fit may provide the first view, but it should not override a saved
+  viewport and make task cards appear to shift after reload.
 - In the schedule project task list, the Task Flow Map action is placed near the
   project title as a large horizontal primary button, because users open this
   map frequently from the project summary.

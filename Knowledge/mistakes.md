@@ -81,3 +81,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Auto-fit should run only for project load and actual viewport
   resize. Manual zoom, task drag, and other map operations must remain under the
   user's control.
+
+### 2026-07-10 - Reloaded task map shifted visual positions
+
+- Mistake: Task Flow Map restored task coordinates but recalculated the viewport
+  on reload, so cards appeared to shift even though their saved coordinates were
+  unchanged.
+- Prevention: Persist each project's task-map pan and zoom separately from task
+  coordinates. Restore the saved viewport before auto-fit, and only auto-fit
+  when no saved viewport exists.
