@@ -523,6 +523,10 @@ Implemented:
 - The top self/other regions should feel clearly dominant in the visible map,
   roughly three quarters of the board height, so users can drop active work
   without aiming at a narrow band.
+- Task card drag should be handled by the card itself after pointer capture,
+  not only by the parent board. Dragging a task must visibly move the task card
+  under the pointer and must not fall back to the browser's native text/image
+  drag ghost.
 - Task Flow Map should preserve each project's pan and zoom across reloads.
   Auto-fit may provide the first view, but it should not override a saved
   viewport and make task cards appear to shift after reload.

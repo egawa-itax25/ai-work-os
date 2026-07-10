@@ -90,3 +90,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Persist each project's task-map pan and zoom separately from task
   coordinates. Restore the saved viewport before auto-fit, and only auto-fit
   when no saved viewport exists.
+
+### 2026-07-10 - Task card drag depended on parent pointer bubbling
+
+- Mistake: Task Flow Map card movement depended on pointer events bubbling from
+  the captured task card to the parent board, and drag state was stored only in
+  React state.
+- Prevention: Handle pointer move/up on the captured card itself and mirror
+  drag state in a ref so the card follows the pointer immediately, even before
+  React has re-rendered.

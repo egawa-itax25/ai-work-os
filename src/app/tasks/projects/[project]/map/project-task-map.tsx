@@ -173,6 +173,7 @@ export default function ProjectTaskMap() {
   const projectName = decodeURIComponent(params.project);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const projectTasksRef = useRef<Task[]>([]);
+  const dragStateRef = useRef<DragState | null>(null);
   const restoredViewportSizeRef = useRef<Point | null>(null);
   const boardSizeRef = useRef<Point>({
     x: minimumBoardSize.width,
@@ -460,7 +461,7 @@ export default function ProjectTaskMap() {
   }
 
   function moveCanvas(point: Point) {
-    if (!panState || dragState) {
+    if (!panState || dragStateRef.current) {
       return;
     }
 
@@ -496,50 +497,55 @@ export default function ProjectTaskMap() {
     return x < rect.width / 2 ? "self" : "other";
   }
 
-  function moveTask(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!dragState || !boardRef.current) {
+  function moveTask(event: ReactPointerEvent<HTMLElement>) {
+    const currentDragState = dragStateRef.current;
+
+    if (!currentDragState || !boardRef.current) {
       return;
     }
 
     const point = getBoardPoint(event.clientX, event.clientY);
     const x = clamp(
-      point.x - dragState.offsetX,
+      point.x - currentDragState.offsetX,
       16,
       boardSize.x - cardWidth - 16,
     );
     const y = clamp(
-      point.y - dragState.offsetY,
+      point.y - currentDragState.offsetY,
       16,
       boardSize.y - cardHeight - 16,
     );
 
     setTasks((current) =>
       current.map((task) =>
-        task.id === dragState.id ? { ...task, x, y } : task,
+        task.id === currentDragState.id ? { ...task, x, y } : task,
       ),
     );
   }
 
-  function finishMoving(event: ReactPointerEvent<HTMLDivElement>) {
-    if (!dragState) {
+  function finishMoving(event: ReactPointerEvent<HTMLElement>) {
+    const currentDragState = dragStateRef.current;
+
+    if (!currentDragState) {
       return;
     }
 
     const zoneTarget = getViewportZoneTarget(event.clientX, event.clientY);
-    const task = tasks.find((item) => item.id === dragState.id);
+    const task = tasks.find((item) => item.id === currentDragState.id);
     const dropTarget = document
       .elementFromPoint(event.clientX, event.clientY)
       ?.closest<HTMLElement>("[data-ball-target]");
 
     if (dropTarget?.dataset.ballTarget) {
       transferBall(
-        dragState.id,
+        currentDragState.id,
         dropTarget.dataset.ballTarget as BallTransferTarget,
       );
     } else if (zoneTarget && task && getTaskTransferTarget(task) !== zoneTarget) {
-      transferBall(dragState.id, zoneTarget);
+      transferBall(currentDragState.id, zoneTarget);
     }
 
+    dragStateRef.current = null;
     setDragState(null);
   }
 
@@ -603,11 +609,15 @@ export default function ProjectTaskMap() {
     const point = getBoardPoint(event.clientX, event.clientY);
 
     setActiveTaskId(task.id);
-    setDragState({
+    const nextDragState = {
       id: task.id,
       offsetX: point.x - task.x,
       offsetY: point.y - task.y,
-    });
+    };
+
+    dragStateRef.current = nextDragState;
+    setDragState(nextDragState);
+    event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
   }
 
@@ -852,10 +862,12 @@ export default function ProjectTaskMap() {
             }}
             onPointerCancel={() => {
               setPanState(null);
+              dragStateRef.current = null;
               setDragState(null);
             }}
             onPointerLeave={() => {
               setPanState(null);
+              dragStateRef.current = null;
               setDragState(null);
             }}
             onWheel={(event) => {
@@ -951,6 +963,8 @@ export default function ProjectTaskMap() {
                     .filter((target): target is Task => Boolean(target))}
                   onDropTarget={setDropTargetId}
                   onConnect={connectTasks}
+                  onMove={moveTask}
+                  onFinishMoving={finishMoving}
                   onDisconnect={disconnectTask}
                   onDisconnectLinks={disconnectTaskLinks}
                   onUpdate={(patch) => updateTask(task.id, patch)}
@@ -1011,6 +1025,8 @@ function TaskNode({
   linkedTasks,
   onDropTarget,
   onConnect,
+  onMove,
+  onFinishMoving,
   onDisconnect,
   onDisconnectLinks,
   onUpdate,
@@ -1034,6 +1050,8 @@ function TaskNode({
   linkedTasks: Task[];
   onDropTarget: (id: string | null) => void;
   onConnect: (sourceId: string, targetId: string) => void;
+  onMove: (event: ReactPointerEvent<HTMLElement>) => void;
+  onFinishMoving: (event: ReactPointerEvent<HTMLElement>) => void;
   onDisconnect: (sourceId: string, targetId: string) => void;
   onDisconnectLinks: (sourceId: string, targetIds: string[]) => void;
   onUpdate: (patch: Partial<Task>) => void;
@@ -1048,6 +1066,18 @@ function TaskNode({
     return (
       <article
         onPointerDown={(event) => onStartMoving(event, task)}
+        onPointerMove={(event) => {
+          event.stopPropagation();
+          onMove(event);
+        }}
+        onPointerUp={(event) => {
+          event.stopPropagation();
+          onFinishMoving(event);
+        }}
+        onPointerCancel={(event) => {
+          event.stopPropagation();
+          onFinishMoving(event);
+        }}
         onClick={() => onSelect(task.id)}
         onContextMenu={(event) => {
           event.preventDefault();
@@ -1064,7 +1094,8 @@ function TaskNode({
           onConnect(sourceId, task.id);
           onConnectEnd();
         }}
-        className={`absolute w-[236px] overflow-visible rounded-lg border p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
+        draggable={false}
+        className={`absolute w-[236px] touch-none select-none overflow-visible rounded-lg border p-4 shadow-xl shadow-black/25 transition duration-200 hover:-translate-y-1 hover:border-sky-200/50 hover:bg-slate-900/95 ${
           active
             ? "z-30 border-sky-200/70 ring-2 ring-sky-200/15"
             : isOtherBall
@@ -1201,6 +1232,18 @@ function TaskNode({
   return (
     <article
       onPointerDown={(event) => onStartMoving(event, task)}
+      onPointerMove={(event) => {
+        event.stopPropagation();
+        onMove(event);
+      }}
+      onPointerUp={(event) => {
+        event.stopPropagation();
+        onFinishMoving(event);
+      }}
+      onPointerCancel={(event) => {
+        event.stopPropagation();
+        onFinishMoving(event);
+      }}
       onContextMenu={(event) => {
         event.preventDefault();
         onMenuToggle(task.id);
@@ -1216,7 +1259,8 @@ function TaskNode({
         onConnect(sourceId, task.id);
         onConnectEnd();
       }}
-      className={`neo-card absolute rounded-md border p-4 pt-10 ring-2 transition ${
+      draggable={false}
+      className={`neo-card absolute touch-none select-none rounded-md border p-4 pt-10 ring-2 transition ${
         active
           ? "border-violet-300 ring-violet-400/40"
           : `border-zinc-800 ${priorityMeta[task.priority].ring}`
