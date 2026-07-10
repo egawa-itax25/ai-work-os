@@ -99,3 +99,10 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Handle pointer move/up on the captured card itself and mirror
   drag state in a ref so the card follows the pointer immediately, even before
   React has re-rendered.
+
+### 2026-07-10 - Task drop used pointer position instead of card position
+
+- Mistake: Task Flow Map handoff classified drops by the pointer location, so a
+  card could visually remain across a border while its ball/status changed.
+- Prevention: Classify drops by the card center and clamp the card into the
+  target region after release so visual placement and task state match.

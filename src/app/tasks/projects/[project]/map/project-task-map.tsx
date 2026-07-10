@@ -29,6 +29,8 @@ type DragState = {
   id: string;
   offsetX: number;
   offsetY: number;
+  x: number;
+  y: number;
 };
 type Point = { x: number; y: number };
 type PanState = { start: Point; origin: Point } | null;
@@ -475,26 +477,52 @@ export default function ProjectTaskMap() {
     setZoom(Math.min(1.25, Math.max(0.72, nextZoom)));
   }
 
-  function getViewportZoneTarget(clientX: number, clientY: number) {
-    const rect = boardRef.current?.getBoundingClientRect();
+  function getBoardZoneTarget(point: Point): BallTransferTarget {
+    const topHeight = boardSize.y * taskMapTopZoneRatio;
 
-    if (!rect) {
-      return undefined;
-    }
-
-    const x = clientX - rect.left;
-    const y = clientY - rect.top;
-    const topHeight = rect.height * taskMapTopZoneRatio;
-
-    if (x < 0 || x > rect.width || y < 0 || y > rect.height) {
-      return undefined;
-    }
-
-    if (y >= topHeight) {
+    if (point.y >= topHeight) {
       return "done";
     }
 
-    return x < rect.width / 2 ? "self" : "other";
+    return point.x < boardSize.x / 2 ? "self" : "other";
+  }
+
+  function clampTaskIntoZone(x: number, y: number, target: BallTransferTarget) {
+    const topHeight = boardSize.y * taskMapTopZoneRatio;
+    const gap = 16;
+    const topMinY = gap;
+    const topMaxY = Math.max(topMinY, topHeight - cardHeight - gap);
+    const doneMinY = Math.min(
+      Math.max(gap, topHeight + gap),
+      boardSize.y - cardHeight - gap,
+    );
+    const doneMaxY = Math.max(doneMinY, boardSize.y - cardHeight - gap);
+    const leftMinX = gap;
+    const leftMaxX = Math.max(leftMinX, boardSize.x / 2 - cardWidth - gap);
+    const rightMinX = Math.min(
+      Math.max(leftMinX, boardSize.x / 2 + gap),
+      boardSize.x - cardWidth - gap,
+    );
+    const rightMaxX = Math.max(rightMinX, boardSize.x - cardWidth - gap);
+
+    if (target === "self") {
+      return {
+        x: clamp(x, leftMinX, leftMaxX),
+        y: clamp(y, topMinY, topMaxY),
+      };
+    }
+
+    if (target === "other") {
+      return {
+        x: clamp(x, rightMinX, rightMaxX),
+        y: clamp(y, topMinY, topMaxY),
+      };
+    }
+
+    return {
+      x: clamp(x, leftMinX, boardSize.x - cardWidth - gap),
+      y: clamp(y, doneMinY, doneMaxY),
+    };
   }
 
   function moveTask(event: ReactPointerEvent<HTMLElement>) {
@@ -515,6 +543,10 @@ export default function ProjectTaskMap() {
       16,
       boardSize.y - cardHeight - 16,
     );
+    const nextDragState = { ...currentDragState, x, y };
+
+    dragStateRef.current = nextDragState;
+    setDragState(nextDragState);
 
     setTasks((current) =>
       current.map((task) =>
@@ -530,19 +562,35 @@ export default function ProjectTaskMap() {
       return;
     }
 
-    const zoneTarget = getViewportZoneTarget(event.clientX, event.clientY);
+    const taskCenter = {
+      x: currentDragState.x + cardWidth / 2,
+      y: currentDragState.y + cardHeight / 2,
+    };
+    const zoneTarget = getBoardZoneTarget(taskCenter);
     const task = tasks.find((item) => item.id === currentDragState.id);
     const dropTarget = document
       .elementFromPoint(event.clientX, event.clientY)
       ?.closest<HTMLElement>("[data-ball-target]");
+    const finalTarget =
+      dropTarget?.dataset.ballTarget
+        ? (dropTarget.dataset.ballTarget as BallTransferTarget)
+        : zoneTarget;
+    const snappedPoint = clampTaskIntoZone(
+      currentDragState.x,
+      currentDragState.y,
+      finalTarget,
+    );
 
-    if (dropTarget?.dataset.ballTarget) {
-      transferBall(
-        currentDragState.id,
-        dropTarget.dataset.ballTarget as BallTransferTarget,
-      );
-    } else if (zoneTarget && task && getTaskTransferTarget(task) !== zoneTarget) {
-      transferBall(currentDragState.id, zoneTarget);
+    setTasks((current) =>
+      current.map((item) =>
+        item.id === currentDragState.id
+          ? { ...item, x: snappedPoint.x, y: snappedPoint.y }
+          : item,
+      ),
+    );
+
+    if (task && getTaskTransferTarget(task) !== finalTarget) {
+      transferBall(currentDragState.id, finalTarget);
     }
 
     dragStateRef.current = null;
@@ -613,6 +661,8 @@ export default function ProjectTaskMap() {
       id: task.id,
       offsetX: point.x - task.x,
       offsetY: point.y - task.y,
+      x: task.x,
+      y: task.y,
     };
 
     dragStateRef.current = nextDragState;
