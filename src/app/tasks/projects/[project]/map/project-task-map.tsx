@@ -1959,11 +1959,11 @@ function TaskFlowZone({
         </div>
       </div>
       {zone.id === "done" ? (
-        <div className="mt-7 grid place-items-center text-center text-slate-300/70 lg:mt-9">
-          <div className="grid h-12 w-12 place-items-center rounded-full border border-emerald-300/25 bg-emerald-300/10 text-2xl text-emerald-100 lg:h-16 lg:w-16 lg:text-3xl">
+        <div className="mt-4 grid place-items-center text-center text-slate-300/70 lg:mt-5">
+          <div className="grid h-10 w-10 place-items-center rounded-full border border-emerald-300/25 bg-emerald-300/10 text-xl text-emerald-100 lg:h-12 lg:w-12 lg:text-2xl">
             ✓
           </div>
-          <p className="mt-3 text-xs leading-5 lg:mt-4 lg:text-sm lg:leading-6">
+          <p className="mt-2 text-xs leading-5 lg:text-xs lg:leading-5">
             ここにタスクを移動すると
             <br />
             完了として記録されます

@@ -606,6 +606,8 @@ Implemented:
 - Task Flow Map should use the vertical room created by the compact header.
   Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
   board height so the area under 完了 is filled according to the visible window.
+- The 完了 zone helper text must remain fully visible inside the zone at 100%
+  browser zoom. Prefer compact spacing over increasing page height.
 - On desktop, the Task Flow Map page should fit inside the browser viewport at
   100% browser zoom without page-level vertical scrolling. The map and inspector
   should share the remaining height below the header, with any inspector
