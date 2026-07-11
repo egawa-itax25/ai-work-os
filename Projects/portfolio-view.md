@@ -606,6 +606,10 @@ Implemented:
 - Task Flow Map should use the vertical room created by the compact header.
   Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
   board height so the area under 完了 is filled according to the visible window.
+- On desktop, the Task Flow Map page should fit inside the browser viewport at
+  100% browser zoom without page-level vertical scrolling. The map and inspector
+  should share the remaining height below the header, with any inspector
+  overflow contained inside the inspector panel.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

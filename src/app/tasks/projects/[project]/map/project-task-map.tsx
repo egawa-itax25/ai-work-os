@@ -42,7 +42,7 @@ const cardWidth = 236;
 const cardHeight = 156;
 const minimumBoardSize = { width: 1240, height: 620 };
 const taskFitPadding = 96;
-const taskFlowViewportHeightClass = "h-[max(640px,calc(100vh-12rem))]";
+const taskFlowViewportHeightClass = "h-full";
 const taskMapDefaultZoom = 0.94;
 const taskMapMinZoom = 0.84;
 const taskMapMaxZoom = 1.25;
@@ -1084,8 +1084,8 @@ export default function ProjectTaskMap() {
   ]);
 
   return (
-    <div className="neo-shell space-y-5 text-zinc-100">
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(40rem,auto)]">
+    <div className="neo-shell flex h-[calc(100vh-4rem)] min-h-0 flex-col gap-4 overflow-hidden text-zinc-100">
+      <section className="grid shrink-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(40rem,auto)]">
         <div>
           <p className="neo-accent text-sm font-medium">プロジェクトマップ</p>
           <h1 className="mt-1 break-words text-3xl font-semibold tracking-normal text-white">
@@ -1131,7 +1131,7 @@ export default function ProjectTaskMap() {
         </div>
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1fr_280px]">
+      <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_280px]">
         <section className={`${taskFlowViewportHeightClass} flex min-h-0 flex-col overflow-x-auto overflow-y-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl lg:overflow-hidden`}>
           <div className="flex min-w-[760px] flex-col items-start gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:min-w-0">
             <div>
@@ -1285,7 +1285,7 @@ export default function ProjectTaskMap() {
           </div>
         </section>
 
-        <aside className="neo-surface rounded-md border p-4">
+        <aside className="neo-surface min-h-0 overflow-y-auto rounded-md border p-4">
           {activeTask && activeTask.project === projectName ? (
             <TaskInspector
               externalLinks={externalLinks.length}
