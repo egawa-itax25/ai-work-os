@@ -1085,7 +1085,7 @@ export default function ProjectTaskMap() {
 
   return (
     <div className="neo-shell flex h-[calc(100vh-4rem)] min-h-0 flex-col gap-4 overflow-hidden text-zinc-100">
-      <section className="grid shrink-0 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(40rem,auto)]">
+      <section className="grid shrink-0 gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(48rem,1.25fr)]">
         <div>
           <p className="neo-accent text-sm font-medium">プロジェクトマップ</p>
           <h1 className="mt-1 break-words text-3xl font-semibold tracking-normal text-white">
@@ -1093,41 +1093,45 @@ export default function ProjectTaskMap() {
           </h1>
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-[minmax(9rem,1fr)_minmax(14rem,1.4fr)_repeat(4,minmax(6rem,auto))]">
-          <Link
-            href="/portfolio"
-            className="group flex min-h-20 items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.025] px-4 py-3 text-left transition hover:border-sky-200/35 hover:bg-sky-200/[0.06]"
-          >
-            <span>
-              <span className="block text-xs font-medium text-slate-500">全体へ戻る</span>
-              <span className="mt-1 block text-sm font-semibold text-slate-100">ポートフォリオ</span>
-            </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-base text-slate-400 transition group-hover:border-sky-200/40 group-hover:text-sky-100">
-              ←
-            </span>
-          </Link>
-          <Link
-            href="/tasks/projects"
-            className="group flex min-h-20 items-center justify-between gap-3 rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-4 py-3 text-left shadow-lg shadow-sky-950/20 transition hover:border-sky-200/55 hover:bg-sky-200/[0.13]"
-          >
-            <span>
-              <span className="block text-xs font-medium text-sky-200/70">予定で確認する</span>
-              <span className="mt-1 block text-sm font-semibold text-sky-50">このプロジェクトのタスク一覧</span>
-            </span>
-            <span className="flex h-8 w-8 items-center justify-center rounded-md border border-sky-200/30 text-base text-sky-100 transition group-hover:bg-sky-200/10">
-              →
-            </span>
-          </Link>
-          <SummaryTile label="タスク" value={projectTasks.length} />
-          <SummaryTile label="内部リンク" value={projectLinks.length} />
-          <SummaryTile label="期限超過" value={overdueCount} urgent />
-          <button
-            type="button"
-            onClick={() => setDrawerOpen(true)}
-            className="neo-surface min-h-20 rounded-md border p-4 text-left text-sm font-semibold text-sky-100 hover:bg-sky-300/10"
-          >
-            ＋ タスク
-          </button>
+        <div className="grid gap-3 xl:grid-cols-[minmax(24rem,1fr)_auto]">
+          <div className="grid gap-3 md:grid-cols-[minmax(12rem,0.85fr)_minmax(18rem,1.15fr)]">
+            <Link
+              href="/portfolio"
+              className="group flex min-h-20 items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.025] px-4 py-3 text-left transition hover:border-sky-200/35 hover:bg-sky-200/[0.06]"
+            >
+              <span>
+                <span className="block text-xs font-medium text-slate-500">全体へ戻る</span>
+                <span className="mt-1 block text-sm font-semibold text-slate-100">ポートフォリオ</span>
+              </span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-white/10 text-base text-slate-400 transition group-hover:border-sky-200/40 group-hover:text-sky-100">
+                ←
+              </span>
+            </Link>
+            <Link
+              href="/tasks/projects"
+              className="group flex min-h-20 items-center justify-between gap-3 rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-4 py-3 text-left shadow-lg shadow-sky-950/20 transition hover:border-sky-200/55 hover:bg-sky-200/[0.13]"
+            >
+              <span>
+                <span className="block text-xs font-medium text-sky-200/70">予定で確認する</span>
+                <span className="mt-1 block text-sm font-semibold text-sky-50">このプロジェクトのタスク一覧</span>
+              </span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-md border border-sky-200/30 text-base text-sky-100 transition group-hover:bg-sky-200/10">
+                →
+              </span>
+            </Link>
+          </div>
+          <div className="grid grid-cols-4 gap-3 xl:min-w-[28rem]">
+            <SummaryTile label="タスク" value={projectTasks.length} />
+            <SummaryTile label="内部リンク" value={projectLinks.length} />
+            <SummaryTile label="期限超過" value={overdueCount} urgent />
+            <button
+              type="button"
+              onClick={() => setDrawerOpen(true)}
+              className="neo-surface min-h-20 rounded-md border p-4 text-left text-sm font-semibold text-sky-100 hover:bg-sky-300/10"
+            >
+              ＋ タスク
+            </button>
+          </div>
         </div>
       </section>
 

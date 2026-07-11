@@ -606,6 +606,9 @@ Implemented:
 - Task Flow Map navigation should live in the unused right side of the project
   header instead of occupying a separate row. This keeps the map closer to the
   title and reduces dead space.
+- Task Flow Map header navigation cards should expand to use the horizontal
+  space beside the project title. Their width should respond to the visible
+  window while keeping summary tiles compact on the far right.
 - Task Flow Map should use the vertical room created by the compact header.
   Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
   board height so the area under 完了 is filled according to the visible window.
