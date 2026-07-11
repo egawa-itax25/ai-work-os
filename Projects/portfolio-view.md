@@ -582,6 +582,11 @@ Implemented:
   restored from that area.
 - The visible archive action should be removed from project and task menus
   because the 30-day trash area now covers the reversible removal use case.
+- On mobile widths, Task Flow Map should keep the desktop behavior but use a
+  wider horizontal touch canvas and smaller zone labels/spacing so ownership
+  zones and task nodes do not overlap in the visible phone viewport.
+- Desktop navigation should use a compact Codex-style sidebar: brand header,
+  grouped list rows, subtle active highlight, and route behavior unchanged.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

@@ -1123,11 +1123,11 @@ export default function ProjectTaskMap() {
       </div>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_280px]">
-        <section className={`${taskFlowViewportHeightClass} flex min-h-0 flex-col overflow-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl`}>
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-4">
+        <section className={`${taskFlowViewportHeightClass} flex min-h-0 flex-col overflow-x-auto overflow-y-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl lg:overflow-hidden`}>
+          <div className="flex min-w-[760px] flex-col items-start gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:min-w-0">
             <div>
               <h2 className="text-base font-semibold text-white">タスクフローマップ</h2>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 max-w-[25rem] text-sm leading-6 text-slate-500 sm:max-w-none">
                 タスクをドラッグして枠内に移動すると、状態が自動で更新されます。
               </p>
             </div>
@@ -1174,7 +1174,7 @@ export default function ProjectTaskMap() {
                 updateZoom(zoom - event.deltaY * 0.001);
               }
             }}
-            className="relative min-h-0 flex-1 overflow-hidden"
+            className="relative min-h-0 w-[760px] min-w-[760px] flex-1 overflow-hidden lg:w-auto lg:min-w-0"
           >
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(125,211,252,0.08),transparent_18rem),linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:auto,48px_48px,48px_48px]" />
             <div className="pointer-events-none absolute inset-0 z-0">
@@ -1910,14 +1910,14 @@ function TaskFlowZone({
 
   return (
     <section
-      className={`pointer-events-none absolute rounded-2xl border border-dashed p-7 shadow-2xl ${zone.tone}`}
+      className={`pointer-events-none absolute rounded-2xl border border-dashed p-4 shadow-2xl lg:p-7 ${zone.tone}`}
       style={fixedStyle}
       aria-hidden="true"
     >
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex items-center gap-4">
+      <div className="flex items-start justify-between gap-3 lg:gap-4">
+        <div className="flex min-w-0 items-center gap-3 lg:gap-4">
           <span
-            className={`grid h-12 w-12 place-items-center rounded-full border text-lg font-semibold shadow-lg ${
+            className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border text-base font-semibold shadow-lg lg:h-12 lg:w-12 lg:text-lg ${
               zone.id === "self"
                 ? "border-sky-300/50 bg-sky-300/15 text-sky-100 shadow-sky-950/40"
                 : zone.id === "other"
@@ -1927,15 +1927,17 @@ function TaskFlowZone({
           >
             {zone.icon}
           </span>
-          <div>
-            <h3 className="text-2xl font-semibold tracking-normal text-white">
+          <div className="min-w-0">
+            <h3 className="text-xl font-semibold tracking-normal text-white lg:text-2xl">
               {zone.label}
             </h3>
-            <p className="mt-1 text-sm text-slate-300/75">{zone.description}</p>
+            <p className="mt-1 max-w-[10rem] text-xs leading-5 text-slate-300/75 lg:max-w-none lg:text-sm">
+              {zone.description}
+            </p>
           </div>
         </div>
         <div
-          className={`flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold ${
+          className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1.5 text-xs font-semibold lg:gap-2 lg:px-3 lg:text-sm ${
             zone.id === "self"
               ? "border-sky-300/45 bg-sky-300/10 text-sky-100"
               : zone.id === "other"
@@ -1948,11 +1950,11 @@ function TaskFlowZone({
         </div>
       </div>
       {zone.id === "done" ? (
-        <div className="mt-9 grid place-items-center text-center text-slate-300/70">
-          <div className="grid h-16 w-16 place-items-center rounded-full border border-emerald-300/25 bg-emerald-300/10 text-3xl text-emerald-100">
+        <div className="mt-7 grid place-items-center text-center text-slate-300/70 lg:mt-9">
+          <div className="grid h-12 w-12 place-items-center rounded-full border border-emerald-300/25 bg-emerald-300/10 text-2xl text-emerald-100 lg:h-16 lg:w-16 lg:text-3xl">
             ✓
           </div>
-          <p className="mt-4 text-sm leading-6">
+          <p className="mt-3 text-xs leading-5 lg:mt-4 lg:text-sm lg:leading-6">
             ここにタスクを移動すると
             <br />
             完了として記録されます

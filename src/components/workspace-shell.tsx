@@ -20,6 +20,8 @@ const defaultNavItems = [
 
 const navOrderStorageKey = "ai-work-os:navigation-order";
 const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics", "ai"]);
+const primaryNavIds = new Set(["calendar", "portfolio", "my-tasks", "projects"]);
+const utilityNavIds = new Set(["settings", "trash"]);
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,6 +35,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     .map((id) => defaultNavItems.find((item) => item.id === id))
     .filter((item): item is (typeof defaultNavItems)[number] => Boolean(item))
     .filter((item) => !hiddenPrimaryNavIds.has(item.id));
+  const primaryNavItems = navItems.filter((item) => primaryNavIds.has(item.id));
+  const utilityNavItems = navItems.filter((item) => utilityNavIds.has(item.id));
 
   useEffect(() => {
     const saved = window.localStorage.getItem("ai-work-os:navigation-collapsed");
@@ -119,8 +123,8 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   }
 
   const mainClassName = isCockpit
-    ? `min-h-screen ${showDesktopNavigation ? "lg:ml-72" : ""}`
-    : `px-4 py-6 lg:px-8 lg:py-8 ${showDesktopNavigation ? "lg:ml-72" : ""}`;
+    ? `min-h-screen ${showDesktopNavigation ? "lg:ml-64" : ""}`
+    : `px-4 py-6 lg:px-8 lg:py-8 ${showDesktopNavigation ? "lg:ml-64" : ""}`;
 
   function isNavActive(href: string) {
     if (href === "/") {
@@ -134,86 +138,102 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
+  function renderNavItem(item: (typeof defaultNavItems)[number]) {
+    const isActive = isNavActive(item.href);
+    const isDragging = draggingNavId === item.id;
+
+    return (
+      <Link
+        key={item.id}
+        href={item.href}
+        draggable
+        onDragStart={(event) => {
+          setDraggingNavId(item.id);
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", item.id);
+        }}
+        onDragEnd={() => setDraggingNavId(null)}
+        onDragOver={(event) => {
+          event.preventDefault();
+          event.dataTransfer.dropEffect = "move";
+        }}
+        onDrop={(event) => {
+          event.preventDefault();
+          const sourceId = event.dataTransfer.getData("text/plain");
+          moveNavigationItem(sourceId, item.id);
+          setDraggingNavId(null);
+        }}
+        className={`group flex cursor-grab items-center gap-2 rounded-md px-2 py-1.5 text-[13px] leading-5 transition active:cursor-grabbing ${
+          isActive
+            ? "bg-white/[0.095] text-white"
+            : "text-zinc-300 hover:bg-white/[0.065] hover:text-white"
+        } ${isDragging ? "scale-[0.98] opacity-55" : ""}`}
+        title="ドラッグで並び替え"
+      >
+        <span className="w-4 text-center text-[12px] text-zinc-500 transition group-hover:text-zinc-300">
+          {navIcon(item.id)}
+        </span>
+        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+        <span className="text-[11px] text-zinc-600 opacity-0 transition group-hover:opacity-100">
+          ⋮⋮
+        </span>
+      </Link>
+    );
+  }
+
   return (
     <body>
       <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(20,184,166,0.22),transparent_28rem),radial-gradient(circle_at_85%_15%,rgba(244,63,94,0.14),transparent_24rem),linear-gradient(135deg,#09090b_0%,#111827_48%,#030712_100%)] text-slate-100">
         <div className="fixed inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:64px_64px]" />
+
         {showDesktopNavigation ? (
-          <aside className="fixed left-4 top-4 z-20 hidden h-[calc(100vh-2rem)] w-64 rounded-lg border border-white/10 bg-white/[0.055] p-4 shadow-2xl shadow-black/40 backdrop-blur-2xl lg:block">
-            <Link href="/" className="block rounded-md border border-white/10 bg-black/20 p-4">
-              <span className="text-xs font-semibold tracking-[0.16em] text-teal-200">
-                流れの司令室
-              </span>
-              <span className="mt-1 block text-xl font-semibold leading-7 text-white">
-                AI仕事基盤
-              </span>
-            </Link>
+          <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 border-r border-white/10 bg-zinc-950/82 px-3 py-4 shadow-2xl shadow-black/35 backdrop-blur-2xl lg:flex lg:flex-col">
+            <div className="flex items-center justify-between px-2">
+              <Link href="/" className="min-w-0 text-[15px] font-semibold tracking-normal text-white">
+                <span>AI仕事基盤</span>
+                <span className="ml-1 text-teal-300">OS</span>
+              </Link>
+              <button
+                type="button"
+                onClick={() => setDesktopNavigationCollapsed(true)}
+                className="grid h-8 w-8 place-items-center rounded-md text-zinc-400 transition hover:bg-white/[0.06] hover:text-white"
+                title="メニューを隠す"
+                aria-label="メニューを隠す"
+              >
+                ×
+              </button>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setDesktopNavigationCollapsed(true)}
-              className="mt-3 w-full rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-teal-200/30 hover:bg-white/[0.06] hover:text-white"
-              title="メニューを隠す"
-            >
-              メニューを隠す
-            </button>
+            <nav className="mt-5 space-y-5" aria-label="主要メニュー">
+              <section className="space-y-1">
+                <button
+                  type="button"
+                  onClick={() => setCreateMenuOpen(true)}
+                  className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-zinc-100 transition hover:bg-white/[0.065]"
+                >
+                  <span className="w-4 text-center text-zinc-400">＋</span>
+                  <span>新しく作成</span>
+                </button>
+              </section>
 
-            <nav className="mt-6 space-y-2" aria-label="主要メニュー">
-              {navItems.map((item) => {
-                const isActive = isNavActive(item.href);
-                const isDragging = draggingNavId === item.id;
+              <SidebarGroup title="メニュー">
+                {primaryNavItems.map(renderNavItem)}
+              </SidebarGroup>
 
-                return (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    draggable
-                    onDragStart={(event) => {
-                      setDraggingNavId(item.id);
-                      event.dataTransfer.effectAllowed = "move";
-                      event.dataTransfer.setData("text/plain", item.id);
-                    }}
-                    onDragEnd={() => setDraggingNavId(null)}
-                    onDragOver={(event) => {
-                      event.preventDefault();
-                      event.dataTransfer.dropEffect = "move";
-                    }}
-                    onDrop={(event) => {
-                      event.preventDefault();
-                      const sourceId = event.dataTransfer.getData("text/plain");
-                      moveNavigationItem(sourceId, item.id);
-                      setDraggingNavId(null);
-                    }}
-                    className={`flex cursor-grab items-center justify-between rounded-md border px-3 py-3 text-[13px] font-medium leading-5 transition active:cursor-grabbing ${
-                      isActive
-                        ? "border-teal-300/40 bg-teal-300/12 text-white shadow-lg shadow-teal-950/30"
-                        : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.055] hover:text-white"
-                    } ${isDragging ? "scale-[0.98] opacity-55" : ""}`}
-                    title="ドラッグで並び替え"
-                  >
-                    {item.label}
-                    <span className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-600">⋮⋮</span>
-                      <span className="h-2 w-2 rounded-full bg-current opacity-60" />
-                    </span>
-                  </Link>
-                );
-              })}
+              <SidebarGroup title="管理">
+                {utilityNavItems.map(renderNavItem)}
+              </SidebarGroup>
             </nav>
 
-            <button
-              type="button"
-              onClick={resetNavigationOrder}
-              className="mt-3 w-full rounded-md border border-transparent px-3 py-2 text-xs font-semibold text-slate-500 transition hover:border-white/10 hover:bg-white/[0.04] hover:text-slate-300"
-            >
-              並び順をリセット
-            </button>
-
-            <div className="absolute bottom-4 left-4 right-4 rounded-md border border-white/10 bg-black/20 p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                情報源
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-300">
+            <div className="mt-auto border-t border-white/10 pt-3">
+              <button
+                type="button"
+                onClick={resetNavigationOrder}
+                className="w-full rounded-md px-2 py-1.5 text-left text-xs font-medium text-zinc-500 transition hover:bg-white/[0.045] hover:text-zinc-300"
+              >
+                並び順をリセット
+              </button>
+              <p className="mt-3 rounded-md border border-white/10 bg-white/[0.03] px-3 py-3 text-xs leading-5 text-zinc-400">
                 知識庫を仕事の記録として扱います。
               </p>
             </div>
@@ -319,4 +339,34 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
       </div>
     </body>
   );
+}
+
+function SidebarGroup({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section>
+      <h2 className="mb-1 px-2 text-[11px] font-semibold tracking-normal text-zinc-500">
+        {title}
+      </h2>
+      <div className="space-y-0.5">{children}</div>
+    </section>
+  );
+}
+
+function navIcon(id: string) {
+  switch (id) {
+    case "calendar":
+      return "◷";
+    case "portfolio":
+      return "□";
+    case "my-tasks":
+      return "✓";
+    case "projects":
+      return "⌁";
+    case "settings":
+      return "⚙";
+    case "trash":
+      return "⌫";
+    default:
+      return "•";
+  }
 }
