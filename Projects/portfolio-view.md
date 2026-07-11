@@ -552,6 +552,9 @@ Implemented:
 - In the schedule project task list, the Task Flow Map action is placed near the
   project title as a large horizontal primary button, because users open this
   map frequently from the project summary.
+- Portfolio project card actions must never overflow the card when the project
+  list wraps into multiple rows. Secondary controls should wrap into a compact
+  two-line action area instead of forcing horizontal overflow.
 - The schedule project task list uses fixed table column widths so ball,
   status, priority, owner, due date, and related counts align vertically across
   project sections. It also shows the current ball as a dedicated column before
