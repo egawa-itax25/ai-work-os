@@ -589,6 +589,8 @@ Implemented:
   grouped list rows, subtle active highlight, and route behavior unchanged.
 - Task Inspector next-action notes should remain editable while reading as a
   calm dark note surface with better contrast, padding, and line height.
+- Project Inspector should not show the project-connection editing block. Keep
+  existing connection data available for future map-level relationship work.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
