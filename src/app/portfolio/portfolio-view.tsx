@@ -1023,15 +1023,6 @@ function ProjectInspector({
         </div>
       </section>
 
-      <section className="rounded-lg border border-sky-200/15 bg-sky-200/[0.06] p-4 shadow-xl shadow-black/20">
-        <p className="text-sm font-semibold text-sky-100">AIインサイト</p>
-        <EditableTextarea value={project.aiSuggestion ?? ""} label="AIインサイト" onChange={(value) => onUpdate(project.id, { aiSuggestion: value })} compact />
-      </section>
-
-      <section className="rounded-lg border border-red-300/20 bg-red-300/[0.04] p-4 shadow-xl shadow-black/20">
-        <p className="text-sm font-semibold text-red-100">リスク情報</p>
-        <EditableTextarea value={project.risk ?? ""} label="リスク情報" onChange={(value) => onUpdate(project.id, { risk: value })} compact />
-      </section>
     </aside>
   );
 }

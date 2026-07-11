@@ -591,6 +591,9 @@ Implemented:
   calm dark note surface with better contrast, padding, and line height.
 - Project Inspector should not show the project-connection editing block. Keep
   existing connection data available for future map-level relationship work.
+- Project Inspector should also hide the always-visible AI insight and risk
+  editing blocks. Keep those data fields available for future summary or
+  contextual views, but do not show them in the current inspector.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
