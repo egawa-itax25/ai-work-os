@@ -597,6 +597,9 @@ Implemented:
 - Project list cards should wrap into responsive rows instead of requiring
   horizontal scrolling. The list should adapt to the visible window width and
   become two or three rows when needed.
+- Task Flow Map navigation should be self-explanatory. The back action should
+  read as returning to the Portfolio, while the stronger action should clearly
+  open the selected project's schedule/task list context.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

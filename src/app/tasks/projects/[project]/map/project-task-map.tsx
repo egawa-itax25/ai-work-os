@@ -1107,18 +1107,30 @@ export default function ProjectTaskMap() {
         </div>
       </section>
 
-      <div className="neo-surface grid gap-3 rounded-md border p-3 sm:grid-cols-2">
+      <div className="neo-surface grid gap-3 rounded-md border p-3 md:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
         <Link
           href="/portfolio"
-          className="rounded-md border border-sky-300/50 bg-sky-300/10 px-5 py-4 text-center text-base font-semibold text-sky-50 shadow-lg shadow-sky-950/20 hover:bg-sky-300/15"
+          className="group flex min-h-20 items-center justify-between gap-4 rounded-md border border-white/10 bg-white/[0.025] px-5 py-4 text-left transition hover:border-sky-200/35 hover:bg-sky-200/[0.06]"
         >
-          ポートフォリオへ戻る
+          <span>
+            <span className="block text-xs font-medium text-slate-500">全体へ戻る</span>
+            <span className="mt-1 block text-base font-semibold text-slate-100">ポートフォリオ</span>
+          </span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-md border border-white/10 text-lg text-slate-400 transition group-hover:border-sky-200/40 group-hover:text-sky-100">
+            ←
+          </span>
         </Link>
         <Link
           href="/tasks/projects"
-          className="rounded-md border border-zinc-700 px-5 py-4 text-center text-base font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white"
+          className="group flex min-h-20 items-center justify-between gap-4 rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-5 py-4 text-left shadow-lg shadow-sky-950/20 transition hover:border-sky-200/55 hover:bg-sky-200/[0.13]"
         >
-          プロジェクト一覧
+          <span>
+            <span className="block text-xs font-medium text-sky-200/70">予定で確認する</span>
+            <span className="mt-1 block text-base font-semibold text-sky-50">このプロジェクトのタスク一覧</span>
+          </span>
+          <span className="flex h-9 w-9 items-center justify-center rounded-md border border-sky-200/30 text-lg text-sky-100 transition group-hover:bg-sky-200/10">
+            →
+          </span>
         </Link>
       </div>
 
