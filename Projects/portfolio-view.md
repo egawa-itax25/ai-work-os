@@ -600,6 +600,9 @@ Implemented:
 - Task Flow Map navigation should be self-explanatory. The back action should
   read as returning to the Portfolio, while the stronger action should clearly
   open the selected project's schedule/task list context.
+- Task Flow Map navigation should live in the unused right side of the project
+  header instead of occupying a separate row. This keeps the map closer to the
+  title and reduces dead space.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

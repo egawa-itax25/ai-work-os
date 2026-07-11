@@ -24,8 +24,12 @@ Replace the equal two-button strip with clearer navigation cards:
 Each action should include a short supporting label so the user can understand
 the destination before clicking.
 
+Place these navigation actions in the unused right side of the project header,
+next to the summary tiles, instead of keeping a separate navigation row below
+the title.
+
 ## Consequences
 
 The Task Flow Map becomes easier to navigate without changing its core map
 behavior. The UI keeps the dark, simple product tone while making the next
-action more self-explanatory.
+action more self-explanatory and reducing dead space above the map.
