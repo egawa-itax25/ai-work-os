@@ -585,11 +585,11 @@ function ProjectList({
           />
         </div>
       </div>
-      <div className="flex gap-3 overflow-x-auto p-3">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(230px,1fr))] gap-3 p-3">
         <button
           type="button"
           onClick={onCreateProject}
-          className="flex min-h-[230px] w-[220px] shrink-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/15 bg-white/[0.025] p-4 text-center transition duration-200 hover:border-sky-200/40 hover:bg-sky-200/[0.06]"
+          className="flex min-h-[230px] min-w-0 flex-col items-center justify-center rounded-lg border border-dashed border-white/15 bg-white/[0.025] p-4 text-center transition duration-200 hover:border-sky-200/40 hover:bg-sky-200/[0.06]"
         >
           <span className="text-3xl font-light text-slate-300">＋</span>
           <span className="mt-3 text-sm font-semibold text-white">新しいプロジェクト</span>
@@ -608,7 +608,7 @@ function ProjectList({
                 event.preventDefault();
                 onMenuToggle(project.id);
               }}
-              className={`relative min-h-[230px] w-[260px] shrink-0 rounded-lg border p-4 transition duration-200 ${
+              className={`relative min-h-[230px] min-w-0 rounded-lg border p-4 transition duration-200 ${
                 project.id === highlightId
                   ? "border-sky-200/75 bg-sky-200/[0.12]"
                   : isSelected

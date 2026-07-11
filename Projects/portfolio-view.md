@@ -594,6 +594,9 @@ Implemented:
 - Project Inspector should also hide the always-visible AI insight and risk
   editing blocks. Keep those data fields available for future summary or
   contextual views, but do not show them in the current inspector.
+- Project list cards should wrap into responsive rows instead of requiring
+  horizontal scrolling. The list should adapt to the visible window width and
+  become two or three rows when needed.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
