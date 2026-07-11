@@ -424,7 +424,7 @@ export default function PortfolioView({
 
   return (
     <section className="min-h-screen space-y-5 text-slate-100">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <header className="grid gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(48rem,1.25fr)]">
         <div>
           <p className="text-sm font-medium text-sky-200">ポートフォリオ</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-normal text-white">
@@ -434,21 +434,22 @@ export default function PortfolioView({
             状況を見た場所から、そのままプロジェクトとタスクを動かします。
           </p>
         </div>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:min-w-[560px]">
-          <Metric label="最優先" value={rankedProjects[0]?.name ?? "なし"} />
-          <Metric label="自分のボール" value={`${actionableProjects.length}件`} />
-          <Metric label="平均進捗" value={`${weeklyProgress}%`} />
-          <button
-            type="button"
-            onClick={() => setDrawer({ type: "project" })}
-            className="rounded-lg border border-sky-200/35 bg-sky-200/[0.08] p-4 text-left text-sm font-semibold text-sky-50 shadow-xl shadow-black/20 backdrop-blur-xl transition hover:bg-sky-200/[0.14]"
-          >
-            ＋ プロジェクトを追加
-          </button>
+        <div className="grid gap-3 xl:grid-cols-[minmax(28rem,1fr)_auto]">
+          <FilterBar active={filter} />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[560px]">
+            <Metric label="最優先" value={rankedProjects[0]?.name ?? "なし"} />
+            <Metric label="自分のボール" value={`${actionableProjects.length}件`} />
+            <Metric label="平均進捗" value={`${weeklyProgress}%`} />
+            <button
+              type="button"
+              onClick={() => setDrawer({ type: "project" })}
+              className="rounded-lg border border-sky-200/35 bg-sky-200/[0.08] p-4 text-left text-sm font-semibold text-sky-50 shadow-xl shadow-black/20 backdrop-blur-xl transition hover:bg-sky-200/[0.14]"
+            >
+              ＋ プロジェクトを追加
+            </button>
+          </div>
         </div>
       </header>
-
-      <FilterBar active={filter} />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-5">

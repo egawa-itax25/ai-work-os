@@ -609,6 +609,10 @@ Implemented:
 - Task Flow Map header navigation cards should expand to use the horizontal
   space beside the project title. Their width should respond to the visible
   window while keeping summary tiles compact on the far right.
+- Portfolio filters and project-task view tabs should follow the same header
+  pattern: use the horizontal space beside the page title, grow with the visible
+  window, and avoid occupying a separate full-width row when there is available
+  header space.
 - Task Flow Map should use the vertical room created by the compact header.
   Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
   board height so the area under 完了 is filled according to the visible window.

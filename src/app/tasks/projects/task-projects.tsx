@@ -88,7 +88,7 @@ export default function TaskProjects() {
 
   return (
     <div className="neo-shell space-y-5 text-zinc-100">
-      <section className="grid gap-4 lg:grid-cols-[1fr_auto]">
+      <section className="grid gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(42rem,1.25fr)]">
         <div>
           <p className="neo-accent text-sm font-medium">プロジェクト別の仕事</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-normal text-white">
@@ -101,22 +101,23 @@ export default function TaskProjects() {
           ) : null}
         </div>
 
-        <div className="grid grid-cols-3 gap-3 sm:min-w-96">
-          <SummaryTile label="プロジェクト" value={projectGroups.length} />
-          <SummaryTile label="タスク" value={filteredTasks.length} />
-          <SummaryTile
-            label="期限超過"
-            value={
-              filteredTasks.filter(
-                (task) => task.status !== "done" && isOverdue(task.dueDate),
-              ).length
-            }
-            urgent
-          />
+        <div className="grid gap-3 xl:grid-cols-[minmax(28rem,1fr)_auto]">
+          <TaskTabs active="projects" />
+          <div className="grid grid-cols-3 gap-3 xl:min-w-96">
+            <SummaryTile label="プロジェクト" value={projectGroups.length} />
+            <SummaryTile label="タスク" value={filteredTasks.length} />
+            <SummaryTile
+              label="期限超過"
+              value={
+                filteredTasks.filter(
+                  (task) => task.status !== "done" && isOverdue(task.dueDate),
+                ).length
+              }
+              urgent
+            />
+          </div>
         </div>
       </section>
-
-      <TaskTabs active="projects" />
 
       <section className="neo-surface rounded-md border p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
