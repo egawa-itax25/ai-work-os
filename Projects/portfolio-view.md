@@ -546,6 +546,10 @@ Implemented:
   into the visible region matching their current ball/status. This should only
   correct cards that would otherwise sit outside their visible ownership region,
   so user placement inside a region is preserved.
+- When the Task Flow Map viewport changes size, task cards should preserve their
+  relative position inside their current ownership zone. Resizing the window
+  should scale the task location with the zone bounds instead of snapping cards
+  to a new corner.
 - Task Flow Map should preserve each project's pan and zoom across reloads.
   Auto-fit may provide the first view, but it should not override a saved
   viewport and make task cards appear to shift after reload.

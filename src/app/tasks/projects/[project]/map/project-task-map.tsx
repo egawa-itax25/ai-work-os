@@ -37,6 +37,14 @@ type Point = { x: number; y: number };
 type PanState = { start: Point; origin: Point } | null;
 type BallTransferTarget = "self" | "other" | "done";
 type ToastState = { message: string; undo?: () => void } | null;
+type TaskMapLayoutSnapshot = {
+  rect: Pick<DOMRect, "bottom" | "height" | "left" | "right" | "top" | "width">;
+  boardSize: Point;
+  pan: Point;
+  projectName: string;
+  viewportSize: Point;
+  zoom: number;
+};
 
 const cardWidth = 236;
 const cardHeight = 156;
@@ -181,6 +189,7 @@ export default function ProjectTaskMap() {
   const projectTasksRef = useRef<Task[]>([]);
   const dragStateRef = useRef<DragState | null>(null);
   const reconciledViewportKeyRef = useRef("");
+  const layoutSnapshotRef = useRef<TaskMapLayoutSnapshot | null>(null);
   const restoredViewportSizeRef = useRef<Point | null>(null);
   const boardSizeRef = useRef<Point>({
     x: minimumBoardSize.width,
@@ -982,39 +991,60 @@ export default function ProjectTaskMap() {
 
     reconciledViewportKeyRef.current = viewportKey;
 
-    const gap = 16;
-    const cardViewportWidth = cardWidth * zoom;
-    const cardViewportHeight = cardHeight * zoom;
-    const topHeight = rect.height * taskMapTopZoneRatio;
-    const topMinY = rect.top + gap;
-    const topMaxY = Math.max(
-      topMinY,
-      rect.top + topHeight - cardViewportHeight - gap,
-    );
-    const doneMinY = Math.min(
-      Math.max(rect.top + gap, rect.top + topHeight + gap),
-      rect.bottom - cardViewportHeight - gap,
-    );
-    const doneMaxY = Math.max(doneMinY, rect.bottom - cardViewportHeight - gap);
-    const leftMinX = rect.left + gap;
-    const leftMaxX = Math.max(
-      leftMinX,
-      rect.left + rect.width / 2 - cardViewportWidth - gap,
-    );
-    const rightMinX = Math.min(
-      Math.max(leftMinX, rect.left + rect.width / 2 + gap),
-      rect.right - cardViewportWidth - gap,
-    );
-    const rightMaxX = Math.max(rightMinX, rect.right - cardViewportWidth - gap);
-    const toViewport = (point: Point) => ({
-      x: rect.left + rect.width / 2 + pan.x + (point.x - boardSize.x / 2) * zoom,
-      y: rect.top + rect.height / 2 + pan.y + (point.y - boardSize.y / 2) * zoom,
-    });
-    const toBoard = (x: number, y: number) => ({
-      x: (x - rect.left - rect.width / 2 - pan.x) / zoom + boardSize.x / 2,
-      y: (y - rect.top - rect.height / 2 - pan.y) / zoom + boardSize.y / 2,
-    });
-    const getBounds = (target: BallTransferTarget) => {
+    const snapshot: TaskMapLayoutSnapshot = {
+      rect: {
+        bottom: rect.bottom,
+        height: rect.height,
+        left: rect.left,
+        right: rect.right,
+        top: rect.top,
+        width: rect.width,
+      },
+      boardSize: { x: boardSize.x, y: boardSize.y },
+      pan: { x: pan.x, y: pan.y },
+      projectName,
+      viewportSize: { x: viewportSize.x, y: viewportSize.y },
+      zoom,
+    };
+    const previousSnapshot = layoutSnapshotRef.current;
+    const isResize =
+      previousSnapshot?.projectName === projectName &&
+      (Math.abs(previousSnapshot.rect.width - snapshot.rect.width) > 2 ||
+        Math.abs(previousSnapshot.rect.height - snapshot.rect.height) > 2 ||
+        Math.abs(previousSnapshot.boardSize.x - snapshot.boardSize.x) > 2 ||
+        Math.abs(previousSnapshot.boardSize.y - snapshot.boardSize.y) > 2);
+
+    layoutSnapshotRef.current = snapshot;
+
+    const getBounds = (
+      target: BallTransferTarget,
+      layout: TaskMapLayoutSnapshot,
+    ) => {
+      const gap = 16;
+      const cardViewportWidth = cardWidth * layout.zoom;
+      const cardViewportHeight = cardHeight * layout.zoom;
+      const topHeight = layout.rect.height * taskMapTopZoneRatio;
+      const topMinY = layout.rect.top + gap;
+      const topMaxY = Math.max(
+        topMinY,
+        layout.rect.top + topHeight - cardViewportHeight - gap,
+      );
+      const doneMinY = Math.min(
+        Math.max(layout.rect.top + gap, layout.rect.top + topHeight + gap),
+        layout.rect.bottom - cardViewportHeight - gap,
+      );
+      const doneMaxY = Math.max(doneMinY, layout.rect.bottom - cardViewportHeight - gap);
+      const leftMinX = layout.rect.left + gap;
+      const leftMaxX = Math.max(
+        leftMinX,
+        layout.rect.left + layout.rect.width / 2 - cardViewportWidth - gap,
+      );
+      const rightMinX = Math.min(
+        Math.max(leftMinX, layout.rect.left + layout.rect.width / 2 + gap),
+        layout.rect.right - cardViewportWidth - gap,
+      );
+      const rightMaxX = Math.max(rightMinX, layout.rect.right - cardViewportWidth - gap);
+
       if (target === "self") {
         return { minX: leftMinX, maxX: leftMaxX, minY: topMinY, maxY: topMaxY };
       }
@@ -1030,6 +1060,28 @@ export default function ProjectTaskMap() {
         maxY: doneMaxY,
       };
     };
+    const toViewport = (point: Point, layout: TaskMapLayoutSnapshot) => ({
+      x:
+        layout.rect.left +
+        layout.rect.width / 2 +
+        layout.pan.x +
+        (point.x - layout.boardSize.x / 2) * layout.zoom,
+      y:
+        layout.rect.top +
+        layout.rect.height / 2 +
+        layout.pan.y +
+        (point.y - layout.boardSize.y / 2) * layout.zoom,
+    });
+    const toBoard = (x: number, y: number, layout: TaskMapLayoutSnapshot) => ({
+      x:
+        (x - layout.rect.left - layout.rect.width / 2 - layout.pan.x) /
+          layout.zoom +
+        layout.boardSize.x / 2,
+      y:
+        (y - layout.rect.top - layout.rect.height / 2 - layout.pan.y) /
+          layout.zoom +
+        layout.boardSize.y / 2,
+    });
 
     setTasks((current) => {
       let changed = false;
@@ -1040,22 +1092,48 @@ export default function ProjectTaskMap() {
         }
 
         const target = getTaskTransferTarget(task);
-        const bounds = getBounds(target);
-        const viewportPoint = toViewport({ x: task.x, y: task.y });
+        const bounds = getBounds(target, snapshot);
+        const viewportPoint = toViewport({ x: task.x, y: task.y }, snapshot);
         const isInside =
           viewportPoint.x >= bounds.minX &&
           viewportPoint.x <= bounds.maxX &&
           viewportPoint.y >= bounds.minY &&
           viewportPoint.y <= bounds.maxY;
 
-        if (isInside) {
+        if (isInside && !isResize) {
           return task;
         }
 
-        const snappedPoint = toBoard(
-          clamp(viewportPoint.x, bounds.minX, bounds.maxX),
-          clamp(viewportPoint.y, bounds.minY, bounds.maxY),
-        );
+        const snappedPoint =
+          isResize && previousSnapshot
+            ? (() => {
+                const previousBounds = getBounds(target, previousSnapshot);
+                const previousViewportPoint = toViewport(
+                  { x: task.x, y: task.y },
+                  previousSnapshot,
+                );
+                const ratioX =
+                  previousBounds.maxX === previousBounds.minX
+                    ? 0
+                    : (previousViewportPoint.x - previousBounds.minX) /
+                      (previousBounds.maxX - previousBounds.minX);
+                const ratioY =
+                  previousBounds.maxY === previousBounds.minY
+                    ? 0
+                    : (previousViewportPoint.y - previousBounds.minY) /
+                      (previousBounds.maxY - previousBounds.minY);
+
+                return toBoard(
+                  bounds.minX + clamp(ratioX, 0, 1) * (bounds.maxX - bounds.minX),
+                  bounds.minY + clamp(ratioY, 0, 1) * (bounds.maxY - bounds.minY),
+                  snapshot,
+                );
+              })()
+            : toBoard(
+                clamp(viewportPoint.x, bounds.minX, bounds.maxX),
+                clamp(viewportPoint.y, bounds.minY, bounds.maxY),
+                snapshot,
+              );
 
         if (
           Math.abs(snappedPoint.x - task.x) < 0.5 &&
