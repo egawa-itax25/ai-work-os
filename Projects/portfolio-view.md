@@ -603,6 +603,9 @@ Implemented:
 - Task Flow Map navigation should live in the unused right side of the project
   header instead of occupying a separate row. This keeps the map closer to the
   title and reduces dead space.
+- Task Flow Map should use the vertical room created by the compact header.
+  Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
+  board height so the area under 完了 is filled according to the visible window.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.
