@@ -587,6 +587,8 @@ Implemented:
   zones and task nodes do not overlap in the visible phone viewport.
 - Desktop navigation should use a compact Codex-style sidebar: brand header,
   grouped list rows, subtle active highlight, and route behavior unchanged.
+- Task Inspector next-action notes should remain editable while reading as a
+  calm dark note surface with better contrast, padding, and line height.
 - URL-based filters, including `filter=self` for projects where the user holds
   the current ball.
 - Compact Project Flow Map with pan, zoom, and project node links.

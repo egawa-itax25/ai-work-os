@@ -1786,7 +1786,7 @@ function TaskInspector({
       <textarea
         value={task.nextAction}
         onChange={(event) => onUpdate({ nextAction: event.target.value, description: event.target.value })}
-        className="neo-input min-h-20 w-full resize-none rounded-md border border-zinc-800 px-3 py-2 text-sm leading-6 text-zinc-300 outline-none focus:border-violet-400"
+        className="min-h-24 w-full resize-none rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-[15px] leading-7 text-slate-100 shadow-inner shadow-black/30 outline-none transition placeholder:text-slate-600 hover:border-sky-200/30 hover:bg-slate-950/82 focus:border-sky-200/70 focus:bg-sky-950/25 focus:ring-2 focus:ring-sky-200/10"
         placeholder="次のアクション"
         aria-label="次のアクション"
       />
