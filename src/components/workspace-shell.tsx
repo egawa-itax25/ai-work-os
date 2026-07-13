@@ -123,9 +123,10 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     setDraggingNavId(null);
   }
 
+  const sidebarOffset = showDesktopNavigation ? "lg:ml-56" : "";
   const mainClassName = isCockpit
-    ? `min-h-screen ${showDesktopNavigation ? "lg:ml-64" : ""}`
-    : `px-4 py-6 lg:px-8 lg:py-8 ${showDesktopNavigation ? "lg:ml-64" : ""}`;
+    ? `min-h-screen ${sidebarOffset}`
+    : `px-4 py-6 lg:px-8 lg:py-8 ${sidebarOffset}`;
 
   function isNavActive(href: string) {
     if (href === "/") {
@@ -171,11 +172,13 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         } ${isDragging ? "scale-[0.98] opacity-55" : ""}`}
         title="ドラッグで並び替え"
       >
-        <span className="w-4 text-center text-[12px] text-zinc-500 transition group-hover:text-zinc-300">
+        <span className="grid h-5 w-5 shrink-0 place-items-center text-[11px] leading-none text-zinc-500 transition group-hover:text-zinc-300">
           {navIcon(item.id)}
         </span>
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
-        <span className="text-[11px] text-zinc-600 opacity-0 transition group-hover:opacity-100">⋮⋮</span>
+        <span className="shrink-0 text-[11px] leading-none text-zinc-600 opacity-0 transition group-hover:opacity-100">
+          ⋮⋮
+        </span>
       </Link>
     );
   }
@@ -186,9 +189,9 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         <div className="fixed inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:64px_64px]" />
 
         {showDesktopNavigation ? (
-          <aside className="fixed left-0 top-0 z-20 hidden h-screen w-64 border-r border-white/10 bg-zinc-950/82 px-3 py-4 shadow-2xl shadow-black/35 backdrop-blur-2xl lg:flex lg:flex-col">
+          <aside className="fixed left-0 top-0 z-20 hidden h-screen w-56 border-r border-white/10 bg-zinc-950/82 px-2.5 py-4 shadow-2xl shadow-black/35 backdrop-blur-2xl lg:flex lg:flex-col">
             <div className="flex items-center justify-between px-2">
-              <Link href="/" className="min-w-0 text-[15px] font-semibold tracking-normal text-white">
+              <Link href="/" className="min-w-0 text-[14px] font-semibold tracking-normal text-white">
                 <span>AI仕事基盤</span>
                 <span className="ml-1 text-teal-300">OS</span>
               </Link>
@@ -210,13 +213,12 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                   onClick={() => setCreateMenuOpen(true)}
                   className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] font-medium text-zinc-100 transition hover:bg-white/[0.065]"
                 >
-                  <span className="w-4 text-center text-zinc-400">＋</span>
+                  <span className="grid h-5 w-5 shrink-0 place-items-center text-zinc-400">＋</span>
                   <span>新しく作成</span>
                 </button>
               </section>
 
               <SidebarGroup title="メニュー">{primaryNavItems.map(renderNavItem)}</SidebarGroup>
-
               <SidebarGroup title="管理">{utilityNavItems.map(renderNavItem)}</SidebarGroup>
             </nav>
 
@@ -348,20 +350,20 @@ function SidebarGroup({ title, children }: { title: string; children: React.Reac
 function navIcon(id: string) {
   switch (id) {
     case "calendar":
-      return "予定";
+      return "◷";
     case "portfolio":
-      return "流";
+      return "□";
     case "my-tasks":
-      return "自";
+      return "✓";
     case "projects":
-      return "案";
+      return "⌁";
     case "settings":
-      return "設";
+      return "⚙";
     case "completed":
-      return "完";
+      return "✓";
     case "trash":
-      return "削";
+      return "⌫";
     default:
-      return "・";
+      return "•";
   }
 }

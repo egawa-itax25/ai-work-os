@@ -623,6 +623,9 @@ Implemented:
   zones and task nodes do not overlap in the visible phone viewport.
 - Desktop navigation should use a compact Codex-style sidebar: brand header,
   grouped list rows, subtle active highlight, and route behavior unchanged.
+- Desktop navigation should keep a narrower sidebar width so the workspace has
+  more horizontal room. Navigation icons must be compact single-symbol markers
+  that do not wrap or split Japanese labels.
 - Task Inspector next-action notes should remain editable while reading as a
   calm dark note surface with better contrast, padding, and line height.
 - Project Inspector should not show the project-connection editing block. Keep
