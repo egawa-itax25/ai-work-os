@@ -579,6 +579,10 @@ Implemented:
   same project section. These edits must write to the shared task data and stay
   reflected in Portfolio. Project renames and deletes should also update the
   Portfolio metadata store so editable project details do not drift.
+- The schedule tab's project task list must also support adding a task directly
+  inside each project section. The new task should inherit the project name,
+  appear immediately in that section, and sync back to Portfolio through the
+  shared task data.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
 - Inline editing controls stop pointer and click propagation so typing,

@@ -73,6 +73,31 @@ export default function TaskProjects() {
     commitTasks(tasks.filter((current) => current.id !== task.id));
   }
 
+  function addTask(project: string) {
+    const projectTasks = tasks.filter((task) => task.project === project);
+    const newTask: Task = {
+      id: `task-${crypto.randomUUID()}`,
+      title: "新しいタスク",
+      description: "",
+      owner: "未設定",
+      currentBallHolder: "あなた",
+      ballHoldingStartedAt: new Date().toISOString().slice(0, 10),
+      project,
+      dueDate: new Date().toISOString().slice(0, 10),
+      status: "todo",
+      priority: "medium",
+      progress: 0,
+      nextAction: "",
+      x: 90 + ((projectTasks.length * 220) % 760),
+      y: 120 + ((projectTasks.length * 120) % 420),
+      links: [],
+      createdAt: new Date().toISOString(),
+    };
+
+    commitTasks([newTask, ...tasks]);
+    setEditingTaskId(newTask.id);
+  }
+
   function startProjectEdit(project: string) {
     setEditingProject(project);
     setProjectNameDraft(project);
@@ -308,6 +333,13 @@ export default function TaskProjects() {
                 </div>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => addTask(group.project)}
+                  className="rounded-md border border-sky-300/45 bg-sky-300/10 px-4 py-2 text-sm font-semibold text-sky-100 hover:bg-sky-300/16"
+                >
+                  ＋ タスク
+                </button>
                 <button
                   type="button"
                   onClick={() => startProjectEdit(group.project)}
