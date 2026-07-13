@@ -617,6 +617,9 @@ Implemented:
   pattern: use the horizontal space beside the page title, grow with the visible
   window, and avoid occupying a separate full-width row when there is available
   header space.
+- Header filters and tabs must not rely on inner horizontal scrolling after
+  being moved beside the title. They should wrap or expand inside the available
+  header area so the control width visibly follows the window size.
 - Task Flow Map should use the vertical room created by the compact header.
   Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
   board height so the area under 完了 is filled according to the visible window.

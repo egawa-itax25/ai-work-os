@@ -101,9 +101,9 @@ export default function TaskProjects() {
           ) : null}
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[minmax(28rem,1fr)_auto]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,auto)]">
           <TaskTabs active="projects" />
-          <div className="grid grid-cols-3 gap-3 xl:min-w-96">
+          <div className="grid grid-cols-3 gap-3 xl:min-w-80">
             <SummaryTile label="プロジェクト" value={projectGroups.length} />
             <SummaryTile label="タスク" value={filteredTasks.length} />
             <SummaryTile
@@ -282,10 +282,10 @@ export default function TaskProjects() {
 
 function TaskTabs({ active }: { active: "map" | "projects" }) {
   return (
-    <div className="neo-surface grid gap-3 rounded-md border p-3 sm:grid-cols-2">
+    <div className="neo-surface grid grid-cols-2 gap-3 rounded-md border p-3">
       <Link
         href="/portfolio"
-        className={`rounded-md border px-5 py-4 text-center text-base font-semibold ${
+        className={`min-w-0 rounded-md border px-5 py-4 text-center text-base font-semibold ${
           active === "map"
             ? "border-violet-400 bg-violet-500/20 text-violet-50 shadow-lg shadow-violet-950/30"
             : "border-zinc-700 text-zinc-300 hover:bg-zinc-900 hover:text-white"
@@ -295,7 +295,7 @@ function TaskTabs({ active }: { active: "map" | "projects" }) {
       </Link>
       <Link
         href="/tasks/projects"
-        className={`rounded-md border px-5 py-4 text-center text-base font-semibold ${
+        className={`min-w-0 rounded-md border px-5 py-4 text-center text-base font-semibold ${
           active === "projects"
             ? "border-violet-400 bg-violet-500/20 text-violet-50 shadow-lg shadow-violet-950/30"
             : "border-zinc-700 text-zinc-300 hover:bg-zinc-900 hover:text-white"
