@@ -434,9 +434,9 @@ export default function PortfolioView({
             状況を見た場所から、そのままプロジェクトとタスクを動かします。
           </p>
         </div>
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(24rem,auto)]">
+        <div className="grid gap-3">
           <FilterBar active={filter} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[30rem]">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric label="最優先" value={rankedProjects[0]?.name ?? "なし"} />
             <Metric label="自分のボール" value={`${actionableProjects.length}件`} />
             <Metric label="平均進捗" value={`${weeklyProgress}%`} />
@@ -513,12 +513,12 @@ export default function PortfolioView({
 function FilterBar({ active }: { active: PortfolioFilter }) {
   return (
     <div className="rounded-lg border border-white/10 bg-slate-950/56 p-2 shadow-xl shadow-black/20 backdrop-blur-xl">
-      <div className="grid grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))] gap-2">
+      <div className="flex flex-wrap gap-2">
         {portfolioFilters.map((item) => (
           <Link
             key={item.id}
             href={item.id === "all" ? "/portfolio" : `/portfolio?filter=${item.id}`}
-            className={`rounded-md border px-3 py-2 text-center text-sm transition duration-200 ${
+            className={`shrink-0 whitespace-nowrap rounded-md border px-3 py-2 text-center text-sm transition duration-200 ${
               active === item.id
                 ? "border-sky-200/60 bg-sky-200/12 text-sky-50"
                 : "border-transparent text-slate-400 hover:border-white/10 hover:bg-white/[0.05] hover:text-slate-100"

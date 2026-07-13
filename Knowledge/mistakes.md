@@ -141,3 +141,11 @@ Use this note only when the user gives an explicit correction and both are true:
   could stay open after the user clicked elsewhere on the map.
 - Prevention: Context menus on the canvas must close on outside pointerdown,
   Escape, task selection, drag start, and menu action selection.
+
+### 2026-07-13 - Portfolio filters stretched into vertical cards
+
+- Mistake: Header filters used an auto-fit grid after being moved beside the
+  title, so filter labels stretched into tall card-like columns at some window
+  widths.
+- Prevention: Segmented filters should keep natural label width with flex-wrap.
+  Avoid responsive grids that stretch short navigation labels vertically.

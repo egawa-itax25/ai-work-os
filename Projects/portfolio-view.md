@@ -620,6 +620,9 @@ Implemented:
 - Header filters and tabs must not rely on inner horizontal scrolling after
   being moved beside the title. They should wrap or expand inside the available
   header area so the control width visibly follows the window size.
+- Portfolio header filters should remain a compact segmented control. Wrapping
+  is acceptable, but each filter keeps its natural label width; filters must not
+  stretch into tall vertical columns or card-like blocks.
 - Task Flow Map should use the vertical room created by the compact header.
   Keep the 自分ボール / 相手ボール / 完了 zone ratio unchanged, but stretch the
   board height so the area under 完了 is filled according to the visible window.
