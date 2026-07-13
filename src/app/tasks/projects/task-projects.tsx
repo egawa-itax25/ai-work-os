@@ -32,7 +32,9 @@ export default function TaskProjects() {
   const [projectNameDraft, setProjectNameDraft] = useState("");
   const [editingTaskId, setEditingTaskId] = useState("");
   const [draggedProject, setDraggedProject] = useState("");
+  const [projectDropTarget, setProjectDropTarget] = useState("");
   const [draggedTaskId, setDraggedTaskId] = useState("");
+  const [taskDropTarget, setTaskDropTarget] = useState("");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -114,6 +116,7 @@ export default function TaskProjects() {
     }
 
     setDraggedProject(project);
+    setProjectDropTarget("");
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", project);
   }
@@ -141,6 +144,7 @@ export default function TaskProjects() {
       ...sourceTasks,
     );
     commitTasks(nextTasks);
+    setProjectDropTarget("");
   }
 
   function startTaskDrag(event: DragEvent<HTMLElement>, taskId: string) {
@@ -150,6 +154,7 @@ export default function TaskProjects() {
     }
 
     setDraggedTaskId(taskId);
+    setTaskDropTarget("");
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", taskId);
   }
@@ -175,6 +180,7 @@ export default function TaskProjects() {
       sourceTask,
     );
     commitTasks(nextTasks);
+    setTaskDropTarget("");
   }
 
   function startProjectEdit(project: string) {
@@ -345,15 +351,25 @@ export default function TaskProjects() {
       </section>
 
       <section className="space-y-4">
-        {projectGroups.map((group) => (
+        {projectGroups.map((group) => {
+          const showProjectDropLine =
+            Boolean(draggedProject) &&
+            draggedProject !== group.project &&
+            projectDropTarget === group.project;
+
+          return (
           <article
             key={group.project}
             draggable
             onDragStart={(event) => startProjectDrag(event, group.project)}
-            onDragEnd={() => setDraggedProject("")}
+            onDragEnd={() => {
+              setDraggedProject("");
+              setProjectDropTarget("");
+            }}
             onDragOver={(event) => {
               if (draggedProject && draggedProject !== group.project) {
                 event.preventDefault();
+                setProjectDropTarget(group.project);
               }
             }}
             onDrop={(event) => {
@@ -364,12 +380,19 @@ export default function TaskProjects() {
               event.preventDefault();
               reorderProject(draggedProject, group.project);
               setDraggedProject("");
+              setProjectDropTarget("");
             }}
-            className={`neo-surface group/project cursor-grab rounded-md border transition active:cursor-grabbing ${
-              draggedProject === group.project ? "opacity-55" : ""
-            }`}
+            className={`neo-surface group/project relative cursor-grab rounded-md border transition active:cursor-grabbing ${
+              draggedProject === group.project ? "scale-[0.995] opacity-55" : ""
+            } ${showProjectDropLine ? "border-sky-200/45" : ""}`}
             title="枠ごとドラッグしてプロジェクトを並び替え"
           >
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute -top-3 left-4 right-4 h-1 rounded-full bg-sky-200 shadow-[0_0_18px_rgba(125,211,252,0.55)] transition ${
+                showProjectDropLine ? "opacity-90" : "opacity-0"
+              }`}
+            />
             <div
               className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4 transition group-hover/project:bg-sky-300/[0.035]"
             >
@@ -377,7 +400,7 @@ export default function TaskProjects() {
                 <div className="flex flex-wrap items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="grid h-11 w-7 place-items-center rounded-md border border-transparent text-lg leading-none text-zinc-600 transition group-hover/project:text-sky-200"
+                    className="grid h-11 w-7 place-items-center rounded-md border border-white/0 text-lg leading-none text-zinc-600 transition group-hover/project:border-sky-200/20 group-hover/project:bg-sky-200/5 group-hover/project:text-sky-100"
                   >
                     ⋮⋮
                   </span>
@@ -482,6 +505,10 @@ export default function TaskProjects() {
                 <tbody className="divide-y divide-zinc-800">
                   {group.tasks.map((task) => {
                     const isEditing = editingTaskId === task.id;
+                    const showTaskDropLine =
+                      Boolean(draggedTaskId) &&
+                      draggedTaskId !== task.id &&
+                      taskDropTarget === task.id;
 
                     return (
                       <tr
@@ -491,10 +518,14 @@ export default function TaskProjects() {
                           event.stopPropagation();
                           startTaskDrag(event, task.id);
                         }}
-                        onDragEnd={() => setDraggedTaskId("")}
+                        onDragEnd={() => {
+                          setDraggedTaskId("");
+                          setTaskDropTarget("");
+                        }}
                         onDragOver={(event) => {
                           if (draggedTaskId && draggedTaskId !== task.id) {
                             event.preventDefault();
+                            setTaskDropTarget(task.id);
                           }
                         }}
                         onDrop={(event) => {
@@ -505,12 +536,15 @@ export default function TaskProjects() {
                           event.preventDefault();
                           reorderTask(draggedTaskId, task.id);
                           setDraggedTaskId("");
+                          setTaskDropTarget("");
                         }}
                         title={isEditing ? undefined : "行をドラッグしてタスクを並び替え"}
-                        className={`group transition ${
+                        className={`group relative transition ${
                           isEditing ? "" : "cursor-grab active:cursor-grabbing"
                         } hover:bg-sky-300/[0.035] ${
                           draggedTaskId === task.id ? "opacity-55" : ""
+                        } ${
+                          showTaskDropLine ? "shadow-[inset_0_2px_0_rgba(125,211,252,0.95)]" : ""
                         }`}
                       >
                         <td className="px-4 py-3 align-middle">
@@ -533,7 +567,7 @@ export default function TaskProjects() {
                             <div className="flex items-start gap-3">
                               <span
                                 aria-hidden="true"
-                                className="mt-0.5 grid h-8 w-5 shrink-0 place-items-center rounded-md text-base leading-none text-zinc-600 transition group-hover:text-sky-200"
+                                className="mt-0.5 grid h-8 w-5 shrink-0 place-items-center rounded-md border border-transparent text-base leading-none text-zinc-600 transition group-hover:border-sky-200/20 group-hover:bg-sky-200/5 group-hover:text-sky-100"
                               >
                                 ⋮⋮
                               </span>
@@ -660,7 +694,8 @@ export default function TaskProjects() {
               </table>
             </div>
           </article>
-        ))}
+          );
+        })}
 
         {projectGroups.length === 0 ? (
           <div className="rounded-md border border-dashed border-zinc-700 px-4 py-10 text-center text-sm text-zinc-500">

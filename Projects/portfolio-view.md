@@ -640,6 +640,10 @@ Implemented:
   frame, not only through the title/header text. The full project frame is the
   reorder target, while buttons, inputs, selects, links, and editable fields
   remain excluded from drag starts.
+- Reordering should show a clear insertion affordance while dragging. When a
+  project section or task row is dragged over another item, a subtle horizontal
+  blue line should appear at the drop position so users understand where the
+  item will land before releasing.
 - Task Flow Map navigation should be self-explanatory. The back action should
   read as returning to the Portfolio, while the stronger action should clearly
   open the selected project's schedule/task list context.
