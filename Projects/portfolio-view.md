@@ -583,6 +583,12 @@ Implemented:
   inside each project section. The new task should inherit the project name,
   appear immediately in that section, and sync back to Portfolio through the
   shared task data.
+- The schedule tab's project task list uses user-controlled ordering. A newly
+  added task is appended to the end of the selected project section, and hidden
+  priority/due-date sorting must not move it unexpectedly.
+- Project sections and task rows can be reordered with drag handles. Reordering
+  updates only the shared task ordering; it must not change status, ball holder,
+  due date, priority, or progress.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
 - Inline editing controls stop pointer and click propagation so typing,

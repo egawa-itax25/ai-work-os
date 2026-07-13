@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type DragEvent } from "react";
 import {
   Task,
   TaskPriority,
@@ -31,6 +31,8 @@ export default function TaskProjects() {
   const [editingProject, setEditingProject] = useState("");
   const [projectNameDraft, setProjectNameDraft] = useState("");
   const [editingTaskId, setEditingTaskId] = useState("");
+  const [draggedProject, setDraggedProject] = useState("");
+  const [draggedTaskId, setDraggedTaskId] = useState("");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(storageKey);
@@ -94,8 +96,75 @@ export default function TaskProjects() {
       createdAt: new Date().toISOString(),
     };
 
-    commitTasks([newTask, ...tasks]);
+    const insertIndex = tasks.reduce(
+      (lastIndex, task, index) => (task.project === project ? index : lastIndex),
+      -1,
+    );
+    const nextTasks = [...tasks];
+
+    nextTasks.splice(insertIndex + 1, 0, newTask);
+    commitTasks(nextTasks);
     setEditingTaskId(newTask.id);
+  }
+
+  function startProjectDrag(event: DragEvent<HTMLButtonElement>, project: string) {
+    setDraggedProject(project);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", project);
+  }
+
+  function reorderProject(sourceProject: string, targetProject: string) {
+    if (!sourceProject || sourceProject === targetProject) {
+      return;
+    }
+
+    const sourceTasks = tasks.filter((task) => task.project === sourceProject);
+
+    if (sourceTasks.length === 0) {
+      return;
+    }
+
+    const remainingTasks = tasks.filter((task) => task.project !== sourceProject);
+    const targetIndex = remainingTasks.findIndex(
+      (task) => task.project === targetProject,
+    );
+    const nextTasks = [...remainingTasks];
+
+    nextTasks.splice(
+      targetIndex === -1 ? nextTasks.length : targetIndex,
+      0,
+      ...sourceTasks,
+    );
+    commitTasks(nextTasks);
+  }
+
+  function startTaskDrag(event: DragEvent<HTMLButtonElement>, taskId: string) {
+    setDraggedTaskId(taskId);
+    event.dataTransfer.effectAllowed = "move";
+    event.dataTransfer.setData("text/plain", taskId);
+  }
+
+  function reorderTask(sourceTaskId: string, targetTaskId: string) {
+    if (!sourceTaskId || sourceTaskId === targetTaskId) {
+      return;
+    }
+
+    const sourceTask = tasks.find((task) => task.id === sourceTaskId);
+    const targetTask = tasks.find((task) => task.id === targetTaskId);
+
+    if (!sourceTask || !targetTask || sourceTask.project !== targetTask.project) {
+      return;
+    }
+
+    const nextTasks = tasks.filter((task) => task.id !== sourceTaskId);
+    const targetIndex = nextTasks.findIndex((task) => task.id === targetTaskId);
+
+    nextTasks.splice(
+      targetIndex === -1 ? nextTasks.length : targetIndex,
+      0,
+      sourceTask,
+    );
+    commitTasks(nextTasks);
   }
 
   function startProjectEdit(project: string) {
@@ -151,36 +220,19 @@ export default function TaskProjects() {
   const filteredTasks = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return tasks
-      .filter((task) => {
-        const matchesQuery =
-          !normalizedQuery ||
-          [task.title, task.description, task.owner, task.project]
-            .join(" ")
-            .toLowerCase()
-            .includes(normalizedQuery);
-        const matchesStatus =
-          statusFilter === "all" || task.status === statusFilter;
-        const matchesProject = !projectFilter || task.project === projectFilter;
+    return tasks.filter((task) => {
+      const matchesQuery =
+        !normalizedQuery ||
+        [task.title, task.description, task.owner, task.project]
+          .join(" ")
+          .toLowerCase()
+          .includes(normalizedQuery);
+      const matchesStatus =
+        statusFilter === "all" || task.status === statusFilter;
+      const matchesProject = !projectFilter || task.project === projectFilter;
 
-        return matchesQuery && matchesStatus && matchesProject;
-      })
-      .sort((a, b) => {
-        const projectDiff = a.project.localeCompare(b.project, "ja-JP");
-
-        if (projectDiff !== 0) {
-          return projectDiff;
-        }
-
-        const priorityDiff =
-          priorityMeta[a.priority].rank - priorityMeta[b.priority].rank;
-
-        if (priorityDiff !== 0) {
-          return priorityDiff;
-        }
-
-        return a.dueDate.localeCompare(b.dueDate);
-      });
+      return matchesQuery && matchesStatus && matchesProject;
+    });
   }, [projectFilter, query, statusFilter, tasks]);
 
   const projectGroups = useMemo(() => {
@@ -286,11 +338,38 @@ export default function TaskProjects() {
         {projectGroups.map((group) => (
           <article
             key={group.project}
-            className="neo-surface rounded-md border"
+            onDragOver={(event) => {
+              if (draggedProject && draggedProject !== group.project) {
+                event.preventDefault();
+              }
+            }}
+            onDrop={(event) => {
+              if (!draggedProject) {
+                return;
+              }
+
+              event.preventDefault();
+              reorderProject(draggedProject, group.project);
+              setDraggedProject("");
+            }}
+            className={`neo-surface rounded-md border transition ${
+              draggedProject === group.project ? "opacity-55" : ""
+            }`}
           >
             <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4">
               <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(event) => startProjectDrag(event, group.project)}
+                    onDragEnd={() => setDraggedProject("")}
+                    className="inline-flex min-h-11 cursor-grab items-center justify-center rounded-md border border-zinc-700 px-3 text-sm font-semibold text-zinc-400 transition hover:border-sky-300/40 hover:bg-sky-300/10 hover:text-sky-100 active:cursor-grabbing"
+                    aria-label={`${group.project}を並び替え`}
+                    title="ドラッグでプロジェクトを並び替え"
+                  >
+                    並び替え
+                  </button>
                   <div className="min-w-0">
                     {editingProject === group.project ? (
                       <div className="flex flex-wrap items-center gap-2">
@@ -368,14 +447,14 @@ export default function TaskProjects() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[980px] table-fixed text-left text-sm">
                 <colgroup>
-                  <col className="w-[28%]" />
+                  <col className="w-[24%]" />
                   <col className="w-[11%]" />
                   <col className="w-[11%]" />
                   <col className="w-[10%]" />
                   <col className="w-[13%]" />
                   <col className="w-[10%]" />
-                  <col className="w-[5%]" />
-                  <col className="w-[12%]" />
+                  <col className="w-[4%]" />
+                  <col className="w-[17%]" />
                 </colgroup>
                 <thead className="text-xs uppercase text-zinc-500">
                   <tr>
@@ -394,7 +473,26 @@ export default function TaskProjects() {
                     const isEditing = editingTaskId === task.id;
 
                     return (
-                      <tr key={task.id} className="hover:bg-zinc-900/60">
+                      <tr
+                        key={task.id}
+                        onDragOver={(event) => {
+                          if (draggedTaskId && draggedTaskId !== task.id) {
+                            event.preventDefault();
+                          }
+                        }}
+                        onDrop={(event) => {
+                          if (!draggedTaskId) {
+                            return;
+                          }
+
+                          event.preventDefault();
+                          reorderTask(draggedTaskId, task.id);
+                          setDraggedTaskId("");
+                        }}
+                        className={`hover:bg-zinc-900/60 ${
+                          draggedTaskId === task.id ? "opacity-55" : ""
+                        }`}
+                      >
                         <td className="px-4 py-3 align-middle">
                           {isEditing ? (
                             <div className="space-y-2">
@@ -511,6 +609,18 @@ export default function TaskProjects() {
                         </td>
                         <td className="px-4 py-3 align-middle">
                           <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              draggable={!isEditing}
+                              onDragStart={(event) => startTaskDrag(event, task.id)}
+                              onDragEnd={() => setDraggedTaskId("")}
+                              className="rounded-md border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-400 hover:border-sky-300/40 hover:bg-sky-300/10 hover:text-sky-100 disabled:cursor-not-allowed disabled:opacity-40"
+                              disabled={isEditing}
+                              aria-label={`${task.title}を並び替え`}
+                              title="ドラッグでタスクを並び替え"
+                            >
+                              並び替え
+                            </button>
                             <button
                               type="button"
                               onClick={() => setEditingTaskId(isEditing ? "" : task.id)}

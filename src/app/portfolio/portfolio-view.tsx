@@ -1494,7 +1494,6 @@ function syncPortfolioProjectsWithTasks(
   const usedProjectIds = new Set<string>();
 
   Array.from(taskGroups.entries())
-    .sort(([left], [right]) => left.localeCompare(right, "ja-JP"))
     .forEach(([projectName, projectTasks], index) => {
       const baseProject = projectsByName.get(projectName);
       const syncedProject = deriveProjectFromTasks(
