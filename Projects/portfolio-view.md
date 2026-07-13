@@ -613,6 +613,11 @@ Implemented:
   restored from that area.
 - The visible archive action should be removed from project and task menus
   because the 30-day trash area now covers the reversible removal use case.
+- The sidebar management group includes "完了済み" as a separate completed-work
+  store. This is different from "削除済み": completed tasks are preserved as
+  finished work, not as removal candidates. The Task Flow Map done zone exposes
+  "完了済みに追加" so users can move finished tasks out of the active map while
+  still being able to review or restore them later.
 - On mobile widths, Task Flow Map should keep the desktop behavior but use a
   wider horizontal touch canvas and smaller zone labels/spacing so ownership
   zones and task nodes do not overlap in the visible phone viewport.

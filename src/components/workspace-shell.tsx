@@ -12,16 +12,17 @@ const defaultNavItems = [
   { id: "projects", href: "/projects", label: "プロジェクト" },
   { id: "knowledge", href: "/knowledge", label: "知識" },
   { id: "calendar", href: "/tasks/projects", label: "予定" },
+  { id: "settings", href: "/settings", label: "設定" },
+  { id: "completed", href: "/completed", label: "完了済み" },
   { id: "trash", href: "/trash", label: "削除済み" },
   { id: "analytics", href: "/analytics", label: "分析" },
   { id: "ai", href: "/ai", label: "AI頭脳" },
-  { id: "settings", href: "/settings", label: "設定" },
 ];
 
 const navOrderStorageKey = "ai-work-os:navigation-order";
 const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics", "ai"]);
 const primaryNavIds = new Set(["calendar", "portfolio", "my-tasks", "projects"]);
-const utilityNavIds = new Set(["settings", "trash"]);
+const utilityNavIds = new Set(["settings", "completed", "trash"]);
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -174,9 +175,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           {navIcon(item.id)}
         </span>
         <span className="min-w-0 flex-1 truncate">{item.label}</span>
-        <span className="text-[11px] text-zinc-600 opacity-0 transition group-hover:opacity-100">
-          ⋮⋮
-        </span>
+        <span className="text-[11px] text-zinc-600 opacity-0 transition group-hover:opacity-100">⋮⋮</span>
       </Link>
     );
   }
@@ -216,13 +215,9 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
                 </button>
               </section>
 
-              <SidebarGroup title="メニュー">
-                {primaryNavItems.map(renderNavItem)}
-              </SidebarGroup>
+              <SidebarGroup title="メニュー">{primaryNavItems.map(renderNavItem)}</SidebarGroup>
 
-              <SidebarGroup title="管理">
-                {utilityNavItems.map(renderNavItem)}
-              </SidebarGroup>
+              <SidebarGroup title="管理">{utilityNavItems.map(renderNavItem)}</SidebarGroup>
             </nav>
 
             <div className="mt-auto border-t border-white/10 pt-3">
@@ -344,9 +339,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 function SidebarGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1 px-2 text-[11px] font-semibold tracking-normal text-zinc-500">
-        {title}
-      </h2>
+      <h2 className="mb-1 px-2 text-[11px] font-semibold tracking-normal text-zinc-500">{title}</h2>
       <div className="space-y-0.5">{children}</div>
     </section>
   );
@@ -355,18 +348,20 @@ function SidebarGroup({ title, children }: { title: string; children: React.Reac
 function navIcon(id: string) {
   switch (id) {
     case "calendar":
-      return "◷";
+      return "予定";
     case "portfolio":
-      return "□";
+      return "流";
     case "my-tasks":
-      return "✓";
+      return "自";
     case "projects":
-      return "⌁";
+      return "案";
     case "settings":
-      return "⚙";
+      return "設";
+    case "completed":
+      return "完";
     case "trash":
-      return "⌫";
+      return "削";
     default:
-      return "•";
+      return "・";
   }
 }

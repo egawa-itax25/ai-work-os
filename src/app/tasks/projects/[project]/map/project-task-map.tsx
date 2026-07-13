@@ -24,6 +24,7 @@ import {
   storageKey,
   todayOffset,
 } from "../../../task-data";
+import { addCompletedTasks, removeCompletedTask } from "@/lib/completed-data";
 import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
 
 type DragState = {
@@ -882,6 +883,38 @@ export default function ProjectTaskMap() {
     });
   }
 
+  function storeCompletedProjectTasks() {
+    const completedTasks = projectTasks.filter((task) => task.status === "done");
+
+    if (completedTasks.length === 0) {
+      return;
+    }
+
+    const beforeTasks = tasks;
+    const storedItems = addCompletedTasks(completedTasks);
+    const completedTaskIds = new Set(completedTasks.map((task) => task.id));
+    const nextTasks = tasks
+      .filter((task) => !completedTaskIds.has(task.id))
+      .map((task) => ({
+        ...task,
+        links: task.links.filter((targetId) => !completedTaskIds.has(targetId)),
+      }));
+
+    setTasks(nextTasks);
+    setActiveTaskId(nextTasks.find((task) => task.project === projectName)?.id ?? "");
+    setToast({
+      message: `${completedTasks.length}件を完了済みに追加しました。`,
+      undo: () => {
+        for (const item of storedItems) {
+          removeCompletedTask(item.id);
+        }
+
+        setTasks(beforeTasks);
+        setActiveTaskId(completedTasks[0]?.id ?? "");
+      },
+    });
+  }
+
   function createTask(input: CreateTaskInput) {
     const newTask: Task = {
       id: crypto.randomUUID(),
@@ -1273,6 +1306,7 @@ export default function ProjectTaskMap() {
                 <TaskFlowZone
                   key={zone.id}
                   count={zoneCounts[zone.id]}
+                  onStoreCompleted={storeCompletedProjectTasks}
                   zone={zone}
                 />
               ))}
@@ -1985,9 +2019,11 @@ function TaskInspector({
 function TaskFlowZone({
   zone,
   count,
+  onStoreCompleted,
 }: {
   zone: TaskFlowZoneDefinition;
   count: number;
+  onStoreCompleted: () => void;
 }) {
   const statusLabel = zone.id === "done" ? "完了" : "進行中";
   const topHeight = `${taskMapTopZoneRatio * 100}%`;
@@ -2050,6 +2086,14 @@ function TaskFlowZone({
             <br />
             完了として記録されます
           </p>
+          <button
+            type="button"
+            onClick={onStoreCompleted}
+            disabled={count === 0}
+            className="pointer-events-auto mt-3 rounded-md border border-emerald-300/35 bg-emerald-300/10 px-4 py-2 text-xs font-semibold text-emerald-50 transition hover:bg-emerald-300/16 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            完了済みに追加
+          </button>
         </div>
       ) : null}
     </section>
