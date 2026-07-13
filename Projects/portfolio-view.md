@@ -644,6 +644,10 @@ Implemented:
   project section or task row is dragged over another item, a subtle horizontal
   blue line should appear at the drop position so users understand where the
   item will land before releasing.
+- Portfolio project visibility should follow the Schedule task list. If the
+  Schedule tab has no active tasks, Portfolio should show no projects. Projects
+  that no longer have active tasks should not be kept visible only because they
+  exist in saved Portfolio localStorage.
 - Task Flow Map navigation should be self-explanatory. The back action should
   read as returning to the Portfolio, while the stronger action should clearly
   open the selected project's schedule/task list context.

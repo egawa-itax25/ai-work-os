@@ -1491,8 +1491,6 @@ function syncPortfolioProjectsWithTasks(
     currentProjects.map((project) => [project.name, project]),
   );
   const syncedProjects: PortfolioProject[] = [];
-  const usedProjectIds = new Set<string>();
-
   Array.from(taskGroups.entries())
     .forEach(([projectName, projectTasks], index) => {
       const baseProject = projectsByName.get(projectName);
@@ -1504,14 +1502,7 @@ function syncPortfolioProjectsWithTasks(
       );
 
       syncedProjects.push(syncedProject);
-      usedProjectIds.add(syncedProject.id);
     });
-
-  currentProjects.forEach((project) => {
-    if (!usedProjectIds.has(project.id) && !taskGroups.has(project.name)) {
-      syncedProjects.push(project);
-    }
-  });
 
   return syncedProjects.map((project, index) => ({
     ...project,
