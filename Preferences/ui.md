@@ -182,3 +182,10 @@ page. Creation and editing controls should appear only when useful:
 - Context menus are available through right click or "…" buttons.
 - Minor edits auto-save with quiet "保存中…" and "保存済み" feedback.
 - Recent changes should show an undo-capable toast.
+
+## Team Allocation View
+
+Team-level allocation should feel like a quiet operating map, not a dense HR
+dashboard. Show people as primary nodes, with compact project/task pills around
+them. Dragging a task to a person should feel like assigning responsibility,
+while current ball ownership remains visibly separate in task details.

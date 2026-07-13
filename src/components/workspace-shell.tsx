@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const defaultNavItems = [
+  { id: "team", href: "/team", label: "全体プロジェクト" },
   { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
   { id: "cockpit", href: "/", label: "司令室" },
   { id: "my-tasks", href: "/tasks", label: "自分の仕事" },
@@ -21,7 +22,7 @@ const defaultNavItems = [
 
 const navOrderStorageKey = "ai-work-os:navigation-order";
 const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics", "ai"]);
-const primaryNavIds = new Set(["calendar", "portfolio", "my-tasks", "projects"]);
+const primaryNavIds = new Set(["calendar", "portfolio", "team", "my-tasks", "projects"]);
 const utilityNavIds = new Set(["settings", "completed", "trash"]);
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
@@ -349,6 +350,8 @@ function SidebarGroup({ title, children }: { title: string; children: React.Reac
 
 function navIcon(id: string) {
   switch (id) {
+    case "team":
+      return "全";
     case "calendar":
       return "◷";
     case "portfolio":
