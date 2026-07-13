@@ -1163,7 +1163,7 @@ export default function ProjectTaskMap() {
 
   return (
     <div className="neo-shell flex h-[calc(100vh-4rem)] min-h-0 flex-col gap-4 overflow-hidden text-zinc-100">
-      <section className="grid shrink-0 gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(48rem,1.25fr)]">
+      <section className="grid shrink-0 gap-4 pr-20 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(48rem,1.25fr)] 2xl:pr-24">
         <div>
           <p className="neo-accent text-sm font-medium">プロジェクトマップ</p>
           <h1 className="mt-1 break-words text-3xl font-semibold tracking-normal text-white">
@@ -1171,8 +1171,8 @@ export default function ProjectTaskMap() {
           </h1>
         </div>
 
-        <div className="grid gap-3 xl:grid-cols-[minmax(24rem,1fr)_auto]">
-          <div className="grid gap-3 md:grid-cols-[minmax(12rem,0.85fr)_minmax(18rem,1.15fr)]">
+        <div className="flex flex-wrap gap-3">
+          <div className="grid min-w-0 flex-[2_1_28rem] gap-3 md:grid-cols-[minmax(12rem,0.85fr)_minmax(18rem,1.15fr)]">
             <Link
               href="/portfolio"
               className="group flex min-h-20 items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.025] px-4 py-3 text-left transition hover:border-sky-200/35 hover:bg-sky-200/[0.06]"
@@ -1198,7 +1198,7 @@ export default function ProjectTaskMap() {
               </span>
             </Link>
           </div>
-          <div className="grid grid-cols-4 gap-3 xl:min-w-[28rem]">
+          <div className="grid min-w-0 flex-[1_1_22rem] grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-2 2xl:grid-cols-4">
             <SummaryTile label="タスク" value={projectTasks.length} />
             <SummaryTile label="内部リンク" value={projectLinks.length} />
             <SummaryTile label="期限超過" value={overdueCount} urgent />

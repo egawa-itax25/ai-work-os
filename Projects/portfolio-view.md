@@ -613,6 +613,9 @@ Implemented:
 - Task Flow Map header navigation cards should expand to use the horizontal
   space beside the project title. Their width should respond to the visible
   window while keeping summary tiles compact on the far right.
+- Task Flow Map header summary tiles must reserve space for the global
+  "＋ 作成" action. At narrower desktop widths, navigation cards and summary
+  tiles should wrap or shrink before they overlap the fixed create action.
 - Portfolio filters and project-task view tabs should follow the same header
   pattern: use the horizontal space beside the page title, grow with the visible
   window, and avoid occupying a separate full-width row when there is available
