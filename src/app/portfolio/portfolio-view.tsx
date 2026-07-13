@@ -1180,7 +1180,7 @@ function Drawer({
       onMouseDown={onClose}
     >
       <aside
-        className="w-full max-w-md rounded-xl border border-white/10 bg-slate-950/95 p-5 shadow-2xl shadow-black/50"
+        className="w-full max-w-xl rounded-xl border border-white/10 bg-slate-950/95 p-6 shadow-2xl shadow-black/50 md:p-7"
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3">
@@ -1189,7 +1189,7 @@ function Drawer({
             ×
           </button>
         </div>
-        <div className="mt-6">{children}</div>
+        <div className="mt-7">{children}</div>
       </aside>
     </div>
   );
@@ -1214,9 +1214,9 @@ function Field({
     <label className="block text-sm text-slate-300">
       {label}
       {textarea ? (
-        <textarea autoFocus={autoFocus} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-24 w-full resize-none rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-slate-100 outline-none focus:border-sky-200/60" />
+        <textarea autoFocus={autoFocus} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-32 w-full resize-none rounded-md border border-white/10 bg-white/[0.04] px-4 py-3 text-slate-100 outline-none focus:border-sky-200/60" />
       ) : (
-        <input autoFocus={autoFocus} type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 w-full rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-slate-100 outline-none focus:border-sky-200/60" />
+        <input autoFocus={autoFocus} type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-4 py-2.5 text-slate-100 outline-none focus:border-sky-200/60" />
       )}
     </label>
   );

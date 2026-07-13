@@ -648,6 +648,9 @@ Implemented:
   Schedule tab has no active tasks, Portfolio should show no projects. Projects
   that no longer have active tasks should not be kept visible only because they
   exist in saved Portfolio localStorage.
+- Create Project and Create Task modals should be large enough for Japanese
+  input. Use a wider modal surface and more generous vertical spacing so
+  project names, objectives, owners, and dates feel easier to edit.
 - Task Flow Map navigation should be self-explanatory. The back action should
   read as returning to the Portfolio, while the stronger action should clearly
   open the selected project's schedule/task list context.
