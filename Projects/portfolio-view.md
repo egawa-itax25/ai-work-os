@@ -573,6 +573,12 @@ Implemented:
   when the separate portfolio storage is empty or stale. Portfolio should keep
   editable project metadata, but derive operational fields such as progress,
   current ball, status, deadline risk, and counts from the task data.
+- The schedule tab's project task list is also an editing surface. Users can
+  edit task title, description, ball holder, status, priority, owner, and due
+  date directly from the list. Users can rename or delete a project from the
+  same project section. These edits must write to the shared task data and stay
+  reflected in Portfolio. Project renames and deletes should also update the
+  Portfolio metadata store so editable project details do not drift.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
 - Inline editing controls stop pointer and click propagation so typing,
