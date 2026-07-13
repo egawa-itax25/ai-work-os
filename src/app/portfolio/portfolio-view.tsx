@@ -23,6 +23,7 @@ import {
 } from "@/lib/portfolio-data";
 import {
   initialTasks,
+  isOverdue,
   normalizeTasks,
   storageKey as taskStorageKey,
   todayOffset,
@@ -173,6 +174,14 @@ export default function PortfolioView({
 
     return () => window.clearTimeout(timeout);
   }, [highlightId]);
+
+  useEffect(() => {
+    setProjects((current) => {
+      const syncedProjects = syncPortfolioProjectsWithTasks(current, portfolioTasks);
+
+      return haveSameProjects(current, syncedProjects) ? current : syncedProjects;
+    });
+  }, [portfolioTasks]);
 
   useEffect(() => {
     if (!toast) {
@@ -1457,6 +1466,187 @@ function readTasks() {
 
 function writeTasks(tasks: Task[]) {
   window.localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
+}
+
+function syncPortfolioProjectsWithTasks(
+  currentProjects: PortfolioProject[],
+  tasks: Task[],
+) {
+  const activeTasks = tasks.filter((task) => task.status !== "archived");
+  const taskGroups = new Map<string, Task[]>();
+
+  for (const task of activeTasks) {
+    const projectName = task.project.trim();
+
+    if (!projectName) {
+      continue;
+    }
+
+    const group = taskGroups.get(projectName) ?? [];
+    group.push(task);
+    taskGroups.set(projectName, group);
+  }
+
+  const projectsByName = new Map(
+    currentProjects.map((project) => [project.name, project]),
+  );
+  const syncedProjects: PortfolioProject[] = [];
+  const usedProjectIds = new Set<string>();
+
+  Array.from(taskGroups.entries())
+    .sort(([left], [right]) => left.localeCompare(right, "ja-JP"))
+    .forEach(([projectName, projectTasks], index) => {
+      const baseProject = projectsByName.get(projectName);
+      const syncedProject = deriveProjectFromTasks(
+        projectName,
+        projectTasks,
+        baseProject,
+        index,
+      );
+
+      syncedProjects.push(syncedProject);
+      usedProjectIds.add(syncedProject.id);
+    });
+
+  currentProjects.forEach((project) => {
+    if (!usedProjectIds.has(project.id) && !taskGroups.has(project.name)) {
+      syncedProjects.push(project);
+    }
+  });
+
+  return syncedProjects.map((project, index) => ({
+    ...project,
+    rank: index + 1,
+  }));
+}
+
+function deriveProjectFromTasks(
+  projectName: string,
+  projectTasks: Task[],
+  baseProject: PortfolioProject | undefined,
+  index: number,
+): PortfolioProject {
+  const sortedTasks = [...projectTasks].sort((left, right) => {
+    const leftOverdue = left.status !== "done" && isOverdue(left.dueDate) ? -1 : 0;
+    const rightOverdue = right.status !== "done" && isOverdue(right.dueDate) ? -1 : 0;
+
+    if (leftOverdue !== rightOverdue) {
+      return leftOverdue - rightOverdue;
+    }
+
+    return left.dueDate.localeCompare(right.dueDate);
+  });
+  const incompleteTasks = sortedTasks.filter((task) => task.status !== "done");
+  const leadTask = incompleteTasks[0] ?? sortedTasks[0];
+  const overdueCount = incompleteTasks.filter((task) => isOverdue(task.dueDate)).length;
+  const progress = Math.round(
+    projectTasks.reduce((total, task) => total + task.progress, 0) /
+      Math.max(projectTasks.length, 1),
+  );
+  const currentBallHolder =
+    leadTask?.currentBallHolder || baseProject?.currentBallHolder || "なし";
+  const ballHolderType = inferBallHolderType(currentBallHolder);
+  const dueDate =
+    leadTask?.dueDate ||
+    baseProject?.dueDate ||
+    projectTasks
+      .map((task) => task.dueDate)
+      .filter(Boolean)
+      .sort()[0] ||
+    "";
+  const allDone =
+    projectTasks.length > 0 && projectTasks.every((task) => task.status === "done");
+  const status =
+    allDone || progress >= 100
+      ? "done"
+      : overdueCount > 0
+        ? "stalled"
+        : ballHolderType === "ai"
+          ? "ai-processing"
+          : ballHolderType === "customer" || ballHolderType === "member"
+            ? "waiting"
+            : "healthy";
+
+  return {
+    id: baseProject?.id ?? projectIdFromName(projectName),
+    rank: baseProject?.rank ?? index + 1,
+    name: projectName,
+    objective:
+      baseProject?.objective || leadTask?.description || "タスクから自動で同期されたプロジェクトです。",
+    owner: baseProject?.owner || leadTask?.owner || "未設定",
+    dueDate,
+    currentBallHolder,
+    ballHolderType,
+    ballHoldingDays: getBallHoldingDays(leadTask?.ballHoldingStartedAt),
+    progress: clamp(progress, 0, 100),
+    status,
+    stalledCount: overdueCount,
+    deadlineRisk: overdueCount > 0 ? "critical" : "none",
+    businessImportance: baseProject?.businessImportance ?? 8,
+    downstreamImpact: baseProject?.downstreamImpact ?? Math.min(projectTasks.length * 4, 24),
+    dueImpact: baseProject?.dueImpact ?? (overdueCount > 0 ? 24 : 8),
+    nextMilestone: baseProject?.nextMilestone || leadTask?.nextAction || "次のタスクを確認する",
+    aiSuggestion: baseProject?.aiSuggestion,
+    risk: baseProject?.risk,
+    x: baseProject?.x ?? 120 + ((index * 180) % 820),
+    y: baseProject?.y ?? 120 + ((index * 110) % 420),
+  };
+}
+
+function haveSameProjects(left: PortfolioProject[], right: PortfolioProject[]) {
+  if (left.length !== right.length) {
+    return false;
+  }
+
+  return left.every((project, index) => {
+    const nextProject = right[index];
+
+    return (
+      nextProject &&
+      project.id === nextProject.id &&
+      project.rank === nextProject.rank &&
+      project.name === nextProject.name &&
+      project.progress === nextProject.progress &&
+      project.status === nextProject.status &&
+      project.currentBallHolder === nextProject.currentBallHolder &&
+      project.ballHolderType === nextProject.ballHolderType &&
+      project.ballHoldingDays === nextProject.ballHoldingDays &&
+      project.stalledCount === nextProject.stalledCount &&
+      project.deadlineRisk === nextProject.deadlineRisk &&
+      project.dueDate === nextProject.dueDate &&
+      project.owner === nextProject.owner
+    );
+  });
+}
+
+function projectIdFromName(name: string) {
+  let hash = 0;
+
+  for (const character of name) {
+    hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  }
+
+  return `task-project-${Math.abs(hash).toString(36)}`;
+}
+
+function getBallHoldingDays(value: string | undefined) {
+  if (!value) {
+    return 0;
+  }
+
+  const startedAt = new Date(`${value}T00:00:00`);
+
+  if (Number.isNaN(startedAt.getTime())) {
+    return 0;
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return Math.max(
+    0,
+    Math.floor((today.getTime() - startedAt.getTime()) / (1000 * 60 * 60 * 24)),
+  );
 }
 
 function inferBallHolderType(value: string): BallHolderType {

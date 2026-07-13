@@ -568,6 +568,11 @@ Implemented:
 - Project progress uses a bar-style range control. Setting project progress to
   100% also sets all tasks in that project to 100%; setting project progress
   below 100% does not rewrite task progress.
+- Portfolio View must stay synchronized with the project list shown in the
+  schedule tab. Projects that exist in task data must appear in Portfolio even
+  when the separate portfolio storage is empty or stale. Portfolio should keep
+  editable project metadata, but derive operational fields such as progress,
+  current ball, status, deadline risk, and counts from the task data.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
 - Inline editing controls stop pointer and click propagation so typing,
