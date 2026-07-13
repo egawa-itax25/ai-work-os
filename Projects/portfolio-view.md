@@ -586,9 +586,12 @@ Implemented:
 - The schedule tab's project task list uses user-controlled ordering. A newly
   added task is appended to the end of the selected project section, and hidden
   priority/due-date sorting must not move it unexpectedly.
-- Project sections and task rows can be reordered with drag handles. Reordering
-  updates only the shared task ordering; it must not change status, ball holder,
-  due date, priority, or progress.
+- Project sections and task rows can be reordered directly by dragging the
+  visible row/header surface. Dedicated text-heavy reorder buttons should not be
+  the primary interaction because they are hard to discover and hard to touch.
+  Editing controls, links, buttons, inputs, and selects must not start drag.
+  Reordering updates only the shared task ordering; it must not change status,
+  ball holder, due date, priority, or progress.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
 - Inline editing controls stop pointer and click propagation so typing,

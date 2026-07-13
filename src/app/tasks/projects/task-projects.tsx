@@ -107,7 +107,12 @@ export default function TaskProjects() {
     setEditingTaskId(newTask.id);
   }
 
-  function startProjectDrag(event: DragEvent<HTMLButtonElement>, project: string) {
+  function startProjectDrag(event: DragEvent<HTMLElement>, project: string) {
+    if (isInteractiveDragTarget(event.target)) {
+      event.preventDefault();
+      return;
+    }
+
     setDraggedProject(project);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", project);
@@ -138,7 +143,12 @@ export default function TaskProjects() {
     commitTasks(nextTasks);
   }
 
-  function startTaskDrag(event: DragEvent<HTMLButtonElement>, taskId: string) {
+  function startTaskDrag(event: DragEvent<HTMLElement>, taskId: string) {
+    if (isInteractiveDragTarget(event.target)) {
+      event.preventDefault();
+      return;
+    }
+
     setDraggedTaskId(taskId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", taskId);
@@ -356,20 +366,21 @@ export default function TaskProjects() {
               draggedProject === group.project ? "opacity-55" : ""
             }`}
           >
-            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4">
+            <div
+              draggable
+              onDragStart={(event) => startProjectDrag(event, group.project)}
+              onDragEnd={() => setDraggedProject("")}
+              className="group flex cursor-grab flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4 transition hover:bg-sky-300/[0.035] active:cursor-grabbing"
+              title="見出しをドラッグしてプロジェクトを並び替え"
+            >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    type="button"
-                    draggable
-                    onDragStart={(event) => startProjectDrag(event, group.project)}
-                    onDragEnd={() => setDraggedProject("")}
-                    className="inline-flex min-h-11 cursor-grab items-center justify-center rounded-md border border-zinc-700 px-3 text-sm font-semibold text-zinc-400 transition hover:border-sky-300/40 hover:bg-sky-300/10 hover:text-sky-100 active:cursor-grabbing"
-                    aria-label={`${group.project}を並び替え`}
-                    title="ドラッグでプロジェクトを並び替え"
+                  <span
+                    aria-hidden="true"
+                    className="grid h-11 w-7 place-items-center rounded-md border border-transparent text-lg leading-none text-zinc-600 transition group-hover:text-sky-200"
                   >
-                    並び替え
-                  </button>
+                    ⋮⋮
+                  </span>
                   <div className="min-w-0">
                     {editingProject === group.project ? (
                       <div className="flex flex-wrap items-center gap-2">
@@ -447,14 +458,14 @@ export default function TaskProjects() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[980px] table-fixed text-left text-sm">
                 <colgroup>
-                  <col className="w-[24%]" />
+                  <col className="w-[28%]" />
                   <col className="w-[11%]" />
                   <col className="w-[11%]" />
                   <col className="w-[10%]" />
                   <col className="w-[13%]" />
                   <col className="w-[10%]" />
-                  <col className="w-[4%]" />
-                  <col className="w-[17%]" />
+                  <col className="w-[5%]" />
+                  <col className="w-[12%]" />
                 </colgroup>
                 <thead className="text-xs uppercase text-zinc-500">
                   <tr>
@@ -475,6 +486,9 @@ export default function TaskProjects() {
                     return (
                       <tr
                         key={task.id}
+                        draggable={!isEditing}
+                        onDragStart={(event) => startTaskDrag(event, task.id)}
+                        onDragEnd={() => setDraggedTaskId("")}
                         onDragOver={(event) => {
                           if (draggedTaskId && draggedTaskId !== task.id) {
                             event.preventDefault();
@@ -489,7 +503,10 @@ export default function TaskProjects() {
                           reorderTask(draggedTaskId, task.id);
                           setDraggedTaskId("");
                         }}
-                        className={`hover:bg-zinc-900/60 ${
+                        title={isEditing ? undefined : "行をドラッグしてタスクを並び替え"}
+                        className={`group transition ${
+                          isEditing ? "" : "cursor-grab active:cursor-grabbing"
+                        } hover:bg-sky-300/[0.035] ${
                           draggedTaskId === task.id ? "opacity-55" : ""
                         }`}
                       >
@@ -510,12 +527,20 @@ export default function TaskProjects() {
                               />
                             </div>
                           ) : (
-                            <>
-                              <div className="font-medium text-white">{task.title}</div>
-                              <div className="mt-1 line-clamp-1 text-xs text-zinc-500">
-                                {task.description || "メモなし"}
+                            <div className="flex items-start gap-3">
+                              <span
+                                aria-hidden="true"
+                                className="mt-0.5 grid h-8 w-5 shrink-0 place-items-center rounded-md text-base leading-none text-zinc-600 transition group-hover:text-sky-200"
+                              >
+                                ⋮⋮
+                              </span>
+                              <div className="min-w-0">
+                                <div className="font-medium text-white">{task.title}</div>
+                                <div className="mt-1 line-clamp-1 text-xs text-zinc-500">
+                                  {task.description || "メモなし"}
+                                </div>
                               </div>
-                            </>
+                            </div>
                           )}
                         </td>
                         <td className="px-4 py-3 align-middle">
@@ -609,18 +634,6 @@ export default function TaskProjects() {
                         </td>
                         <td className="px-4 py-3 align-middle">
                           <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              draggable={!isEditing}
-                              onDragStart={(event) => startTaskDrag(event, task.id)}
-                              onDragEnd={() => setDraggedTaskId("")}
-                              className="rounded-md border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-400 hover:border-sky-300/40 hover:bg-sky-300/10 hover:text-sky-100 disabled:cursor-not-allowed disabled:opacity-40"
-                              disabled={isEditing}
-                              aria-label={`${task.title}を並び替え`}
-                              title="ドラッグでタスクを並び替え"
-                            >
-                              並び替え
-                            </button>
                             <button
                               type="button"
                               onClick={() => setEditingTaskId(isEditing ? "" : task.id)}
@@ -787,6 +800,13 @@ function removePortfolioProject(projectName: string) {
   }
 
   writePortfolioProjects(projects.filter((project) => project.name !== projectName));
+}
+
+function isInteractiveDragTarget(target: EventTarget | null) {
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest("a, button, input, select, textarea, [role='button']"))
+  );
 }
 
 
