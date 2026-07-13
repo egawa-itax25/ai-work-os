@@ -348,6 +348,9 @@ export default function TaskProjects() {
         {projectGroups.map((group) => (
           <article
             key={group.project}
+            draggable
+            onDragStart={(event) => startProjectDrag(event, group.project)}
+            onDragEnd={() => setDraggedProject("")}
             onDragOver={(event) => {
               if (draggedProject && draggedProject !== group.project) {
                 event.preventDefault();
@@ -362,22 +365,19 @@ export default function TaskProjects() {
               reorderProject(draggedProject, group.project);
               setDraggedProject("");
             }}
-            className={`neo-surface rounded-md border transition ${
+            className={`neo-surface group/project cursor-grab rounded-md border transition active:cursor-grabbing ${
               draggedProject === group.project ? "opacity-55" : ""
             }`}
+            title="枠ごとドラッグしてプロジェクトを並び替え"
           >
             <div
-              draggable
-              onDragStart={(event) => startProjectDrag(event, group.project)}
-              onDragEnd={() => setDraggedProject("")}
-              className="group flex cursor-grab flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4 transition hover:bg-sky-300/[0.035] active:cursor-grabbing"
-              title="見出しをドラッグしてプロジェクトを並び替え"
+              className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-800 px-4 py-4 transition group-hover/project:bg-sky-300/[0.035]"
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="grid h-11 w-7 place-items-center rounded-md border border-transparent text-lg leading-none text-zinc-600 transition group-hover:text-sky-200"
+                    className="grid h-11 w-7 place-items-center rounded-md border border-transparent text-lg leading-none text-zinc-600 transition group-hover/project:text-sky-200"
                   >
                     ⋮⋮
                   </span>
@@ -487,7 +487,10 @@ export default function TaskProjects() {
                       <tr
                         key={task.id}
                         draggable={!isEditing}
-                        onDragStart={(event) => startTaskDrag(event, task.id)}
+                        onDragStart={(event) => {
+                          event.stopPropagation();
+                          startTaskDrag(event, task.id);
+                        }}
                         onDragEnd={() => setDraggedTaskId("")}
                         onDragOver={(event) => {
                           if (draggedTaskId && draggedTaskId !== task.id) {

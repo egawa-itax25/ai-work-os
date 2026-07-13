@@ -633,6 +633,10 @@ Implemented:
 - Project list cards should wrap into responsive rows instead of requiring
   horizontal scrolling. The list should adapt to the visible window width and
   become two or three rows when needed.
+- Project sections in the project-task list should be draggable as a whole
+  frame, not only through the title/header text. The full project frame is the
+  reorder target, while buttons, inputs, selects, links, and editable fields
+  remain excluded from drag starts.
 - Task Flow Map navigation should be self-explanatory. The back action should
   read as returning to the Portfolio, while the stronger action should clearly
   open the selected project's schedule/task list context.
