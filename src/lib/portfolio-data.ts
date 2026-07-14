@@ -8,6 +8,8 @@ export type PortfolioStatus =
 
 export type BallHolderType = "self" | "customer" | "member" | "ai" | "none";
 
+export type PortfolioProjectOrigin = "manual" | "task";
+
 export type PriorityScorePart = {
   label: string;
   value: number;
@@ -15,6 +17,7 @@ export type PriorityScorePart = {
 
 export type PortfolioProject = {
   id: string;
+  origin: PortfolioProjectOrigin;
   rank: number;
   name: string;
   objective: string;
@@ -63,6 +66,7 @@ export const portfolioStorageKey = "ai-work-os:portfolio-projects:v1";
 export const portfolioProjects: PortfolioProject[] = [
   {
     id: "portfolio-a-renewal",
+    origin: "task",
     rank: 1,
     name: "A社リニューアル",
     objective: "既存サイトを営業導線として再設計し、問い合わせ率を改善する。",
@@ -86,6 +90,7 @@ export const portfolioProjects: PortfolioProject[] = [
   },
   {
     id: "portfolio-b-system",
+    origin: "task",
     rank: 2,
     name: "B社システム導入",
     objective: "基幹システムとの連携を安定させ、手作業の転記を減らす。",
@@ -109,6 +114,7 @@ export const portfolioProjects: PortfolioProject[] = [
   },
   {
     id: "portfolio-closing",
+    origin: "task",
     rank: 3,
     name: "決算業務効率化",
     objective: "決算資料の収集と分類を自動化し、レビュー時間を短縮する。",
@@ -131,6 +137,7 @@ export const portfolioProjects: PortfolioProject[] = [
   },
   {
     id: "portfolio-recruiting",
+    origin: "task",
     rank: 4,
     name: "採用プロジェクト",
     objective: "候補者体験を崩さず、面談から評価までのリードタイムを短縮する。",
@@ -154,6 +161,7 @@ export const portfolioProjects: PortfolioProject[] = [
   },
   {
     id: "portfolio-ops",
+    origin: "task",
     rank: 5,
     name: "運用安定化",
     objective: "通知と監視を整え、障害対応の初動を安定させる。",
@@ -175,6 +183,7 @@ export const portfolioProjects: PortfolioProject[] = [
   },
   {
     id: "portfolio-archive",
+    origin: "task",
     rank: 6,
     name: "社内ナレッジ移行",
     objective: "散らばった社内知識をVaultへ移し、AI検索の土台を作る。",
@@ -206,6 +215,7 @@ export function normalizePortfolioProjects(
 ): PortfolioProject[] {
   return projects.map((project, index) => ({
     id: project.id,
+    origin: project.origin ?? "manual",
     rank: project.rank ?? index + 1,
     name: project.name,
     objective: project.objective ?? "",

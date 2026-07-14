@@ -319,6 +319,7 @@ export default function PortfolioView({
     const before = projects;
     const nextProject: PortfolioProject = {
       id: `project-${crypto.randomUUID()}`,
+      origin: "manual",
       rank: projects.length + 1,
       name: input.name,
       objective: input.objective,
@@ -1594,7 +1595,12 @@ function syncPortfolioProjectsWithTasks(
       syncedProjects.push(syncedProject);
     });
 
-  return syncedProjects.map((project, index) => ({
+  const taskProjectNames = new Set(taskGroups.keys());
+  const manualProjectsWithoutTasks = currentProjects.filter(
+    (project) => project.origin === "manual" && !taskProjectNames.has(project.name),
+  );
+
+  return [...syncedProjects, ...manualProjectsWithoutTasks].map((project, index) => ({
     ...project,
     rank: index + 1,
   }));
@@ -1650,6 +1656,7 @@ function deriveProjectFromTasks(
 
   return {
     id: baseProject?.id ?? projectIdFromName(projectName),
+    origin: baseProject?.origin ?? "task",
     rank: baseProject?.rank ?? index + 1,
     name: projectName,
     objective:
@@ -1685,6 +1692,7 @@ function haveSameProjects(left: PortfolioProject[], right: PortfolioProject[]) {
     return (
       nextProject &&
       project.id === nextProject.id &&
+      project.origin === nextProject.origin &&
       project.rank === nextProject.rank &&
       project.name === nextProject.name &&
       project.progress === nextProject.progress &&

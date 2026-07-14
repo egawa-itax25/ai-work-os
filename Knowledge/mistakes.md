@@ -149,3 +149,12 @@ Use this note only when the user gives an explicit correction and both are true:
   widths.
 - Prevention: Segmented filters should keep natural label width with flex-wrap.
   Avoid responsive grids that stretch short navigation labels vertically.
+
+### 2026-07-14 - Manual projects disappeared during task sync
+
+- Mistake: Portfolio synchronization treated the task list as the only source
+  of visible projects, so a project created manually in Portfolio could
+  disappear after reload or sync if it did not yet have tasks.
+- Prevention: Track whether a project was manually created or derived from task
+  data. Task-derived projects may follow Schedule visibility, but manual
+  project shells must remain until the user deletes them.

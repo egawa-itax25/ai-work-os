@@ -5,6 +5,7 @@ project: ai-task-system
 related:
   - Decisions/2026-07-07-portfolio-view.md
   - Decisions/2026-07-07-portfolio-operation-hub.md
+  - Decisions/2026-07-14-manual-project-persistence.md
   - Projects/AI-Task-System-Architecture.md
   - Preferences/ui.md
 ---
@@ -648,10 +649,12 @@ Implemented:
   project section or task row is dragged over another item, a subtle horizontal
   blue line should appear at the drop position so users understand where the
   item will land before releasing.
-- Portfolio project visibility should follow the Schedule task list. If the
-  Schedule tab has no active tasks, Portfolio should show no projects. Projects
-  that no longer have active tasks should not be kept visible only because they
-  exist in saved Portfolio localStorage.
+- Portfolio project visibility should follow the Schedule task list for
+  task-derived projects, but user-created projects are durable Portfolio
+  records. A project created from Portfolio must remain visible even when it
+  has zero tasks, until the user deletes it or moves it to the trash. This
+  prevents newly created project shells from disappearing before tasks are
+  added.
 - Create Project and Create Task modals should be large enough for Japanese
   input. Use a wider modal surface and more generous vertical spacing so
   project names, objectives, owners, and dates feel easier to edit.
