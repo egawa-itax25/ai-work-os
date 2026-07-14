@@ -167,3 +167,11 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Schedule views must load the Portfolio project store as a
   secondary project index and render empty project shells for user-created
   projects that match the current filters.
+
+### 2026-07-15 - Legacy cockpit remained reachable
+
+- Mistake: The old cockpit screen stayed available at `/` even after the
+  product had moved to Portfolio and Schedule as the active operation surfaces.
+- Prevention: When a major surface is retired from navigation, also remove or
+  redirect its direct route and update review links so stale screens are not
+  rediscovered later.

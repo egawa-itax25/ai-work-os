@@ -192,7 +192,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         {showDesktopNavigation ? (
           <aside className="fixed left-0 top-0 z-20 hidden h-screen w-56 border-r border-white/10 bg-zinc-950/82 px-2.5 py-4 shadow-2xl shadow-black/35 backdrop-blur-2xl lg:flex lg:flex-col">
             <div className="flex items-center justify-between px-2">
-              <Link href="/" className="min-w-0 text-[14px] font-semibold tracking-normal text-white">
+              <Link href="/portfolio" className="min-w-0 text-[14px] font-semibold tracking-normal text-white">
                 <span>AI仕事基盤</span>
                 <span className="ml-1 text-teal-300">OS</span>
               </Link>
@@ -252,7 +252,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
         {!isCockpit ? (
           <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-2xl lg:hidden">
             <div className="flex items-center justify-between gap-3 px-4 py-4">
-              <Link href="/" className="shrink-0 whitespace-nowrap text-base font-semibold text-white">
+              <Link href="/portfolio" className="shrink-0 whitespace-nowrap text-base font-semibold text-white">
                 AI仕事基盤
               </Link>
               <nav className="flex gap-2 overflow-x-auto text-[13px] text-slate-400">

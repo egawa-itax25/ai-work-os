@@ -114,9 +114,11 @@ When reporting completed UI changes, include the latest relevant review links
 every time so the user can open the current screen quickly from phone or PC.
 Prefer the Vercel URL for mobile review:
 
-- Cockpit: `https://ai-work-os-preview.vercel.app/`
 - Portfolio: `https://ai-work-os-preview.vercel.app/portfolio`
 - Tasks: `https://ai-work-os-preview.vercel.app/tasks`
+
+The product root `/` is not a separate cockpit screen anymore. It should send
+users to Portfolio View, which is the current operation hub.
 
 ## Primary Navigation
 
@@ -127,7 +129,7 @@ the labels clearly represent the same area.
 Current intended routes:
 
 - ポートフォリオ: `/portfolio`
-- 司令室: `/`
+- 入口: `/` -> `/portfolio`
 - 自分の仕事: `/tasks`
 - 受信箱: `/inbox`
 - プロジェクト: `/projects`
@@ -148,6 +150,10 @@ change the destination route of each item.
 The desktop left navigation should stay focused on active work. Remove these
 tabs from the primary navigation until they become daily-use surfaces:
 司令室, 分析, AI頭脳, 受信箱, 知識.
+
+Do not expose the legacy cockpit screen as an active route. The root URL should
+redirect to Portfolio View until a new command-room surface is intentionally
+specified.
 
 ## Portfolio View
 

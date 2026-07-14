@@ -27,6 +27,10 @@ Within three seconds, the user should understand:
 
 ## Position In Product
 
+Portfolio View is the default product entry surface. The legacy cockpit route
+at `/` should redirect here instead of rendering the old spatial command-room
+screen.
+
 ```text
 Portfolio View
 Project Flow
