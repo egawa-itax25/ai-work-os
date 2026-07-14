@@ -1004,7 +1004,7 @@ function ProjectInspector({
           <StatusPill project={project} />
         </div>
 
-        <EditableTextarea value={project.objective} label="目的" onChange={(value) => onUpdate(project.id, { objective: value })} />
+        <EditableTextarea value={project.objective} label="詳細" onChange={(value) => onUpdate(project.id, { objective: value })} />
 
         <div className="mt-4 flex items-end justify-between">
           <div>
@@ -1075,7 +1075,7 @@ function CreateProjectDrawer({
     <Drawer title="プロジェクトを作成" onClose={onClose}>
       <form className="space-y-4" onSubmit={submit}>
         <Field label="プロジェクト名" value={input.name} onChange={(value) => setInput((current) => ({ ...current, name: value }))} autoFocus />
-        <Field label="目的" value={input.objective} onChange={(value) => setInput((current) => ({ ...current, objective: value }))} textarea />
+        <Field label="詳細" value={input.objective} onChange={(value) => setInput((current) => ({ ...current, objective: value }))} textarea />
         <ProjectDueDateField value={input.dueDate} onChange={(value) => setInput((current) => ({ ...current, dueDate: value }))} />
         <Field label="責任者" value={input.owner} onChange={(value) => setInput((current) => ({ ...current, owner: value }))} />
         <button type="submit" className="w-full rounded-md border border-sky-200/35 bg-sky-200/[0.1] px-4 py-3 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.16]">

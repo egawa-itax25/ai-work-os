@@ -299,7 +299,7 @@ The initial structure must be extensible for:
 The modal appears in the center of the screen and starts with only:
 
 - プロジェクト名
-- 目的
+- 詳細
 - 期限
 - 責任者
 
@@ -325,7 +325,7 @@ Project list selection and map node selection use the same Project Inspector.
 The Inspector supports viewing and inline editing for:
 
 - プロジェクト名
-- 目的
+- 詳細
 - 責任者
 - 期限
 - 進捗
