@@ -450,9 +450,11 @@ not move when the user pans the task canvas; only task nodes and link paths move
 
 Minor edits auto-save.
 
-The first implementation persists editable mock state in localStorage. Future
-implementations should replace this with Vault parsing and write-back while
-preserving the same field names.
+The first implementation persisted editable mock state in localStorage. Current
+direction is Supabase-backed workspace state for logged-in users, with
+localStorage kept as a fast cache and unauthenticated fallback. Project and task
+edits should be visible from another browser, PC, or phone after the same user
+signs in.
 
 After edits, show:
 

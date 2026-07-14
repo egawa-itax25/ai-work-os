@@ -2,15 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
-  normalizeTasks,
+  normalizeTaskList,
+  remoteStorageKey as taskRemoteStorageKey,
   storageKey as taskStorageKey,
   type Task,
 } from "@/app/tasks/task-data";
 import {
+  completedRemoteStorageKey,
+  completedStorageKey,
+  normalizeCompletedTasks,
   readCompletedTasks,
   removeCompletedTask,
   type CompletedTaskItem,
 } from "@/lib/completed-data";
+import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 type ToastState = { message: string } | null;
 
@@ -19,7 +24,13 @@ export default function CompletedView() {
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
-    setItems(readCompletedTasks());
+    void loadSyncedState({
+      localKey: completedStorageKey,
+      remoteKey: completedRemoteStorageKey,
+      fallback: [],
+      normalize: normalizeCompletedTasks,
+      onValue: setItems,
+    });
   }, []);
 
   const groupedItems = useMemo(() => {
@@ -142,11 +153,11 @@ export default function CompletedView() {
 
 function readTasks() {
   const saved = window.localStorage.getItem(taskStorageKey);
-  return saved ? normalizeTasks(JSON.parse(saved)) : [];
+  return saved ? normalizeTaskList(JSON.parse(saved)) : [];
 }
 
 function writeTasks(tasks: Task[]) {
-  window.localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
+  void saveSyncedState(taskStorageKey, taskRemoteStorageKey, tasks);
 }
 
 function formatDateTime(value: string) {

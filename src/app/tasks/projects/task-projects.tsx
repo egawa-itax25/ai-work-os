@@ -10,17 +10,20 @@ import {
   formatDate,
   initialTasks,
   isOverdue,
-  normalizeTasks,
+  normalizeTaskList,
+  remoteStorageKey,
   priorityMeta,
   statusMeta,
   storageKey,
 } from "../task-data";
 import {
   normalizePortfolioProjects,
+  portfolioRemoteStorageKey,
   portfolioStorageKey,
   type PortfolioProject,
 } from "@/lib/portfolio-data";
 import { addTrashItem, createTrashDates } from "@/lib/trash-data";
+import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 export default function TaskProjects() {
   const searchParams = useSearchParams();
@@ -37,16 +40,18 @@ export default function TaskProjects() {
   const [taskDropTarget, setTaskDropTarget] = useState("");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(storageKey);
-
-    if (saved) {
-      setTasks(normalizeTasks(JSON.parse(saved)));
-    }
+    void loadSyncedState({
+      localKey: storageKey,
+      remoteKey: remoteStorageKey,
+      fallback: initialTasks,
+      normalize: normalizeTaskList,
+      onValue: setTasks,
+    });
   }, []);
 
   function commitTasks(nextTasks: Task[]) {
     setTasks(nextTasks);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextTasks));
+    void saveSyncedState(storageKey, remoteStorageKey, nextTasks);
   }
 
   function updateTask(id: string, patch: Partial<Task>) {
@@ -809,7 +814,7 @@ function readPortfolioProjects() {
 }
 
 function writePortfolioProjects(projects: PortfolioProject[]) {
-  window.localStorage.setItem(portfolioStorageKey, JSON.stringify(projects));
+  void saveSyncedState(portfolioStorageKey, portfolioRemoteStorageKey, projects);
 }
 
 function readPortfolioProject(projectName: string) {

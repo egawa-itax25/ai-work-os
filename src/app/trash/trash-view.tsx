@@ -4,20 +4,25 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   normalizePortfolioProjects,
+  portfolioRemoteStorageKey,
   portfolioStorageKey,
   type PortfolioProject,
 } from "@/lib/portfolio-data";
 import {
-  normalizeTasks,
+  normalizeTaskList,
+  remoteStorageKey as taskRemoteStorageKey,
   storageKey as taskStorageKey,
   type Task,
 } from "@/app/tasks/task-data";
 import {
+  pruneTrash,
   readTrash,
   removeTrashItem,
-  writeTrash,
+  trashRemoteStorageKey,
+  trashStorageKey,
   type DeletedTrashItem,
 } from "@/lib/trash-data";
+import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 type ToastState = { message: string } | null;
 type DeletedProjectItem = Extract<DeletedTrashItem, { kind: "project" }>;
@@ -28,9 +33,13 @@ export default function TrashView() {
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
-    const nextItems = readTrash();
-    setItems(nextItems);
-    writeTrash(nextItems);
+    void loadSyncedState({
+      localKey: trashStorageKey,
+      remoteKey: trashRemoteStorageKey,
+      fallback: [],
+      normalize: pruneTrash,
+      onValue: setItems,
+    });
   }, []);
 
   const groupedItems = useMemo(
@@ -212,16 +221,16 @@ function readProjects() {
 }
 
 function writeProjects(projects: PortfolioProject[]) {
-  window.localStorage.setItem(portfolioStorageKey, JSON.stringify(projects));
+  void saveSyncedState(portfolioStorageKey, portfolioRemoteStorageKey, projects);
 }
 
 function readTasks() {
   const saved = window.localStorage.getItem(taskStorageKey);
-  return saved ? normalizeTasks(JSON.parse(saved)) : [];
+  return saved ? normalizeTaskList(JSON.parse(saved)) : [];
 }
 
 function writeTasks(tasks: Task[]) {
-  window.localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
+  void saveSyncedState(taskStorageKey, taskRemoteStorageKey, tasks);
 }
 
 function readProjectConnections(): { sourceId: string; targetId: string }[] {
@@ -237,5 +246,9 @@ function readProjectConnections(): { sourceId: string; targetId: string }[] {
 }
 
 function writeProjectConnections(connections: { sourceId: string; targetId: string }[]) {
-  window.localStorage.setItem("ai-work-os:portfolio-connections:v1", JSON.stringify(connections));
+  void saveSyncedState(
+    "ai-work-os:portfolio-connections:v1",
+    "portfolio-connections",
+    connections,
+  );
 }

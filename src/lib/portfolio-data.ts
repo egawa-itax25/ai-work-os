@@ -62,6 +62,7 @@ export const portfolioFilters: { id: PortfolioFilter; label: string }[] = [
 ];
 
 export const portfolioStorageKey = "ai-work-os:portfolio-projects:v1";
+export const portfolioRemoteStorageKey = "portfolio-projects";
 
 export const portfolioProjects: PortfolioProject[] = [
   {
@@ -237,6 +238,10 @@ export function normalizePortfolioProjects(
     x: project.x ?? 120 + ((index * 180) % 820),
     y: project.y ?? 120 + ((index * 110) % 420),
   }));
+}
+
+export function normalizePortfolioProjectList(value: unknown): PortfolioProject[] {
+  return Array.isArray(value) ? normalizePortfolioProjects(value) : portfolioProjects;
 }
 
 export function getPriorityBreakdown(project: PortfolioProject): PriorityScorePart[] {

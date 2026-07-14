@@ -465,6 +465,10 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
   routes.
 - Portfolio View should support in-context project creation/editing and task
   creation through drawers and a shared Project Inspector.
+- Editable project, task, trash, and completed-work state should synchronize
+  through Supabase for logged-in users. Browser localStorage remains a fast
+  cache and unauthenticated fallback, but it is no longer the intended durable
+  source for cross-device work state.
 - Project Flow should support Task Inspector editing on node selection.
 - Project Flow should support drag-to-transfer for task ball ownership, using a
   temporary dock for 自分, 相手, AI, and 完了 while a Task Node is being dragged.

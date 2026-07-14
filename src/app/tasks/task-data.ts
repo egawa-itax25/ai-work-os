@@ -27,6 +27,7 @@ type StoredTask = Partial<Task> & {
 };
 
 export const storageKey = "codex-task-manager-map:v2";
+export const remoteStorageKey = "tasks";
 export const defaultProject = "営業改善";
 
 export const statusMeta: Record<TaskStatus, { label: string; tone: string }> = {
@@ -368,6 +369,10 @@ export function normalizeTasks(tasks: StoredTask[]): Task[] {
     links: task.links ?? [],
     createdAt: task.createdAt ?? new Date().toISOString(),
   }));
+}
+
+export function normalizeTaskList(value: unknown): Task[] {
+  return Array.isArray(value) ? normalizeTasks(value) : initialTasks;
 }
 
 export function todayOffset(days: number) {

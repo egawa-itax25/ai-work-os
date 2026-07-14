@@ -1,4 +1,5 @@
 import type { Task } from "@/app/tasks/task-data";
+import { saveSyncedState } from "@/lib/synced-storage";
 
 export type CompletedTaskItem = {
   id: string;
@@ -7,6 +8,7 @@ export type CompletedTaskItem = {
 };
 
 export const completedStorageKey = "ai-work-os:completed-tasks:v1";
+export const completedRemoteStorageKey = "completed-tasks";
 
 export function readCompletedTasks() {
   if (typeof window === "undefined") {
@@ -28,9 +30,10 @@ export function readCompletedTasks() {
 }
 
 export function writeCompletedTasks(items: CompletedTaskItem[]) {
-  window.localStorage.setItem(
+  void saveSyncedState(
     completedStorageKey,
-    JSON.stringify(normalizeCompletedTasks(items)),
+    completedRemoteStorageKey,
+    normalizeCompletedTasks(items),
   );
 }
 
@@ -61,7 +64,7 @@ export function removeCompletedTask(id: string) {
   writeCompletedTasks(readCompletedTasks().filter((item) => item.id !== id));
 }
 
-function normalizeCompletedTasks(value: unknown): CompletedTaskItem[] {
+export function normalizeCompletedTasks(value: unknown): CompletedTaskItem[] {
   if (!Array.isArray(value)) {
     return [];
   }

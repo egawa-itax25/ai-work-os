@@ -7,9 +7,11 @@ import {
   TaskStatus,
   initialTasks,
   isOverdue,
-  normalizeTasks,
+  normalizeTaskList,
+  remoteStorageKey,
   storageKey,
 } from "../tasks/task-data";
+import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 type ViewMode = "orbit" | "list" | "load";
 type StatusFilter = "all" | TaskStatus;
@@ -39,22 +41,18 @@ export default function TeamAllocationView() {
   const [lastMove, setLastMove] = useState("");
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(storageKey);
-
-    if (!saved) {
-      return;
-    }
-
-    try {
-      setTasks(normalizeTasks(JSON.parse(saved)));
-    } catch {
-      window.localStorage.removeItem(storageKey);
-    }
+    void loadSyncedState({
+      localKey: storageKey,
+      remoteKey: remoteStorageKey,
+      fallback: initialTasks,
+      normalize: normalizeTaskList,
+      onValue: setTasks,
+    });
   }, []);
 
   function commitTasks(nextTasks: Task[]) {
     setTasks(nextTasks);
-    window.localStorage.setItem(storageKey, JSON.stringify(nextTasks));
+    void saveSyncedState(storageKey, remoteStorageKey, nextTasks);
   }
 
   const activeTasks = useMemo(

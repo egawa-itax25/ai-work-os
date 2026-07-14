@@ -82,3 +82,41 @@ create policy "Authenticated users can mark notifications as read"
 
 -- The web app's webhook routes insert through SUPABASE_SERVICE_ROLE_KEY.
 -- For MVP master-data entry, add customers from Supabase Studio or SQL Editor.
+
+create table if not exists public.workspace_states (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  state_key text not null,
+  value jsonb not null default 'null'::jsonb,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, state_key)
+);
+
+create index if not exists workspace_states_user_updated_at_idx
+  on public.workspace_states(user_id, updated_at desc);
+
+alter table public.workspace_states enable row level security;
+
+drop policy if exists "Users can read their own workspace state"
+  on public.workspace_states;
+create policy "Users can read their own workspace state"
+  on public.workspace_states
+  for select
+  to authenticated
+  using (auth.uid() = user_id);
+
+drop policy if exists "Users can insert their own workspace state"
+  on public.workspace_states;
+create policy "Users can insert their own workspace state"
+  on public.workspace_states
+  for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+drop policy if exists "Users can update their own workspace state"
+  on public.workspace_states;
+create policy "Users can update their own workspace state"
+  on public.workspace_states
+  for update
+  to authenticated
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);

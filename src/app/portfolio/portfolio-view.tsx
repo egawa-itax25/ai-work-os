@@ -13,8 +13,9 @@ import {
   getPortfolioStatusLabel,
   getPriorityBreakdown,
   getPriorityScore,
-  normalizePortfolioProjects,
+  normalizePortfolioProjectList,
   portfolioFilters,
+  portfolioRemoteStorageKey,
   portfolioProjects,
   portfolioStorageKey,
   type BallHolderType,
@@ -24,13 +25,15 @@ import {
 import {
   initialTasks,
   isOverdue,
-  normalizeTasks,
+  normalizeTaskList,
+  remoteStorageKey as taskRemoteStorageKey,
   storageKey as taskStorageKey,
   todayOffset,
   type Task,
   type TaskPriority,
 } from "@/app/tasks/task-data";
 import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
+import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 type DrawerState =
   | { type: "project" }
@@ -41,6 +44,7 @@ type ProjectConnection = { sourceId: string; targetId: string };
 
 const viewStorageKey = "ai-work-os:portfolio-view-state:v1";
 const connectionStorageKey = "ai-work-os:portfolio-connections:v1";
+const connectionRemoteStorageKey = "portfolio-connections";
 const defaultProjectConnections: ProjectConnection[] = portfolioProjects
   .slice(0, -1)
   .map((project, index) => ({
@@ -64,19 +68,10 @@ export default function PortfolioView({
   const [menuProjectId, setMenuProjectId] = useState("");
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
   const [portfolioTasks, setPortfolioTasks] = useState<Task[]>(initialTasks);
+  const [syncReady, setSyncReady] = useState(false);
 
   useEffect(() => {
-    const savedProjects = window.localStorage.getItem(portfolioStorageKey);
     const savedView = window.localStorage.getItem(viewStorageKey);
-    const savedConnections = window.localStorage.getItem(connectionStorageKey);
-
-    if (savedProjects) {
-      try {
-        setProjects(normalizePortfolioProjects(JSON.parse(savedProjects)));
-      } catch {
-        window.localStorage.removeItem(portfolioStorageKey);
-      }
-    }
 
     if (savedView) {
       try {
@@ -99,20 +94,29 @@ export default function PortfolioView({
       }
     }
 
-    if (savedConnections) {
-      try {
-        setProjectConnections(normalizeProjectConnections(JSON.parse(savedConnections)));
-      } catch {
-        window.localStorage.removeItem(connectionStorageKey);
-      }
-    }
-
-    try {
-      setPortfolioTasks(readTasks());
-    } catch {
-      window.localStorage.removeItem(taskStorageKey);
-      setPortfolioTasks(initialTasks);
-    }
+    Promise.all([
+      loadSyncedState({
+        localKey: portfolioStorageKey,
+        remoteKey: portfolioRemoteStorageKey,
+        fallback: portfolioProjects,
+        normalize: normalizePortfolioProjectList,
+        onValue: setProjects,
+      }),
+      loadSyncedState({
+        localKey: taskStorageKey,
+        remoteKey: taskRemoteStorageKey,
+        fallback: initialTasks,
+        normalize: normalizeTaskList,
+        onValue: setPortfolioTasks,
+      }),
+      loadSyncedState({
+        localKey: connectionStorageKey,
+        remoteKey: connectionRemoteStorageKey,
+        fallback: defaultProjectConnections,
+        normalize: normalizeProjectConnections,
+        onValue: setProjectConnections,
+      }),
+    ]).finally(() => setSyncReady(true));
   }, []);
 
   useEffect(() => {
@@ -134,18 +138,30 @@ export default function PortfolioView({
   });
 
   useEffect(() => {
+    if (!syncReady) {
+      return;
+    }
+
     setSaveState("saving");
     const timeout = window.setTimeout(() => {
-      window.localStorage.setItem(portfolioStorageKey, JSON.stringify(projects));
+      void saveSyncedState(portfolioStorageKey, portfolioRemoteStorageKey, projects);
       setSaveState("saved");
     }, 250);
 
     return () => window.clearTimeout(timeout);
-  }, [projects]);
+  }, [projects, syncReady]);
 
   useEffect(() => {
-    window.localStorage.setItem(connectionStorageKey, JSON.stringify(projectConnections));
-  }, [projectConnections]);
+    if (!syncReady) {
+      return;
+    }
+
+    void saveSyncedState(
+      connectionStorageKey,
+      connectionRemoteStorageKey,
+      projectConnections,
+    );
+  }, [projectConnections, syncReady]);
 
   useEffect(() => {
     const saveView = () => {
@@ -176,12 +192,16 @@ export default function PortfolioView({
   }, [highlightId]);
 
   useEffect(() => {
+    if (!syncReady) {
+      return;
+    }
+
     setProjects((current) => {
       const syncedProjects = syncPortfolioProjectsWithTasks(current, portfolioTasks);
 
       return haveSameProjects(current, syncedProjects) ? current : syncedProjects;
     });
-  }, [portfolioTasks]);
+  }, [portfolioTasks, syncReady]);
 
   useEffect(() => {
     if (!toast) {
@@ -1552,11 +1572,11 @@ function normalizeProjectConnections(value: unknown): ProjectConnection[] {
 
 function readTasks() {
   const saved = window.localStorage.getItem(taskStorageKey);
-  return saved ? normalizeTasks(JSON.parse(saved)) : initialTasks;
+  return saved ? normalizeTaskList(JSON.parse(saved)) : initialTasks;
 }
 
 function writeTasks(tasks: Task[]) {
-  window.localStorage.setItem(taskStorageKey, JSON.stringify(tasks));
+  void saveSyncedState(taskStorageKey, taskRemoteStorageKey, tasks);
 }
 
 function syncPortfolioProjectsWithTasks(

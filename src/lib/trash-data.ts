@@ -1,5 +1,6 @@
 import type { Task } from "@/app/tasks/task-data";
 import type { PortfolioProject } from "@/lib/portfolio-data";
+import { saveSyncedState } from "@/lib/synced-storage";
 
 export type DeletedProjectConnection = {
   sourceId: string;
@@ -25,6 +26,7 @@ export type DeletedTrashItem =
     };
 
 export const trashStorageKey = "ai-work-os:trash:v1";
+export const trashRemoteStorageKey = "trash";
 const trashRetentionDays = 30;
 
 export function createTrashDates(now = new Date()) {
@@ -57,7 +59,7 @@ export function readTrash() {
 }
 
 export function writeTrash(items: DeletedTrashItem[]) {
-  window.localStorage.setItem(trashStorageKey, JSON.stringify(pruneTrash(items)));
+  void saveSyncedState(trashStorageKey, trashRemoteStorageKey, pruneTrash(items));
 }
 
 export function addTrashItem(item: DeletedTrashItem) {

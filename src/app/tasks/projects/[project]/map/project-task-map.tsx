@@ -18,14 +18,16 @@ import {
   TaskStatus,
   initialTasks,
   isOverdue,
-  normalizeTasks,
+  normalizeTaskList,
   priorityMeta,
+  remoteStorageKey,
   statusMeta,
   storageKey,
   todayOffset,
 } from "../../../task-data";
 import { addCompletedTasks, removeCompletedTask } from "@/lib/completed-data";
 import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
+import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 type DragState = {
   id: string;
@@ -221,17 +223,19 @@ export default function ProjectTaskMap() {
   } | null>(null);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem(storageKey);
-    const parsed = saved ? normalizeTasks(JSON.parse(saved)) : initialTasks;
-    const missingSamples = initialTasks.filter(
-      (sample) => !parsed.some((task) => task.id === sample.id),
-    );
-    const mergedTasks = [...parsed, ...missingSamples];
-    const firstProjectTask = mergedTasks.find((task) => task.project === projectName);
+    setIsReady(false);
+    void loadSyncedState({
+      localKey: storageKey,
+      remoteKey: remoteStorageKey,
+      fallback: initialTasks,
+      normalize: normalizeTaskList,
+      onValue: (nextTasks) => {
+        const firstProjectTask = nextTasks.find((task) => task.project === projectName);
 
-    setTasks(mergedTasks);
-    setActiveTaskId(firstProjectTask?.id ?? "");
-    setIsReady(true);
+        setTasks(nextTasks);
+        setActiveTaskId(firstProjectTask?.id ?? "");
+      },
+    }).finally(() => setIsReady(true));
   }, [projectName]);
 
   useEffect(() => {
@@ -271,7 +275,7 @@ export default function ProjectTaskMap() {
     if (isReady) {
       setSaveState("saving");
       const timeout = window.setTimeout(() => {
-        window.localStorage.setItem(storageKey, JSON.stringify(tasks));
+        void saveSyncedState(storageKey, remoteStorageKey, tasks);
         setSaveState("saved");
       }, 250);
 
