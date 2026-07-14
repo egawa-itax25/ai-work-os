@@ -44,6 +44,11 @@ Use the same dark, calm product UI as Portfolio.
   pills.
 - Bottom: team summary metrics.
 
+When the number of employees grows, the map must not use absolute circular
+placement that allows nodes to overlap. Use a responsive constellation grid:
+the whole-team summary and employee nodes sit on the same grid, preserving the
+spatial feeling while guaranteeing readable spacing.
+
 The page is additive. Do not change existing Portfolio, task list, or task map
 behavior to create this view.
 
@@ -82,6 +87,7 @@ Implemented:
 - New `/team` page.
 - Primary navigation entry labeled `全体プロジェクト`.
 - Employee workload map derived from shared task data.
+- Employee map uses a responsive non-overlapping constellation grid.
 - Task drag-to-assign to employee nodes.
 - Filters for member, status, project, and priority.
 - Team summary metrics.

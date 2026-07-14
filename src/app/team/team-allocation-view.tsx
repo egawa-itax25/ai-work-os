@@ -297,7 +297,7 @@ function OrbitMap({
 }) {
   return (
     <div className="relative z-10 min-h-[680px]">
-      <div className="absolute left-1/2 top-1/2 grid h-44 w-44 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/25 bg-slate-950/72 text-center shadow-[0_0_60px_rgba(125,211,252,0.14)] backdrop-blur-xl">
+      <div className="absolute left-6 top-6 grid h-32 w-48 place-items-center rounded-[2rem] border border-white/25 bg-slate-950/72 text-center shadow-[0_0_60px_rgba(125,211,252,0.14)] backdrop-blur-xl">
         <div>
           <p className="text-xs text-zinc-400">全体プロジェクト</p>
           <p className="mt-2 text-4xl font-semibold text-white">{new Set(taskPool.map((task) => task.project)).size}</p>
@@ -323,7 +323,7 @@ function OrbitMap({
             }}
             onDragLeave={() => onMemberDragEnter("")}
             onDrop={(event) => onMemberDrop(event, employee.name)}
-            className={`absolute w-56 -translate-x-1/2 -translate-y-1/2 rounded-full border p-3 text-center backdrop-blur-xl transition ${
+            className={`absolute w-48 -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border p-3 text-center backdrop-blur-xl transition ${
               isHovered
                 ? "scale-105 border-sky-200 bg-sky-300/15 shadow-[0_0_38px_rgba(125,211,252,0.22)]"
                 : "border-white/15 bg-slate-950/68"
@@ -609,14 +609,17 @@ function getInitials(name: string) {
 
 function getOrbitPosition(index: number, total: number) {
   if (total === 1) {
-    return { left: "50%", top: "24%" };
+    return { left: "50%", top: "42%" };
   }
 
-  const radiusX = 36;
-  const radiusY = 34;
-  const angle = -Math.PI / 2 + (index / total) * Math.PI * 2;
-  const left = 50 + Math.cos(angle) * radiusX;
-  const top = 50 + Math.sin(angle) * radiusY;
+  const columns = total <= 6 ? 3 : 4;
+  const row = Math.floor(index / columns);
+  const column = index % columns;
+  const rowCount = Math.ceil(total / columns);
+  const horizontalStep = 78 / Math.max(columns - 1, 1);
+  const verticalStep = 52 / Math.max(rowCount - 1, 1);
+  const left = 11 + column * horizontalStep;
+  const top = 36 + row * verticalStep;
 
   return {
     left: `${left}%`,
