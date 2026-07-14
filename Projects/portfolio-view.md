@@ -657,6 +657,11 @@ Implemented:
   has zero tasks, until the user deletes it or moves it to the trash. This
   prevents newly created project shells from disappearing before tasks are
   added.
+- The Schedule tab must also read Portfolio project records. A project created
+  in Portfolio appears in the Schedule project list immediately, even before it
+  has tasks, so users can add the first task from the schedule context. The
+  empty schedule project shell should respect the current project filter and
+  search query, and it should disappear only when the project is deleted.
 - Create Project and Create Task modals should be large enough for Japanese
   input. Use a wider modal surface and more generous vertical spacing so
   project names, objectives, owners, and dates feel easier to edit.

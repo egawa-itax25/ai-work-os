@@ -158,3 +158,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Track whether a project was manually created or derived from task
   data. Task-derived projects may follow Schedule visibility, but manual
   project shells must remain until the user deletes them.
+
+### 2026-07-14 - Schedule ignored Portfolio-only project shells
+
+- Mistake: The Schedule project list grouped only existing tasks, so projects
+  created in Portfolio did not appear in Schedule until at least one task
+  existed.
+- Prevention: Schedule views must load the Portfolio project store as a
+  secondary project index and render empty project shells for user-created
+  projects that match the current filters.

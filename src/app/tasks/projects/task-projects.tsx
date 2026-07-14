@@ -29,6 +29,7 @@ export default function TaskProjects() {
   const searchParams = useSearchParams();
   const projectFilter = searchParams.get("project") ?? "";
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [portfolioProjects, setPortfolioProjects] = useState<PortfolioProject[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
   const [editingProject, setEditingProject] = useState("");
@@ -40,13 +41,23 @@ export default function TaskProjects() {
   const [taskDropTarget, setTaskDropTarget] = useState("");
 
   useEffect(() => {
-    void loadSyncedState({
-      localKey: storageKey,
-      remoteKey: remoteStorageKey,
-      fallback: initialTasks,
-      normalize: normalizeTaskList,
-      onValue: setTasks,
-    });
+    void Promise.all([
+      loadSyncedState({
+        localKey: storageKey,
+        remoteKey: remoteStorageKey,
+        fallback: initialTasks,
+        normalize: normalizeTaskList,
+        onValue: setTasks,
+      }),
+      loadSyncedState({
+        localKey: portfolioStorageKey,
+        remoteKey: portfolioRemoteStorageKey,
+        fallback: [],
+        normalize: (value) =>
+          Array.isArray(value) ? normalizePortfolioProjects(value) : [],
+        onValue: setPortfolioProjects,
+      }),
+    ]);
   }, []);
 
   function commitTasks(nextTasks: Task[]) {
@@ -207,6 +218,11 @@ export default function TaskProjects() {
       ),
     );
     renamePortfolioProject(project, nextName);
+    setPortfolioProjects((current) =>
+      current.map((item) =>
+        item.name === project ? { ...item, name: nextName } : item,
+      ),
+    );
     setEditingProject("");
   }
 
@@ -236,6 +252,9 @@ export default function TaskProjects() {
 
     commitTasks(tasks.filter((task) => task.project !== project));
     removePortfolioProject(project);
+    setPortfolioProjects((current) =>
+      current.filter((item) => item.name !== project),
+    );
   }
 
   const filteredTasks = useMemo(() => {
@@ -257,7 +276,29 @@ export default function TaskProjects() {
   }, [projectFilter, query, statusFilter, tasks]);
 
   const projectGroups = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
     const groups = new Map<string, Task[]>();
+
+    if (statusFilter === "all") {
+      for (const project of [...portfolioProjects].sort((a, b) => a.rank - b.rank)) {
+        const matchesProject = !projectFilter || project.name === projectFilter;
+        const matchesQuery =
+          !normalizedQuery ||
+          [
+            project.name,
+            project.objective,
+            project.owner,
+            project.currentBallHolder,
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(normalizedQuery);
+
+        if (matchesProject && matchesQuery) {
+          groups.set(project.name, []);
+        }
+      }
+    }
 
     for (const task of filteredTasks) {
       const list = groups.get(task.project) ?? [];
@@ -275,7 +316,7 @@ export default function TaskProjects() {
         (task) => task.status !== "done" && isOverdue(task.dueDate),
       ).length,
     }));
-  }, [filteredTasks]);
+  }, [filteredTasks, portfolioProjects, projectFilter, query, statusFilter]);
 
   return (
     <div className="neo-shell space-y-5 text-zinc-100">
