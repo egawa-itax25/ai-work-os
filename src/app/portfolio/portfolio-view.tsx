@@ -927,6 +927,10 @@ function getProjectPriorityLevel(project: PortfolioProject) {
 }
 
 function formatDateLabel(value: string) {
+  if (isMonthlyProjectDueDate(value)) {
+    return "毎月";
+  }
+
   if (!value) {
     return "期限なし";
   }
@@ -938,6 +942,12 @@ function formatDateLabel(value: string) {
   }
 
   return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+const monthlyProjectDueDate = "monthly";
+
+function isMonthlyProjectDueDate(value: string) {
+  return value === monthlyProjectDueDate;
 }
 
 function ProjectInspector({
@@ -1011,7 +1021,7 @@ function ProjectInspector({
 
         <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
           <EditableInfo label="責任者" value={project.owner} onChange={(value) => onUpdate(project.id, { owner: value })} />
-          <EditableInfo label="期限" value={project.dueDate} type="date" onChange={(value) => onUpdate(project.id, { dueDate: value })} />
+          <ProjectDueDateEditor value={project.dueDate} onChange={(value) => onUpdate(project.id, { dueDate: value })} />
           <EditableInfo label="現在のボール" value={project.currentBallHolder} onChange={(value) => onUpdate(project.id, { currentBallHolder: value, ballHolderType: inferBallHolderType(value) })} />
           <EditableInfo label="保持時間" value={String(project.ballHoldingDays)} type="number" suffix="日" onChange={(value) => onUpdate(project.id, { ballHoldingDays: Number(value) })} />
         </div>
@@ -1066,7 +1076,7 @@ function CreateProjectDrawer({
       <form className="space-y-4" onSubmit={submit}>
         <Field label="プロジェクト名" value={input.name} onChange={(value) => setInput((current) => ({ ...current, name: value }))} autoFocus />
         <Field label="目的" value={input.objective} onChange={(value) => setInput((current) => ({ ...current, objective: value }))} textarea />
-        <Field label="期限" type="date" value={input.dueDate} onChange={(value) => setInput((current) => ({ ...current, dueDate: value }))} />
+        <ProjectDueDateField value={input.dueDate} onChange={(value) => setInput((current) => ({ ...current, dueDate: value }))} />
         <Field label="責任者" value={input.owner} onChange={(value) => setInput((current) => ({ ...current, owner: value }))} />
         <button type="submit" className="w-full rounded-md border border-sky-200/35 bg-sky-200/[0.1] px-4 py-3 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.16]">
           作成する
@@ -1218,6 +1228,86 @@ function Field({
       ) : (
         <input autoFocus={autoFocus} type={type} value={value} onChange={(event) => onChange(event.target.value)} className="mt-2 min-h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-4 py-2.5 text-slate-100 outline-none focus:border-sky-200/60" />
       )}
+    </label>
+  );
+}
+
+function ProjectDueDateField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const mode = isMonthlyProjectDueDate(value) ? "monthly" : "date";
+
+  return (
+    <div className="block text-sm text-slate-300">
+      <span>期限</span>
+      <div className="mt-2 grid gap-2 sm:grid-cols-[10rem_1fr]">
+        <select
+          value={mode}
+          onChange={(event) => {
+            onChange(event.target.value === "monthly" ? monthlyProjectDueDate : todayOffset(7));
+          }}
+          className="min-h-11 rounded-md border border-white/10 bg-white/[0.04] px-4 py-2.5 text-slate-100 outline-none focus:border-sky-200/60"
+        >
+          <option value="date">日付</option>
+          <option value="monthly">毎月</option>
+        </select>
+        {mode === "monthly" ? (
+          <div className="flex min-h-11 items-center rounded-md border border-sky-200/25 bg-sky-200/[0.08] px-4 py-2.5 text-sm font-semibold text-sky-100">
+            毎月の業務として扱います
+          </div>
+        ) : (
+          <input
+            type="date"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="min-h-11 w-full rounded-md border border-white/10 bg-white/[0.04] px-4 py-2.5 text-slate-100 outline-none focus:border-sky-200/60"
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ProjectDueDateEditor({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const mode = isMonthlyProjectDueDate(value) ? "monthly" : "date";
+
+  return (
+    <label className="min-w-0 rounded-md border border-white/10 bg-white/[0.045] px-2 py-2 transition hover:border-sky-200/35 hover:bg-white/[0.06] focus-within:border-sky-200/70 focus-within:bg-sky-200/[0.06]">
+      <span className="text-[10px] text-slate-500">期限</span>
+      <span className="mt-1 grid gap-1">
+        <select
+          value={mode}
+          onChange={(event) => {
+            onChange(event.target.value === "monthly" ? monthlyProjectDueDate : todayOffset(7));
+          }}
+          className="min-w-0 rounded-md border border-white/10 bg-slate-950/70 px-2 py-1.5 text-xs font-semibold text-slate-100 outline-none focus:border-sky-200/60"
+        >
+          <option value="date">日付</option>
+          <option value="monthly">毎月</option>
+        </select>
+        {mode === "monthly" ? (
+          <span className="rounded-md border border-sky-200/25 bg-sky-200/[0.08] px-2 py-1.5 text-sm font-semibold text-sky-100">
+            毎月
+          </span>
+        ) : (
+          <input
+            type="date"
+            value={value}
+            onChange={(event) => onChange(event.target.value)}
+            className="min-w-0 bg-transparent text-sm font-medium text-slate-200 outline-none focus:text-white"
+          />
+        )}
+      </span>
     </label>
   );
 }
@@ -1536,14 +1626,15 @@ function deriveProjectFromTasks(
   const currentBallHolder =
     leadTask?.currentBallHolder || baseProject?.currentBallHolder || "なし";
   const ballHolderType = inferBallHolderType(currentBallHolder);
-  const dueDate =
-    leadTask?.dueDate ||
-    baseProject?.dueDate ||
-    projectTasks
-      .map((task) => task.dueDate)
-      .filter(Boolean)
-      .sort()[0] ||
-    "";
+  const dueDate = isMonthlyProjectDueDate(baseProject?.dueDate ?? "")
+    ? monthlyProjectDueDate
+    : leadTask?.dueDate ||
+      baseProject?.dueDate ||
+      projectTasks
+        .map((task) => task.dueDate)
+        .filter(Boolean)
+        .sort()[0] ||
+      "";
   const allDone =
     projectTasks.length > 0 && projectTasks.every((task) => task.status === "done");
   const status =

@@ -73,7 +73,7 @@ Recommended project fields:
 | `name` | string | Human-readable project name. |
 | `objective` | string | Why the project exists and what outcome it creates. |
 | `owner` | string | Responsible person or agent. |
-| `dueDate` | date | Target deadline. |
+| `dueDate` | date or `monthly` | Target deadline. Use `monthly` for recurring monthly project work. |
 | `progress` | number | Completion percentage from 0 to 100. |
 | `currentBallHolder` | string | Person, customer, team, or AI currently holding the ball. |
 | `ballHolderType` | enum | `self`, `customer`, `member`, `ai`, or `none`. |

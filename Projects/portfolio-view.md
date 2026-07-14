@@ -303,6 +303,10 @@ The modal appears in the center of the screen and starts with only:
 - 期限
 - 責任者
 
+期限は特定の日付だけでなく、毎月業務向けの `毎月` も選択できる。
+毎月の顧問業務や月次作業では、仮の日付を入れずに期限欄から
+`毎月` を選べるようにする。
+
 After saving, the new project appears immediately in:
 
 - Project list.
@@ -651,6 +655,9 @@ Implemented:
 - Create Project and Create Task modals should be large enough for Japanese
   input. Use a wider modal surface and more generous vertical spacing so
   project names, objectives, owners, and dates feel easier to edit.
+- Project creation and editing support a monthly deadline option for recurring
+  monthly work. The UI shows this as `毎月`, while date-based projects continue
+  to use a normal date picker.
 - Task Flow Map navigation should be self-explanatory. The back action should
   read as returning to the Portfolio, while the stronger action should clearly
   open the selected project's schedule/task list context.
