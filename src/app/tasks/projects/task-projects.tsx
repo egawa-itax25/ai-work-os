@@ -126,11 +126,7 @@ export default function TaskProjects() {
   }
 
   function startProjectDrag(event: DragEvent<HTMLElement>, project: string) {
-    if (isInteractiveDragTarget(event.target)) {
-      event.preventDefault();
-      return;
-    }
-
+    event.stopPropagation();
     setDraggedProject(project);
     setProjectDropTarget("");
     event.dataTransfer.effectAllowed = "move";
@@ -164,11 +160,7 @@ export default function TaskProjects() {
   }
 
   function startTaskDrag(event: DragEvent<HTMLElement>, taskId: string) {
-    if (isInteractiveDragTarget(event.target)) {
-      event.preventDefault();
-      return;
-    }
-
+    event.stopPropagation();
     setDraggedTaskId(taskId);
     setTaskDropTarget("");
     event.dataTransfer.effectAllowed = "move";
@@ -406,12 +398,6 @@ export default function TaskProjects() {
           return (
           <article
             key={group.project}
-            draggable
-            onDragStart={(event) => startProjectDrag(event, group.project)}
-            onDragEnd={() => {
-              setDraggedProject("");
-              setProjectDropTarget("");
-            }}
             onDragOver={(event) => {
               if (draggedProject && draggedProject !== group.project) {
                 event.preventDefault();
@@ -428,10 +414,9 @@ export default function TaskProjects() {
               setDraggedProject("");
               setProjectDropTarget("");
             }}
-            className={`neo-surface group/project relative cursor-grab rounded-md border transition active:cursor-grabbing ${
+            className={`neo-surface group/project relative rounded-md border transition ${
               draggedProject === group.project ? "scale-[0.995] opacity-55" : ""
             } ${showProjectDropLine ? "border-sky-200/45" : ""}`}
-            title="枠ごとドラッグしてプロジェクトを並び替え"
           >
             <div
               aria-hidden="true"
@@ -444,12 +429,20 @@ export default function TaskProjects() {
             >
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    aria-hidden="true"
-                    className="grid h-11 w-7 place-items-center rounded-md border border-white/0 text-lg leading-none text-zinc-600 transition group-hover/project:border-sky-200/20 group-hover/project:bg-sky-200/5 group-hover/project:text-sky-100"
+                  <button
+                    type="button"
+                    draggable
+                    onDragStart={(event) => startProjectDrag(event, group.project)}
+                    onDragEnd={() => {
+                      setDraggedProject("");
+                      setProjectDropTarget("");
+                    }}
+                    className="grid h-11 w-8 cursor-grab place-items-center rounded-md border border-white/0 text-lg leading-none text-zinc-500 transition hover:border-sky-200/30 hover:bg-sky-200/10 hover:text-sky-100 active:cursor-grabbing group-hover/project:border-sky-200/20 group-hover/project:bg-sky-200/5"
+                    aria-label={`${group.project} をドラッグして並び替え`}
+                    title="ドラッグしてプロジェクトを並び替え"
                   >
                     ⋮⋮
-                  </span>
+                  </button>
                   <div className="min-w-0">
                     {editingProject === group.project ? (
                       <div className="flex flex-wrap items-center gap-2">
@@ -559,15 +552,6 @@ export default function TaskProjects() {
                     return (
                       <tr
                         key={task.id}
-                        draggable={!isEditing}
-                        onDragStart={(event) => {
-                          event.stopPropagation();
-                          startTaskDrag(event, task.id);
-                        }}
-                        onDragEnd={() => {
-                          setDraggedTaskId("");
-                          setTaskDropTarget("");
-                        }}
                         onDragOver={(event) => {
                           if (draggedTaskId && draggedTaskId !== task.id) {
                             event.preventDefault();
@@ -584,9 +568,8 @@ export default function TaskProjects() {
                           setDraggedTaskId("");
                           setTaskDropTarget("");
                         }}
-                        title={isEditing ? undefined : "行をドラッグしてタスクを並び替え"}
                         className={`group relative transition ${
-                          isEditing ? "" : "cursor-grab active:cursor-grabbing"
+                          isEditing ? "" : ""
                         } hover:bg-sky-300/[0.035] ${
                           draggedTaskId === task.id ? "opacity-55" : ""
                         } ${
@@ -611,12 +594,20 @@ export default function TaskProjects() {
                             </div>
                           ) : (
                             <div className="flex items-start gap-3">
-                              <span
-                                aria-hidden="true"
-                                className="mt-0.5 grid h-8 w-5 shrink-0 place-items-center rounded-md border border-transparent text-base leading-none text-zinc-600 transition group-hover:border-sky-200/20 group-hover:bg-sky-200/5 group-hover:text-sky-100"
+                              <button
+                                type="button"
+                                draggable
+                                onDragStart={(event) => startTaskDrag(event, task.id)}
+                                onDragEnd={() => {
+                                  setDraggedTaskId("");
+                                  setTaskDropTarget("");
+                                }}
+                                className="mt-0.5 grid h-8 w-6 shrink-0 cursor-grab place-items-center rounded-md border border-transparent text-base leading-none text-zinc-500 transition hover:border-sky-200/30 hover:bg-sky-200/10 hover:text-sky-100 active:cursor-grabbing group-hover:border-sky-200/20 group-hover:bg-sky-200/5"
+                                aria-label={`${task.title} をドラッグして並び替え`}
+                                title="ドラッグしてタスクを並び替え"
                               >
                                 ⋮⋮
-                              </span>
+                              </button>
                               <div className="min-w-0">
                                 <div className="font-medium text-white">{task.title}</div>
                                 <div className="mt-1 line-clamp-1 text-xs text-zinc-500">
@@ -884,13 +875,6 @@ function removePortfolioProject(projectName: string) {
   }
 
   writePortfolioProjects(projects.filter((project) => project.name !== projectName));
-}
-
-function isInteractiveDragTarget(target: EventTarget | null) {
-  return (
-    target instanceof HTMLElement &&
-    Boolean(target.closest("a, button, input, select, textarea, [role='button']"))
-  );
 }
 
 

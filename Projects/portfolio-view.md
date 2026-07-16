@@ -657,10 +657,11 @@ Implemented:
 - Project list cards should wrap into responsive rows instead of requiring
   horizontal scrolling. The list should adapt to the visible window width and
   become two or three rows when needed.
-- Project sections in the project-task list should be draggable as a whole
-  frame, not only through the title/header text. The full project frame is the
-  reorder target, while buttons, inputs, selects, links, and editable fields
-  remain excluded from drag starts.
+- Project sections and task rows in the project-task list should reorder through
+  a dedicated visible drag handle. The full project frame or row remains the
+  drop target, while buttons, inputs, selects, links, and editable fields do not
+  start drag operations. This keeps reordering reliable while preserving normal
+  edit/delete/add controls.
 - Reordering should show a clear insertion affordance while dragging. When a
   project section or task row is dragged over another item, a subtle horizontal
   blue line should appear at the drop position so users understand where the

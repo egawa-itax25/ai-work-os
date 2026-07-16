@@ -175,3 +175,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: When a major surface is retired from navigation, also remove or
   redirect its direct route and update review links so stale screens are not
   rediscovered later.
+
+### 2026-07-16 - Schedule drag competed with row controls
+
+- Mistake: Schedule project sections and task rows made the whole frame or row
+  draggable with HTML5 drag events, so table content, buttons, and editable
+  controls could interfere with drag start and make reordering unreliable.
+- Prevention: Use a dedicated visible drag handle as the drag source. Keep the
+  full section or row as the drop target, but do not make every child element a
+  drag starter.
