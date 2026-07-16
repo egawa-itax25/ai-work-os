@@ -6,6 +6,7 @@ related:
   - Decisions/2026-07-07-portfolio-view.md
   - Decisions/2026-07-07-portfolio-operation-hub.md
   - Decisions/2026-07-14-manual-project-persistence.md
+  - Decisions/2026-07-16-clickable-task-inspector-links.md
   - Projects/AI-Task-System-Architecture.md
   - Preferences/ui.md
 ---
@@ -420,6 +421,13 @@ Task node menus must not trap the user. A menu should close when the user
 clicks outside it, presses Escape, selects another task, starts dragging a task,
 or chooses a menu action.
 
+Task Inspector text fields may contain pasted reference URLs. When a user
+pastes an `http://` or `https://` URL into the next-action/detail text, the
+Inspector should detect it and show it as a clickable Japanese "検出したリンク"
+preview near the field. Keep the editable text area as the source of the note,
+but make the link usable without requiring the user to copy and paste it into a
+browser manually.
+
 Task Flow Map UI should use the same canvas language as Portfolio Project Flow
 Map: quiet dark surface, compact nodes, pan by dragging empty space, zoom
 buttons, and Shift+scroll zoom. The Task Inspector is already useful and should
@@ -564,6 +572,8 @@ Implemented:
 - Task Flow Map should preserve each project's pan and zoom across reloads.
   Auto-fit may provide the first view, but it should not override a saved
   viewport and make task cards appear to shift after reload.
+- Task Inspector detects URLs in the task's next-action/detail text and renders
+  them as clickable "検出したリンク" anchors that open in a new tab.
 - In the schedule project task list, the Task Flow Map action is placed near the
   project title as a large horizontal primary button, because users open this
   map frequently from the project summary.

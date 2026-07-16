@@ -1878,6 +1878,62 @@ function TaskNode({
   );
 }
 
+function extractUrls(text: string) {
+  const matches = text.match(/https?:\/\/[^\s<>"']+/g) ?? [];
+  const urls = matches
+    .map((url) => url.replace(/[)、。,.]+$/g, ""))
+    .filter((url) => {
+      try {
+        new URL(url);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+  return Array.from(new Set(urls));
+}
+
+function formatUrlLabel(url: string) {
+  try {
+    const parsed = new URL(url);
+    const path = parsed.pathname === "/" ? "" : parsed.pathname;
+    const label = `${parsed.hostname}${path}`;
+
+    return label.length > 58 ? `${label.slice(0, 55)}...` : label;
+  } catch {
+    return url.length > 58 ? `${url.slice(0, 55)}...` : url;
+  }
+}
+
+function DetectedLinks({ text }: { text: string }) {
+  const links = useMemo(() => extractUrls(text), [text]);
+
+  if (links.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-lg border border-sky-300/20 bg-sky-400/[0.045] p-3">
+      <p className="text-xs font-semibold text-sky-100">検出したリンク</p>
+      <div className="mt-2 space-y-2">
+        {links.map((url) => (
+          <a
+            key={url}
+            href={url}
+            target="_blank"
+            rel="noreferrer"
+            className="block rounded-md border border-white/10 bg-slate-950/65 px-3 py-2 text-sm text-sky-100 underline-offset-4 transition hover:border-sky-200/50 hover:bg-sky-950/40 hover:text-white hover:underline"
+            title={url}
+          >
+            <span className="block truncate">{formatUrlLabel(url)}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function TaskInspector({
   task,
   taskMap,
@@ -1919,6 +1975,7 @@ function TaskInspector({
         placeholder="次のアクション"
         aria-label="次のアクション"
       />
+      <DetectedLinks text={task.nextAction} />
 
       <div className="grid gap-2 text-sm">
         <EditableTaskField label="担当者" value={task.owner} onChange={(value) => onUpdate({ owner: value })} />
