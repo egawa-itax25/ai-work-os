@@ -733,6 +733,10 @@ Implemented:
   on `http://127.0.0.1:3030/portfolio`.
 - Verified LAN access from the PC using
   `http://172.16.1.157:3030/portfolio` for mobile review on the same Wi-Fi.
+- Login and signup should use clear Japanese UI because workspace sync depends
+  on users understanding that they need the same app account on PC and mobile.
+  Successful authentication should return users to Portfolio, the current
+  operation hub, not to older customer pages.
 
 Current mock data is deterministic and should later be replaced by Vault parsing
 and AI scoring.

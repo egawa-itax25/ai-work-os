@@ -13,7 +13,7 @@ export async function signIn(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/customers");
+  redirect("/portfolio");
 }
 
 export async function signUp(formData: FormData) {
@@ -26,7 +26,7 @@ export async function signUp(formData: FormData) {
     redirect(`/login?error=${encodeURIComponent(error.message)}`);
   }
 
-  redirect("/customers");
+  redirect("/portfolio");
 }
 
 export async function signOut() {

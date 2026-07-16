@@ -4,63 +4,94 @@ type LoginPageProps = {
   searchParams: Promise<{ error?: string }>;
 };
 
+function getErrorMessage(error?: string) {
+  if (!error) {
+    return "";
+  }
+
+  if (error.toLowerCase().includes("invalid login credentials")) {
+    return "メールアドレスまたはパスワードが違います。初めて使う場合は新規登録してください。";
+  }
+
+  if (error.toLowerCase().includes("already registered")) {
+    return "このメールアドレスは登録済みです。ログインしてください。";
+  }
+
+  return error;
+}
+
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error } = await searchParams;
+  const errorMessage = getErrorMessage(error);
 
   return (
-    <div className="mx-auto max-w-md">
-      <h1 className="text-2xl font-semibold">ログイン</h1>
-      <p className="mt-2 text-sm text-slate-600">
-        Supabase Authのメール・パスワード認証でMVP画面に入ります。
-      </p>
-
-      {error ? (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
+    <main className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-xl items-center px-5 py-8">
+      <section className="w-full rounded-2xl border border-white/12 bg-slate-950/80 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+        <div>
+          <p className="text-sm font-semibold text-sky-200">同期アカウント</p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">ログイン</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            PCとスマホで同じメールアドレスを使うと、プロジェクトとタスクを同期できます。
+            初めて使う場合は、メールアドレスとパスワードを入力して「新規登録」を押してください。
+          </p>
         </div>
-      ) : null}
 
-      <form className="mt-6 space-y-4 rounded-md border border-slate-200 bg-white p-5">
-        <label className="block">
-          <span className="text-sm font-medium">メールアドレス</span>
-          <input
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-            name="email"
-            type="email"
-            required
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-medium">パスワード</span>
-          <input
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2"
-            name="password"
-            type="password"
-            required
-            minLength={6}
-          />
-        </label>
-        <div className="flex gap-3">
-          <button
-            formAction={signIn}
-            className="rounded-md bg-slate-950 px-4 py-2 text-sm font-medium text-white"
-          >
-            ログイン
-          </button>
-          <button
-            formAction={signUp}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium"
-          >
-            新規登録
-          </button>
+        {errorMessage ? (
+          <div className="mt-5 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm font-semibold leading-6 text-red-100">
+            {errorMessage}
+          </div>
+        ) : null}
+
+        <form className="mt-6 space-y-5">
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-200">メールアドレス</span>
+            <input
+              className="mt-2 w-full rounded-xl border border-white/12 bg-slate-900 px-4 py-3 text-base text-white outline-none transition placeholder:text-slate-600 focus:border-sky-200/70 focus:ring-2 focus:ring-sky-200/15"
+              name="email"
+              type="email"
+              autoComplete="email"
+              inputMode="email"
+              required
+              placeholder="you@example.com"
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-semibold text-slate-200">パスワード</span>
+            <input
+              className="mt-2 w-full rounded-xl border border-white/12 bg-slate-900 px-4 py-3 text-base text-white outline-none transition placeholder:text-slate-600 focus:border-sky-200/70 focus:ring-2 focus:ring-sky-200/15"
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              minLength={6}
+              placeholder="6文字以上"
+            />
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <button
+              formAction={signIn}
+              className="rounded-xl border border-sky-200/40 bg-sky-200/12 px-5 py-3 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/18"
+            >
+              ログイン
+            </button>
+            <button
+              formAction={signUp}
+              className="rounded-xl border border-white/15 bg-white/[0.06] px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/[0.1]"
+            >
+              新規登録
+            </button>
+          </div>
+
           <button
             formAction={signOut}
-            className="ml-auto rounded-md px-4 py-2 text-sm text-slate-600"
+            className="w-full rounded-xl px-5 py-3 text-sm font-semibold text-slate-400 transition hover:bg-white/[0.04] hover:text-slate-200"
           >
             ログアウト
           </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </section>
+    </main>
   );
 }
