@@ -33,7 +33,7 @@ import {
   type TaskPriority,
 } from "@/app/tasks/task-data";
 import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
-import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
+import { loadSyncedState, saveSyncedState, type SyncResult } from "@/lib/synced-storage";
 
 type DrawerState =
   | { type: "project" }
@@ -63,7 +63,10 @@ export default function PortfolioView({
   const [expandedScoreId, setExpandedScoreId] = useState(portfolioProjects[0]?.id ?? "");
   const [drawer, setDrawer] = useState<DrawerState>(null);
   const [toast, setToast] = useState<ToastState>(null);
-  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [syncResult, setSyncResult] = useState<SyncResult>({
+    status: "idle",
+    message: "同期状態を確認しています。",
+  });
   const [highlightId, setHighlightId] = useState("");
   const [menuProjectId, setMenuProjectId] = useState("");
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
@@ -101,6 +104,7 @@ export default function PortfolioView({
         fallback: portfolioProjects,
         normalize: normalizePortfolioProjectList,
         onValue: setProjects,
+        onStatus: setSyncResult,
       }),
       loadSyncedState({
         localKey: taskStorageKey,
@@ -108,6 +112,7 @@ export default function PortfolioView({
         fallback: initialTasks,
         normalize: normalizeTaskList,
         onValue: setPortfolioTasks,
+        onStatus: setSyncResult,
       }),
       loadSyncedState({
         localKey: connectionStorageKey,
@@ -115,6 +120,7 @@ export default function PortfolioView({
         fallback: defaultProjectConnections,
         normalize: normalizeProjectConnections,
         onValue: setProjectConnections,
+        onStatus: setSyncResult,
       }),
     ]).finally(() => setSyncReady(true));
   }, []);
@@ -142,10 +148,12 @@ export default function PortfolioView({
       return;
     }
 
-    setSaveState("saving");
+    setSyncResult({
+      status: "saving",
+      message: "保存中です。",
+    });
     const timeout = window.setTimeout(() => {
-      void saveSyncedState(portfolioStorageKey, portfolioRemoteStorageKey, projects);
-      setSaveState("saved");
+      void saveSyncedState(portfolioStorageKey, portfolioRemoteStorageKey, projects).then(setSyncResult);
     }, 250);
 
     return () => window.clearTimeout(timeout);
@@ -515,7 +523,7 @@ export default function PortfolioView({
         <ProjectInspector
           project={selectedProject}
           projects={visibleProjects}
-          saveState={saveState}
+          syncResult={syncResult}
           onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
           onSelect={setSelectedId}
           onUpdate={updateProject}
@@ -971,17 +979,53 @@ function isMonthlyProjectDueDate(value: string) {
   return value === monthlyProjectDueDate;
 }
 
+function getSyncStatusLabel(status: SyncResult["status"]) {
+  switch (status) {
+    case "saving":
+      return "保存中…";
+    case "synced":
+      return "クラウド同期済み";
+    case "signed-out":
+      return "ログインで同期";
+    case "error":
+      return "同期エラー";
+    case "local":
+      return "この端末のみ";
+    case "loading":
+      return "同期確認中";
+    default:
+      return "同期待機中";
+  }
+}
+
+function getSyncStatusClassName(status: SyncResult["status"]) {
+  switch (status) {
+    case "synced":
+      return "border-emerald-300/30 bg-emerald-300/[0.08] text-emerald-100";
+    case "signed-out":
+    case "local":
+      return "border-amber-300/35 bg-amber-300/[0.08] text-amber-100";
+    case "error":
+      return "border-rose-300/35 bg-rose-300/[0.08] text-rose-100";
+    case "saving":
+    case "loading":
+      return "border-sky-300/30 bg-sky-300/[0.08] text-sky-100";
+    default:
+      return "border-white/10 bg-white/[0.04] text-slate-400";
+  }
+}
+
 function ProjectInspector({
   project,
   projects,
-  saveState,
+  syncResult,
   onSelect,
   onUpdate,
   onCreateTask,
 }: {
   project?: PortfolioProject;
   projects: PortfolioProject[];
-  saveState: "saved" | "saving";
+  syncResult: SyncResult;
   onSelect: (id: string) => void;
   onUpdate: (id: string, patch: Partial<PortfolioProject>) => void;
   onCreateTask: (project: PortfolioProject) => void;
@@ -995,8 +1039,11 @@ function ProjectInspector({
       <section className="rounded-lg border border-white/10 bg-slate-950/62 p-4 shadow-xl shadow-black/25 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-white">プロジェクト切替</p>
-          <span className="text-xs text-slate-500">
-            {saveState === "saving" ? "保存中…" : "保存済み"}
+          <span
+            className={`rounded-full border px-2 py-1 text-xs font-semibold ${getSyncStatusClassName(syncResult.status)}`}
+            title={syncResult.message}
+          >
+            {getSyncStatusLabel(syncResult.status)}
           </span>
         </div>
         <div className="mt-4 space-y-2">

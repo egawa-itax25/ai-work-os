@@ -517,6 +517,9 @@ Portfolio should restore as much as possible when returning from Project Flow:
 - Portfolio state is restored as much as possible after returning from Project Flow.
 - Japanese UI is used throughout.
 - Existing Project Flow is preserved.
+- Project and task sync feedback distinguishes local save from cloud sync.
+  Users should see whether edits are saved only on this device, synced to
+  Supabase, or blocked by an auth/server error.
 
 ## Implementation Status
 
@@ -737,6 +740,10 @@ Implemented:
   on users understanding that they need the same app account on PC and mobile.
   Successful authentication should return users to Portfolio, the current
   operation hub, not to older customer pages.
+- Cloud sync status is visible on key editing surfaces. "保存済み" alone is not
+  enough because localStorage can succeed while Supabase sync fails. Empty
+  remote state should not overwrite non-empty local work; the app should push
+  the local state to Supabase first when the remote key has no value.
 
 Current mock data is deterministic and should later be replaced by Vault parsing
 and AI scoring.

@@ -29,3 +29,9 @@ task, trash, and knowledge tables.
   hot paths to normalized relational tables.
 - API routes should reject unauthenticated remote writes instead of exposing a
   public write endpoint.
+- The UI must not treat localStorage success as cloud sync success. Save helpers
+  return an explicit status so product screens can show whether data is local
+  only, cloud-synced, or blocked by an auth/server error.
+- A device with local data should not be overwritten by an empty remote value.
+  When the remote value is empty and the local value is non-empty, the local
+  value is pushed to Supabase first.

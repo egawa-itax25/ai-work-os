@@ -27,7 +27,7 @@ import {
 } from "../../../task-data";
 import { addCompletedTasks, removeCompletedTask } from "@/lib/completed-data";
 import { addTrashItem, createTrashDates, removeTrashItem } from "@/lib/trash-data";
-import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
+import { loadSyncedState, saveSyncedState, type SyncResult } from "@/lib/synced-storage";
 
 type DragState = {
   id: string;
@@ -195,7 +195,10 @@ export default function ProjectTaskMap() {
   const [menuTaskId, setMenuTaskId] = useState("");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
-  const [saveState, setSaveState] = useState<"saved" | "saving">("saved");
+  const [syncResult, setSyncResult] = useState<SyncResult>({
+    status: "idle",
+    message: "同期状態を確認しています。",
+  });
   const [isReady, setIsReady] = useState(false);
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(taskMapDefaultZoom);
@@ -220,6 +223,7 @@ export default function ProjectTaskMap() {
         setTasks(nextTasks);
         setActiveTaskId(firstProjectTask?.id ?? "");
       },
+      onStatus: setSyncResult,
     }).finally(() => setIsReady(true));
   }, [projectName]);
 
@@ -258,10 +262,12 @@ export default function ProjectTaskMap() {
 
   useEffect(() => {
     if (isReady) {
-      setSaveState("saving");
+      setSyncResult({
+        status: "saving",
+        message: "保存中です。",
+      });
       const timeout = window.setTimeout(() => {
-        void saveSyncedState(storageKey, remoteStorageKey, tasks);
-        setSaveState("saved");
+        void saveSyncedState(storageKey, remoteStorageKey, tasks).then(setSyncResult);
       }, 250);
 
       return () => window.clearTimeout(timeout);
@@ -1175,7 +1181,7 @@ export default function ProjectTaskMap() {
           {activeTask && activeTask.project === projectName ? (
             <TaskInspector
               externalLinks={externalLinks.length}
-              saveState={saveState}
+              syncResult={syncResult}
               task={activeTask}
               taskMap={taskMap}
               onDuplicate={duplicateTask}
@@ -1724,11 +1730,47 @@ function DetectedLinks({ text }: { text: string }) {
   );
 }
 
+function getSyncStatusLabel(status: SyncResult["status"]) {
+  switch (status) {
+    case "saving":
+      return "保存中…";
+    case "synced":
+      return "クラウド同期済み";
+    case "signed-out":
+      return "ログインで同期";
+    case "error":
+      return "同期エラー";
+    case "local":
+      return "この端末のみ";
+    case "loading":
+      return "同期確認中";
+    default:
+      return "同期待機中";
+  }
+}
+
+function getSyncStatusClassName(status: SyncResult["status"]) {
+  switch (status) {
+    case "synced":
+      return "border-emerald-300/30 bg-emerald-300/[0.08] text-emerald-100";
+    case "signed-out":
+    case "local":
+      return "border-amber-300/35 bg-amber-300/[0.08] text-amber-100";
+    case "error":
+      return "border-rose-300/35 bg-rose-300/[0.08] text-rose-100";
+    case "saving":
+    case "loading":
+      return "border-sky-300/30 bg-sky-300/[0.08] text-sky-100";
+    default:
+      return "border-white/10 bg-white/[0.04] text-slate-400";
+  }
+}
+
 function TaskInspector({
   task,
   taskMap,
   externalLinks,
-  saveState,
+  syncResult,
   onUpdate,
   onDuplicate,
   onRemove,
@@ -1736,7 +1778,7 @@ function TaskInspector({
   task: Task;
   taskMap: Map<string, Task>;
   externalLinks: number;
-  saveState: "saved" | "saving";
+  syncResult: SyncResult;
   onUpdate: (patch: Partial<Task>) => void;
   onDuplicate: (task: Task) => void;
   onRemove: (id: string) => void;
@@ -1753,8 +1795,11 @@ function TaskInspector({
             aria-label="タスク名"
           />
         </div>
-        <span className="shrink-0 text-xs text-zinc-500">
-          {saveState === "saving" ? "保存中…" : "保存済み"}
+        <span
+          className={`shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${getSyncStatusClassName(syncResult.status)}`}
+          title={syncResult.message}
+        >
+          {getSyncStatusLabel(syncResult.status)}
         </span>
       </div>
 

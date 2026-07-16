@@ -194,3 +194,12 @@ Use this note only when the user gives an explicit correction and both are true:
   Viewport resize may adjust visible zone backgrounds, but it must not persist
   task coordinates or override a saved pan/zoom unless the user directly drags,
   drops, pans, or zooms.
+
+### 2026-07-16 - Local save looked like cloud sync
+
+- Mistake: Workspace save helpers swallowed Supabase failures, so the UI could
+  show a saved state even when data existed only in the current browser's
+  localStorage.
+- Prevention: Local cache success and cloud sync success must be separate
+  states. Return explicit sync results from persistence helpers and surface
+  login/server failures in the product UI.
