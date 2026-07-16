@@ -1316,21 +1316,21 @@ function TaskNode({
           <option value="low">低</option>
         </select>
 
-        <div className="pr-12">
-          <p className="text-xs text-slate-500">{statusMeta[task.status].label}</p>
+        <div>
+          <p className="pr-14 text-xs text-slate-500">{statusMeta[task.status].label}</p>
           <textarea
             value={task.title}
-            rows={2}
+            rows={3}
             onChange={(event) => onUpdate({ title: event.target.value })}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
             onFocus={() => onSelect(task.id)}
-            className="mt-1 min-h-12 w-full resize-none rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold leading-5 text-white outline-none transition placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/60 focus:bg-sky-200/[0.06]"
+            className="mt-1 min-h-[4.25rem] w-full resize-none rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold leading-5 text-white outline-none transition placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/60 focus:bg-sky-200/[0.06]"
             aria-label={`${task.title} のタイトル`}
           />
         </div>
 
-        <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
+        <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
           <span>進捗 {task.progress}%</span>
           <span className="truncate">{task.currentBallHolder}</span>
         </div>

@@ -663,6 +663,10 @@ Implemented:
   project section or task row is dragged over another item, a subtle horizontal
   blue line should appear at the drop position so users understand where the
   item will land before releasing.
+- Compact Task Flow node title fields should use the priority control's lower
+  dead space. Only the status row reserves room for the upper-right priority
+  control; the title input should expand to the full node width and wrap across
+  more lines.
 - Portfolio project visibility should follow the Schedule task list for
   task-derived projects, but user-created projects are durable Portfolio
   records. A project created from Portfolio must remain visible even when it
