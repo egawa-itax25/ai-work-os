@@ -40,18 +40,11 @@ type Point = { x: number; y: number };
 type PanState = { start: Point; origin: Point } | null;
 type BallTransferTarget = "self" | "other" | "done";
 type ToastState = { message: string; undo?: () => void } | null;
-type TaskMapLayoutSnapshot = {
-  rect: Pick<DOMRect, "bottom" | "height" | "left" | "right" | "top" | "width">;
-  boardSize: Point;
-  pan: Point;
-  projectName: string;
-  viewportSize: Point;
-  zoom: number;
-};
 
 const cardWidth = 236;
 const cardHeight = 156;
 const minimumBoardSize = { width: 1240, height: 620 };
+const stableBoardSize: Point = { x: minimumBoardSize.width, y: minimumBoardSize.height };
 const taskFitPadding = 96;
 const taskFlowViewportHeightClass = "h-full";
 const taskMapDefaultZoom = 0.94;
@@ -191,13 +184,7 @@ export default function ProjectTaskMap() {
   const boardRef = useRef<HTMLDivElement | null>(null);
   const projectTasksRef = useRef<Task[]>([]);
   const dragStateRef = useRef<DragState | null>(null);
-  const reconciledViewportKeyRef = useRef("");
-  const layoutSnapshotRef = useRef<TaskMapLayoutSnapshot | null>(null);
   const restoredViewportSizeRef = useRef<Point | null>(null);
-  const boardSizeRef = useRef<Point>({
-    x: minimumBoardSize.width,
-    y: minimumBoardSize.height,
-  });
   const zoomRef = useRef(taskMapDefaultZoom);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTaskId, setActiveTaskId] = useState("");
@@ -212,10 +199,7 @@ export default function ProjectTaskMap() {
   const [pan, setPan] = useState<Point>({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(taskMapDefaultZoom);
   const [panState, setPanState] = useState<PanState>(null);
-  const [boardSize, setBoardSize] = useState<Point>({
-    x: minimumBoardSize.width,
-    y: minimumBoardSize.height,
-  });
+  const boardSize = stableBoardSize;
   const [viewportSize, setViewportSize] = useState<Point>({ x: 0, y: 0 });
   const [viewportRestore, setViewportRestore] = useState<{
     projectName: string;
@@ -340,26 +324,6 @@ export default function ProjectTaskMap() {
   }, [isReady, pan, projectName, viewportRestore, zoom]);
 
   useEffect(() => {
-    boardSizeRef.current = boardSize;
-  }, [boardSize]);
-
-  useEffect(() => {
-    const rect = boardRef.current?.getBoundingClientRect();
-
-    if (!rect) {
-      return;
-    }
-
-    const nextBoardSize = {
-      x: Math.max(minimumBoardSize.width, rect.width / zoom),
-      y: Math.max(minimumBoardSize.height, rect.height / zoom),
-    };
-
-    boardSizeRef.current = nextBoardSize;
-    setBoardSize(nextBoardSize);
-  }, [zoom]);
-
-  useEffect(() => {
     const currentBoard = boardRef.current;
 
     if (!currentBoard) {
@@ -370,13 +334,6 @@ export default function ProjectTaskMap() {
 
     function syncBoardSize() {
       const rect = observedBoard.getBoundingClientRect();
-      const nextBoardSize = {
-        x: Math.max(minimumBoardSize.width, rect.width / zoomRef.current),
-        y: Math.max(minimumBoardSize.height, rect.height / zoomRef.current),
-      };
-
-      boardSizeRef.current = nextBoardSize;
-      setBoardSize(nextBoardSize);
       setViewportSize({ x: rect.width, y: rect.height });
     }
 
@@ -413,23 +370,20 @@ export default function ProjectTaskMap() {
     }
 
     if (viewportRestore.hasSavedView) {
-      const restoredViewportSize = restoredViewportSizeRef.current;
-
-      if (!restoredViewportSize) {
-        restoredViewportSizeRef.current = { x: viewportSize.x, y: viewportSize.y };
-        return;
-      }
-
-      if (
-        Math.abs(restoredViewportSize.x - viewportSize.x) < 2 &&
-        Math.abs(restoredViewportSize.y - viewportSize.y) < 2
-      ) {
-        return;
-      }
+      restoredViewportSizeRef.current = restoredViewportSizeRef.current ?? {
+        x: viewportSize.x,
+        y: viewportSize.y,
+      };
+      return;
     }
 
+    if (restoredViewportSizeRef.current) {
+      return;
+    }
+
+    restoredViewportSizeRef.current = { x: viewportSize.x, y: viewportSize.y };
     const nextFrame = getTaskFitFrame({
-      boardSize: boardSizeRef.current,
+      boardSize,
       currentZoom: zoomRef.current,
       tasks: projectTasksRef.current,
       viewport: rect,
@@ -449,7 +403,7 @@ export default function ProjectTaskMap() {
 
       return nextFrame.pan;
     });
-  }, [isReady, projectName, viewportRestore, viewportSize.x, viewportSize.y]);
+  }, [boardSize, isReady, projectName, viewportRestore, viewportSize.x, viewportSize.y]);
 
   const taskMap = useMemo(() => {
     return new Map(tasks.map((task) => [task.id, task]));
@@ -481,8 +435,12 @@ export default function ProjectTaskMap() {
   }, [projectName, projectTasks, taskMap]);
 
   const taskFlowZones = useMemo(
-    () => createTaskFlowZones(boardSize),
-    [boardSize],
+    () =>
+      createTaskFlowZones({
+        x: Math.max(minimumBoardSize.width, viewportSize.x || minimumBoardSize.width),
+        y: Math.max(minimumBoardSize.height, viewportSize.y || minimumBoardSize.height),
+      }),
+    [viewportSize.x, viewportSize.y],
   );
 
   const zoneCounts = useMemo(() => {
@@ -998,205 +956,6 @@ export default function ProjectTaskMap() {
       });
     }
   }
-
-  useEffect(() => {
-    if (
-      !isReady ||
-      dragStateRef.current ||
-      viewportSize.x === 0 ||
-      viewportSize.y === 0 ||
-      projectTasks.length === 0
-    ) {
-      return;
-    }
-
-    const rect = boardRef.current?.getBoundingClientRect();
-
-    if (!rect) {
-      return;
-    }
-
-    const viewportKey = `${projectName}:${Math.round(viewportSize.x)}:${Math.round(
-      viewportSize.y,
-    )}:${Math.round(zoom * 100)}:${Math.round(pan.x)}:${Math.round(
-      pan.y,
-    )}:${Math.round(boardSize.x)}:${Math.round(boardSize.y)}`;
-
-    if (reconciledViewportKeyRef.current === viewportKey) {
-      return;
-    }
-
-    reconciledViewportKeyRef.current = viewportKey;
-
-    const snapshot: TaskMapLayoutSnapshot = {
-      rect: {
-        bottom: rect.bottom,
-        height: rect.height,
-        left: rect.left,
-        right: rect.right,
-        top: rect.top,
-        width: rect.width,
-      },
-      boardSize: { x: boardSize.x, y: boardSize.y },
-      pan: { x: pan.x, y: pan.y },
-      projectName,
-      viewportSize: { x: viewportSize.x, y: viewportSize.y },
-      zoom,
-    };
-    const previousSnapshot = layoutSnapshotRef.current;
-    const isResize =
-      previousSnapshot?.projectName === projectName &&
-      (Math.abs(previousSnapshot.rect.width - snapshot.rect.width) > 2 ||
-        Math.abs(previousSnapshot.rect.height - snapshot.rect.height) > 2 ||
-        Math.abs(previousSnapshot.boardSize.x - snapshot.boardSize.x) > 2 ||
-        Math.abs(previousSnapshot.boardSize.y - snapshot.boardSize.y) > 2);
-
-    layoutSnapshotRef.current = snapshot;
-
-    const getBounds = (
-      target: BallTransferTarget,
-      layout: TaskMapLayoutSnapshot,
-    ) => {
-      const gap = 16;
-      const cardViewportWidth = cardWidth * layout.zoom;
-      const cardViewportHeight = cardHeight * layout.zoom;
-      const topHeight = layout.rect.height * taskMapTopZoneRatio;
-      const topMinY = layout.rect.top + gap;
-      const topMaxY = Math.max(
-        topMinY,
-        layout.rect.top + topHeight - cardViewportHeight - gap,
-      );
-      const doneMinY = Math.min(
-        Math.max(layout.rect.top + gap, layout.rect.top + topHeight + gap),
-        layout.rect.bottom - cardViewportHeight - gap,
-      );
-      const doneMaxY = Math.max(doneMinY, layout.rect.bottom - cardViewportHeight - gap);
-      const leftMinX = layout.rect.left + gap;
-      const leftMaxX = Math.max(
-        leftMinX,
-        layout.rect.left + layout.rect.width / 2 - cardViewportWidth - gap,
-      );
-      const rightMinX = Math.min(
-        Math.max(leftMinX, layout.rect.left + layout.rect.width / 2 + gap),
-        layout.rect.right - cardViewportWidth - gap,
-      );
-      const rightMaxX = Math.max(rightMinX, layout.rect.right - cardViewportWidth - gap);
-
-      if (target === "self") {
-        return { minX: leftMinX, maxX: leftMaxX, minY: topMinY, maxY: topMaxY };
-      }
-
-      if (target === "other") {
-        return { minX: rightMinX, maxX: rightMaxX, minY: topMinY, maxY: topMaxY };
-      }
-
-      return {
-        minX: leftMinX,
-        maxX: Math.max(leftMinX, rect.right - cardViewportWidth - gap),
-        minY: doneMinY,
-        maxY: doneMaxY,
-      };
-    };
-    const toViewport = (point: Point, layout: TaskMapLayoutSnapshot) => ({
-      x:
-        layout.rect.left +
-        layout.rect.width / 2 +
-        layout.pan.x +
-        (point.x - layout.boardSize.x / 2) * layout.zoom,
-      y:
-        layout.rect.top +
-        layout.rect.height / 2 +
-        layout.pan.y +
-        (point.y - layout.boardSize.y / 2) * layout.zoom,
-    });
-    const toBoard = (x: number, y: number, layout: TaskMapLayoutSnapshot) => ({
-      x:
-        (x - layout.rect.left - layout.rect.width / 2 - layout.pan.x) /
-          layout.zoom +
-        layout.boardSize.x / 2,
-      y:
-        (y - layout.rect.top - layout.rect.height / 2 - layout.pan.y) /
-          layout.zoom +
-        layout.boardSize.y / 2,
-    });
-
-    setTasks((current) => {
-      let changed = false;
-
-      const nextTasks = current.map((task) => {
-        if (task.project !== projectName) {
-          return task;
-        }
-
-        const target = getTaskTransferTarget(task);
-        const bounds = getBounds(target, snapshot);
-        const viewportPoint = toViewport({ x: task.x, y: task.y }, snapshot);
-        const isInside =
-          viewportPoint.x >= bounds.minX &&
-          viewportPoint.x <= bounds.maxX &&
-          viewportPoint.y >= bounds.minY &&
-          viewportPoint.y <= bounds.maxY;
-
-        if (isInside && !isResize) {
-          return task;
-        }
-
-        const snappedPoint =
-          isResize && previousSnapshot
-            ? (() => {
-                const previousBounds = getBounds(target, previousSnapshot);
-                const previousViewportPoint = toViewport(
-                  { x: task.x, y: task.y },
-                  previousSnapshot,
-                );
-                const ratioX =
-                  previousBounds.maxX === previousBounds.minX
-                    ? 0
-                    : (previousViewportPoint.x - previousBounds.minX) /
-                      (previousBounds.maxX - previousBounds.minX);
-                const ratioY =
-                  previousBounds.maxY === previousBounds.minY
-                    ? 0
-                    : (previousViewportPoint.y - previousBounds.minY) /
-                      (previousBounds.maxY - previousBounds.minY);
-
-                return toBoard(
-                  bounds.minX + clamp(ratioX, 0, 1) * (bounds.maxX - bounds.minX),
-                  bounds.minY + clamp(ratioY, 0, 1) * (bounds.maxY - bounds.minY),
-                  snapshot,
-                );
-              })()
-            : toBoard(
-                clamp(viewportPoint.x, bounds.minX, bounds.maxX),
-                clamp(viewportPoint.y, bounds.minY, bounds.maxY),
-                snapshot,
-              );
-
-        if (
-          Math.abs(snappedPoint.x - task.x) < 0.5 &&
-          Math.abs(snappedPoint.y - task.y) < 0.5
-        ) {
-          return task;
-        }
-
-        changed = true;
-        return { ...task, x: snappedPoint.x, y: snappedPoint.y };
-      });
-
-      return changed ? nextTasks : current;
-    });
-  }, [
-    boardSize.x,
-    boardSize.y,
-    isReady,
-    pan.x,
-    pan.y,
-    projectName,
-    projectTasks,
-    viewportSize.x,
-    viewportSize.y,
-    zoom,
-  ]);
 
   return (
     <div className="neo-shell flex h-[calc(100vh-4rem)] min-h-0 flex-col gap-4 overflow-hidden text-zinc-100">

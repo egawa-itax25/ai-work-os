@@ -561,17 +561,14 @@ Implemented:
   moving task cards to the internal board size while fixed ownership regions
   are viewport-based; otherwise small screens can prevent cards from reaching
   the top of the visible map.
-- On project open or viewport resize, task cards should be lightly reconciled
-  into the visible region matching their current ball/status. This should only
-  correct cards that would otherwise sit outside their visible ownership region,
-  so user placement inside a region is preserved.
-- When the Task Flow Map viewport changes size, task cards should preserve their
-  relative position inside their current ownership zone. Resizing the window
-  should scale the task location with the zone bounds instead of snapping cards
-  to a new corner.
-- Task Flow Map should preserve each project's pan and zoom across reloads.
-  Auto-fit may provide the first view, but it should not override a saved
-  viewport and make task cards appear to shift after reload.
+- Task Flow Map uses a stable internal coordinate space for task cards. Moving
+  the browser between monitors or resizing the window must not rewrite task
+  `x/y` coordinates.
+- Viewport resize may adjust the visible ownership-zone backgrounds and may
+  provide the first auto-fit for a project without saved view state. Once a
+  project has saved pan/zoom, resize must not override that view state.
+- Only explicit user actions, such as task drag/drop, new task placement,
+  manual pan, or manual zoom, may change task coordinates or map viewport state.
 - Task Inspector detects URLs in the task's next-action/detail text and renders
   them as clickable "検出したリンク" anchors that open in a new tab.
 - In the schedule project task list, the Task Flow Map action is placed near the

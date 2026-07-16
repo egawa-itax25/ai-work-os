@@ -184,3 +184,13 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Use a dedicated visible drag handle as the drag source. Keep the
   full section or row as the drop target, but do not make every child element a
   drag starter.
+
+### 2026-07-16 - Task map resize rewrote task positions
+
+- Mistake: The Task Flow Map resized its internal board and reconciled task
+  cards whenever the viewport changed, so moving the browser between monitors
+  rewrote saved `x/y` positions and made cards drift or overlap.
+- Prevention: Keep task-map card coordinates in a stable internal board space.
+  Viewport resize may adjust visible zone backgrounds, but it must not persist
+  task coordinates or override a saved pan/zoom unless the user directly drags,
+  drops, pans, or zooms.
