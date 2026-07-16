@@ -667,6 +667,9 @@ Implemented:
   dead space. Only the status row reserves room for the upper-right priority
   control; the title input should expand to the full node width and wrap across
   more lines.
+- When a task is created directly on the Task Flow Map, the new node's title
+  field should receive focus immediately and select the default title so the
+  user can start typing without an extra click.
 - Portfolio project visibility should follow the Schedule task list for
   task-derived projects, but user-created projects are durable Portfolio
   records. A project created from Portfolio must remain visible even when it

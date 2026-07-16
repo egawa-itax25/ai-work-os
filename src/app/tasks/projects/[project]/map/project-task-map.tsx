@@ -188,6 +188,7 @@ export default function ProjectTaskMap() {
   const zoomRef = useRef(taskMapDefaultZoom);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTaskId, setActiveTaskId] = useState("");
+  const [focusTaskTitleId, setFocusTaskTitleId] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [linkSourceId, setLinkSourceId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -707,6 +708,7 @@ export default function ProjectTaskMap() {
 
     setTasks((current) => [newTask, ...current]);
     setActiveTaskId(newTask.id);
+    setFocusTaskTitleId(newTask.id);
     setToast({ message: "タスクを作成しました。", undo: () => removeTask(newTask.id, false) });
   }
 
@@ -899,6 +901,7 @@ export default function ProjectTaskMap() {
 
     setTasks((current) => [newTask, ...current]);
     setActiveTaskId(newTask.id);
+    setFocusTaskTitleId(newTask.id);
     setDrawerOpen(false);
     setToast({ message: "タスクを作成しました。", undo: () => removeTask(newTask.id, false) });
   }
@@ -1130,6 +1133,7 @@ export default function ProjectTaskMap() {
                   key={task.id}
                   task={task}
                   active={activeTask?.id === task.id}
+                  focusTitle={focusTaskTitleId === task.id}
                   linking={linkSourceId !== null}
                   dropTarget={dropTargetId === task.id}
                   menuOpen={menuTaskId === task.id}
@@ -1158,6 +1162,9 @@ export default function ProjectTaskMap() {
                   onUpdate={(patch) => updateTask(task.id, patch)}
                   onRemove={removeTask}
                   onStatusChange={(status) => updateTask(task.id, { status })}
+                  onTitleFocused={() =>
+                    setFocusTaskTitleId((current) => (current === task.id ? "" : current))
+                  }
                 />
               ))}
             </div>
@@ -1199,6 +1206,7 @@ function TaskNode({
   compact = false,
   task,
   active,
+  focusTitle = false,
   linking,
   dropTarget,
   menuOpen,
@@ -1219,10 +1227,12 @@ function TaskNode({
   onUpdate,
   onRemove,
   onStatusChange,
+  onTitleFocused,
 }: {
   compact?: boolean;
   task: Task;
   active: boolean;
+  focusTitle?: boolean;
   linking: boolean;
   dropTarget: boolean;
   menuOpen: boolean;
@@ -1243,10 +1253,29 @@ function TaskNode({
   onUpdate: (patch: Partial<Task>) => void;
   onRemove: (id: string) => void;
   onStatusChange: (status: TaskStatus) => void;
+  onTitleFocused?: () => void;
 }) {
   const ballMeta = getTaskBallMeta(task);
   const isOtherBall = ballMeta.label === "相手のボール";
+  const compactTitleRef = useRef<HTMLTextAreaElement | null>(null);
+  const titleRef = useRef<HTMLInputElement | null>(null);
   const [unlinkMenuOpen, setUnlinkMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!focusTitle) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      const target = compact ? compactTitleRef.current : titleRef.current;
+
+      target?.focus();
+      target?.select();
+      onTitleFocused?.();
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [compact, focusTitle, onTitleFocused]);
 
   if (compact) {
     return (
@@ -1319,6 +1348,7 @@ function TaskNode({
         <div>
           <p className="pr-14 text-xs text-slate-500">{statusMeta[task.status].label}</p>
           <textarea
+            ref={compactTitleRef}
             value={task.title}
             rows={3}
             onChange={(event) => onUpdate({ title: event.target.value })}
@@ -1532,6 +1562,7 @@ function TaskNode({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1 space-y-2">
           <input
+            ref={titleRef}
             value={task.title}
             onChange={(event) => onUpdate({ title: event.target.value })}
             onFocus={() => onSelect(task.id)}
