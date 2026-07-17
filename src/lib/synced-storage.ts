@@ -22,6 +22,19 @@ export type SyncResult = {
   httpStatus?: number;
 };
 
+type RemotePayload = {
+  value?: unknown;
+  updatedAt?: string | null;
+};
+
+type LocalMeta = {
+  updatedAt: string;
+};
+
+const syncMetaPrefix = "ai-work-os:sync-meta:";
+const backupPrefix = "ai-work-os:backup:";
+const maxBackups = 8;
+
 export async function loadSyncedState<T>({
   localKey,
   remoteKey,
@@ -36,6 +49,7 @@ export async function loadSyncedState<T>({
 
   const local = readLocalValue(localKey, normalize, fallback);
   const localValue = local.value;
+  const localMeta = readLocalMeta(localKey);
   onValue(localValue);
   setSyncStatus(onStatus, {
     status: "loading",
@@ -52,12 +66,19 @@ export async function loadSyncedState<T>({
       return;
     }
 
-    const payload = (await response.json()) as { value?: unknown };
+    const payload = (await response.json()) as RemotePayload;
+    const hasRemote = payload.value !== null && typeof payload.value !== "undefined";
 
-    if (payload.value === null || typeof payload.value === "undefined") {
+    if (!hasRemote) {
       if (local.exists && !isEmptySyncedValue(localValue)) {
         const result = await saveSyncedState(localKey, remoteKey, localValue);
-        setSyncStatus(onStatus, result);
+        setSyncStatus(onStatus, {
+          ...result,
+          message:
+            result.status === "synced"
+              ? "この端末のデータをクラウドへ初回同期しました。"
+              : result.message,
+        });
         return;
       }
 
@@ -69,7 +90,28 @@ export async function loadSyncedState<T>({
     }
 
     const remoteValue = normalize(payload.value);
+    const remoteUpdatedAt = payload.updatedAt ?? "";
+
+    if (shouldUploadLocal(local, localMeta, localValue, remoteValue, remoteUpdatedAt)) {
+      const result = await saveSyncedState(localKey, remoteKey, localValue);
+      setSyncStatus(onStatus, {
+        ...result,
+        message:
+          result.status === "synced"
+            ? "この端末の新しいデータをクラウドへ反映しました。"
+            : result.message,
+      });
+      return;
+    }
+
+    if (local.exists && !areEqualJson(localValue, remoteValue)) {
+      writeLocalBackup(localKey, localValue);
+    }
+
     window.localStorage.setItem(localKey, JSON.stringify(remoteValue));
+    if (remoteUpdatedAt) {
+      writeLocalMeta(localKey, remoteUpdatedAt);
+    }
     onValue(remoteValue);
     setSyncStatus(onStatus, {
       status: "synced",
@@ -98,7 +140,9 @@ export async function saveSyncedState<T>(
     };
   }
 
+  const updatedAt = new Date().toISOString();
   window.localStorage.setItem(localKey, JSON.stringify(value));
+  writeLocalMeta(localKey, updatedAt);
 
   try {
     const response = await fetch(`/api/workspace-state/${encodeURIComponent(remoteKey)}`, {
@@ -113,6 +157,11 @@ export async function saveSyncedState<T>(
       const result = await createHttpResult(response);
       emitSyncStatus(result);
       return result;
+    }
+
+    const payload = (await response.json().catch(() => null)) as { updatedAt?: string } | null;
+    if (payload?.updatedAt) {
+      writeLocalMeta(localKey, payload.updatedAt);
     }
 
     const result: SyncResult = {
@@ -148,7 +197,9 @@ function readLocalValue<T>(
   try {
     return { value: normalize(JSON.parse(saved)), exists: true };
   } catch {
+    writeLocalBackup(localKey, saved);
     window.localStorage.removeItem(localKey);
+    window.localStorage.removeItem(getMetaKey(localKey));
     return { value: fallback, exists: false };
   }
 }
@@ -172,6 +223,74 @@ async function createHttpResult(response: Response): Promise<SyncResult> {
   };
 }
 
+function shouldUploadLocal<T>(
+  local: { value: T; exists: boolean },
+  localMeta: LocalMeta | null,
+  localValue: T,
+  remoteValue: T,
+  remoteUpdatedAt: string,
+) {
+  if (!local.exists || isEmptySyncedValue(localValue)) {
+    return false;
+  }
+
+  if (isEmptySyncedValue(remoteValue)) {
+    return true;
+  }
+
+  if (localMeta?.updatedAt) {
+    if (!remoteUpdatedAt) {
+      return true;
+    }
+
+    return Date.parse(localMeta.updatedAt) > Date.parse(remoteUpdatedAt);
+  }
+
+  return getValueWeight(localValue) > getValueWeight(remoteValue);
+}
+
+function readLocalMeta(localKey: string): LocalMeta | null {
+  const saved = window.localStorage.getItem(getMetaKey(localKey));
+
+  if (!saved) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(saved) as Partial<LocalMeta>;
+    return typeof parsed.updatedAt === "string" ? { updatedAt: parsed.updatedAt } : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeLocalMeta(localKey: string, updatedAt: string) {
+  window.localStorage.setItem(getMetaKey(localKey), JSON.stringify({ updatedAt }));
+}
+
+function writeLocalBackup(localKey: string, value: unknown) {
+  try {
+    const key = `${backupPrefix}${localKey}`;
+    const saved = window.localStorage.getItem(key);
+    const backups = saved ? (JSON.parse(saved) as unknown[]) : [];
+    const nextBackups = [
+      {
+        createdAt: new Date().toISOString(),
+        value,
+      },
+      ...backups,
+    ].slice(0, maxBackups);
+
+    window.localStorage.setItem(key, JSON.stringify(nextBackups));
+  } catch {
+    // Backup is a safety net. Sync should continue even when storage is full.
+  }
+}
+
+function getMetaKey(localKey: string) {
+  return `${syncMetaPrefix}${localKey}`;
+}
+
 function isEmptySyncedValue(value: unknown) {
   if (Array.isArray(value)) {
     return value.length === 0;
@@ -182,6 +301,26 @@ function isEmptySyncedValue(value: unknown) {
   }
 
   return value === null || typeof value === "undefined" || value === "";
+}
+
+function getValueWeight(value: unknown): number {
+  if (Array.isArray(value)) {
+    return value.length + value.reduce((total, item) => total + getValueWeight(item), 0);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.values(value).reduce((total, item) => total + getValueWeight(item), 1);
+  }
+
+  return value ? 1 : 0;
+}
+
+function areEqualJson(left: unknown, right: unknown) {
+  try {
+    return JSON.stringify(left) === JSON.stringify(right);
+  } catch {
+    return false;
+  }
 }
 
 function setSyncStatus(onStatus: ((result: SyncResult) => void) | undefined, result: SyncResult) {

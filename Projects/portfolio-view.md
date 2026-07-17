@@ -520,6 +520,11 @@ Portfolio should restore as much as possible when returning from Project Flow:
 - Project and task sync feedback distinguishes local save from cloud sync.
   Users should see whether edits are saved only on this device, synced to
   Supabase, or blocked by an auth/server error.
+- Portfolio, Schedule, Task Flow Map, trash, and completed-work state must use
+  the same signed-in Supabase workspace state. Local browser state is only a
+  cache/fallback. First sync should upload non-empty local work when the remote
+  value is empty, compare timestamps when both sides exist, and keep a recovery
+  snapshot before replacing local data.
 
 ## Implementation Status
 

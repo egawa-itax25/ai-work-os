@@ -469,6 +469,10 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
   through Supabase for logged-in users. Browser localStorage remains a fast
   cache and unauthenticated fallback, but it is no longer the intended durable
   source for cross-device work state.
+- Cross-device work requires the same Supabase Auth login. The sync layer keeps
+  local cache timestamps, compares them with Supabase `updated_at`, and stores
+  a small local backup before replacing cached workspace state so PC-entered
+  projects and tasks are not silently lost during device or deployment changes.
 - Project Flow should support Task Inspector editing on node selection.
 - Project Flow should support drag-to-transfer for task ball ownership, using a
   temporary dock for 自分, 相手, AI, and 完了 while a Task Node is being dragged.

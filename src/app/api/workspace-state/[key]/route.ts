@@ -44,18 +44,19 @@ export async function PUT(request: Request, context: RouteContext) {
     return NextResponse.json({ error: "value is required" }, { status: 400 });
   }
 
+  const updatedAt = new Date().toISOString();
   const { error } = await auth.supabase.from("workspace_states").upsert({
     user_id: auth.userId,
     state_key: key,
     value: body.value,
-    updated_at: new Date().toISOString(),
+    updated_at: updatedAt,
   });
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, updatedAt });
 }
 
 async function getAuthenticatedClient() {
@@ -68,10 +69,7 @@ async function getAuthenticatedClient() {
   if (error || !user) {
     return {
       ok: false as const,
-      response: NextResponse.json(
-        { error: "ログインすると端末間で同期できます。" },
-        { status: 401 },
-      ),
+      response: NextResponse.json({ error: "ログインすると端末間で同期できます。" }, { status: 401 }),
     };
   }
 

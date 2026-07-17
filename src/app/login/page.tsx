@@ -1,7 +1,7 @@
 import { signIn, signOut, signUp } from "./actions";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 };
 
 function getErrorMessage(error?: string) {
@@ -9,32 +9,40 @@ function getErrorMessage(error?: string) {
     return "";
   }
 
-  if (error.toLowerCase().includes("invalid login credentials")) {
-    return "メールアドレスまたはパスワードが違います。初めて使う場合は新規登録してください。";
+  const lower = error.toLowerCase();
+
+  if (lower.includes("invalid login credentials")) {
+    return "メールアドレスまたはパスワードが違います。初めて使う場合は「新規登録」を押してください。";
   }
 
-  if (error.toLowerCase().includes("already registered")) {
-    return "このメールアドレスは登録済みです。ログインしてください。";
+  if (lower.includes("already registered") || lower.includes("user already registered")) {
+    return "このメールアドレスは登録済みです。「ログイン」を押してください。";
   }
 
   return error;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error } = await searchParams;
+  const { error, message } = await searchParams;
   const errorMessage = getErrorMessage(error);
 
   return (
-    <main className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-xl items-center px-5 py-8">
-      <section className="w-full rounded-2xl border border-white/12 bg-slate-950/80 p-6 shadow-2xl shadow-black/30 backdrop-blur">
+    <main className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-2xl items-center px-5 py-8">
+      <section className="w-full rounded-2xl border border-white/12 bg-slate-950/88 p-6 shadow-2xl shadow-black/30 backdrop-blur sm:p-8">
         <div>
           <p className="text-sm font-semibold text-sky-200">同期アカウント</p>
-          <h1 className="mt-2 text-2xl font-semibold text-white">ログイン</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-400">
-            PCとスマホで同じメールアドレスを使うと、プロジェクトとタスクを同期できます。
-            初めて使う場合は、メールアドレスとパスワードを入力して「新規登録」を押してください。
+          <h1 className="mt-2 text-3xl font-semibold text-white">ログイン</h1>
+          <p className="mt-3 text-sm leading-7 text-slate-400">
+            同じメールアドレスでログインすると、PC・スマホ・別PCでプロジェクトとタスクを同期できます。
+            初めて使う場合はメールアドレスとパスワードを入力して「新規登録」を押してください。
           </p>
         </div>
+
+        {message ? (
+          <div className="mt-5 rounded-xl border border-sky-200/25 bg-sky-200/10 px-4 py-3 text-sm font-semibold leading-6 text-sky-50">
+            {message}
+          </div>
+        ) : null}
 
         {errorMessage ? (
           <div className="mt-5 rounded-xl border border-red-300/30 bg-red-500/10 px-4 py-3 text-sm font-semibold leading-6 text-red-100">
