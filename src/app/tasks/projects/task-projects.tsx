@@ -2,12 +2,11 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent, type KeyboardEvent } from "react";
 import {
   Task,
   TaskPriority,
   TaskStatus,
-  formatDate,
   initialTasks,
   isOverdue,
   normalizeTaskList,
@@ -34,7 +33,12 @@ export default function TaskProjects() {
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
   const [editingProject, setEditingProject] = useState("");
   const [projectNameDraft, setProjectNameDraft] = useState("");
-  const [editingTaskId, setEditingTaskId] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState("");
+  const [editingCell, setEditingCell] = useState<{
+    taskId: string;
+    field: "title" | "description";
+  } | null>(null);
+  const [cellDraft, setCellDraft] = useState("");
   const [draggedProject, setDraggedProject] = useState("");
   const [projectDropTarget, setProjectDropTarget] = useState("");
   const [draggedTaskId, setDraggedTaskId] = useState("");
@@ -60,6 +64,66 @@ export default function TaskProjects() {
     ]);
   }, []);
 
+  useEffect(() => {
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const isTyping =
+        target?.closest("input, textarea, select, button, a") ||
+        target?.getAttribute("contenteditable") === "true";
+
+      if (event.key !== "Delete" || !selectedTaskId || isTyping) {
+        return;
+      }
+
+      const task = tasks.find((current) => current.id === selectedTaskId);
+
+      if (!task) {
+        return;
+      }
+
+      event.preventDefault();
+      addTrashItem({
+        id: `task-${task.id}-${Date.now()}`,
+        kind: "task",
+        ...createTrashDates(),
+        task,
+      });
+      const nextTasks = tasks.filter((current) => current.id !== task.id);
+
+      setTasks(nextTasks);
+      void saveSyncedState(storageKey, remoteStorageKey, nextTasks);
+      setSelectedTaskId("");
+      setEditingCell(null);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedTaskId, tasks]);
+
+  const ownerCandidates = useMemo(() => {
+    const values = new Set(["未設定", "あなた"]);
+
+    for (const task of tasks) {
+      if (task.owner && task.owner !== "AI") {
+        values.add(task.owner);
+      }
+      if (
+        task.currentBallHolder &&
+        !["AI", "なし", "顧客", "あなた"].includes(task.currentBallHolder)
+      ) {
+        values.add(task.currentBallHolder);
+      }
+    }
+
+    for (const project of portfolioProjects) {
+      if (project.owner && project.owner !== "AI") {
+        values.add(project.owner);
+      }
+    }
+
+    return Array.from(values);
+  }, [portfolioProjects, tasks]);
+
   function commitTasks(nextTasks: Task[]) {
     setTasks(nextTasks);
     void saveSyncedState(storageKey, remoteStorageKey, nextTasks);
@@ -67,19 +131,7 @@ export default function TaskProjects() {
 
   function updateTask(id: string, patch: Partial<Task>) {
     commitTasks(
-      tasks.map((task) =>
-        task.id === id
-          ? {
-              ...task,
-              ...patch,
-              progress: patch.status === "done" ? 100 : patch.progress ?? task.progress,
-              currentBallHolder:
-                patch.status === "done"
-                  ? "なし"
-                  : patch.currentBallHolder ?? task.currentBallHolder,
-            }
-          : task,
-      ),
+      tasks.map((task) => (task.id === id ? applyTaskPatch(task, patch) : task)),
     );
   }
 
@@ -91,6 +143,57 @@ export default function TaskProjects() {
       task,
     });
     commitTasks(tasks.filter((current) => current.id !== task.id));
+  }
+
+  function beginCellEdit(task: Task, field: "title" | "description") {
+    setSelectedTaskId(task.id);
+    setEditingCell({ taskId: task.id, field });
+    setCellDraft(field === "title" ? task.title : task.description);
+  }
+
+  function commitCellEdit() {
+    if (!editingCell) {
+      return;
+    }
+
+    const value = cellDraft.trim();
+    updateTask(editingCell.taskId, {
+      [editingCell.field]: editingCell.field === "title" ? value || "無題のタスク" : cellDraft,
+    } as Partial<Task>);
+    setEditingCell(null);
+  }
+
+  function cancelCellEdit() {
+    setEditingCell(null);
+    setCellDraft("");
+  }
+
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.nativeEvent.isComposing) {
+      return;
+    }
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commitCellEdit();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelCellEdit();
+    }
+  }
+
+  function handleDescriptionKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key === "Enter" && event.shiftKey) {
+      event.preventDefault();
+      commitCellEdit();
+    }
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      cancelCellEdit();
+    }
   }
 
   function addTask(project: string) {
@@ -122,7 +225,9 @@ export default function TaskProjects() {
 
     nextTasks.splice(insertIndex + 1, 0, newTask);
     commitTasks(nextTasks);
-    setEditingTaskId(newTask.id);
+    setSelectedTaskId(newTask.id);
+    setEditingCell({ taskId: newTask.id, field: "title" });
+    setCellDraft(newTask.title);
   }
 
   function startProjectDrag(event: DragEvent<HTMLElement>, project: string) {
@@ -312,6 +417,12 @@ export default function TaskProjects() {
 
   return (
     <div className="neo-shell space-y-5 text-zinc-100">
+      <datalist id="schedule-owner-candidates">
+        {ownerCandidates.map((owner) => (
+          <option key={owner} value={owner} />
+        ))}
+      </datalist>
+
       <section className="grid gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(42rem,1.25fr)]">
         <div>
           <p className="neo-accent text-sm font-medium">プロジェクト別の仕事</p>
@@ -543,7 +654,11 @@ export default function TaskProjects() {
                 </thead>
                 <tbody className="divide-y divide-zinc-800">
                   {group.tasks.map((task) => {
-                    const isEditing = editingTaskId === task.id;
+                    const isSelected = selectedTaskId === task.id;
+                    const isTitleEditing =
+                      editingCell?.taskId === task.id && editingCell.field === "title";
+                    const isDescriptionEditing =
+                      editingCell?.taskId === task.id && editingCell.field === "description";
                     const showTaskDropLine =
                       Boolean(draggedTaskId) &&
                       draggedTaskId !== task.id &&
@@ -552,6 +667,8 @@ export default function TaskProjects() {
                     return (
                       <tr
                         key={task.id}
+                        tabIndex={0}
+                        onClick={() => setSelectedTaskId(task.id)}
                         onDragOver={(event) => {
                           if (draggedTaskId && draggedTaskId !== task.id) {
                             event.preventDefault();
@@ -568,121 +685,109 @@ export default function TaskProjects() {
                           setDraggedTaskId("");
                           setTaskDropTarget("");
                         }}
-                        className={`group relative transition ${
-                          isEditing ? "" : ""
-                        } hover:bg-sky-300/[0.035] ${
+                        className={`group relative transition hover:bg-sky-300/[0.035] ${
+                          isSelected ? "bg-sky-300/[0.055] outline outline-1 outline-sky-200/20" : ""
+                        } ${
                           draggedTaskId === task.id ? "opacity-55" : ""
                         } ${
                           showTaskDropLine ? "shadow-[inset_0_2px_0_rgba(125,211,252,0.95)]" : ""
                         }`}
                       >
                         <td className="px-4 py-3 align-middle">
-                          {isEditing ? (
-                            <div className="space-y-2">
+                          <div className="flex items-start gap-3">
+                            <button
+                              type="button"
+                              draggable
+                              onDragStart={(event) => startTaskDrag(event, task.id)}
+                              onDragEnd={() => {
+                                setDraggedTaskId("");
+                                setTaskDropTarget("");
+                              }}
+                              className="mt-0.5 grid h-8 w-6 shrink-0 cursor-grab place-items-center rounded-md border border-transparent text-base leading-none text-zinc-500 transition hover:border-sky-200/30 hover:bg-sky-200/10 hover:text-sky-100 active:cursor-grabbing group-hover:border-sky-200/20 group-hover:bg-sky-200/5"
+                              aria-label={`${task.title} をドラッグして並び替え`}
+                              title="ドラッグしてタスクを並び替え"
+                            >
+                              ⋮⋮
+                            </button>
+                            <div className="min-w-0 flex-1">
+                              {isTitleEditing ? (
                               <input
-                                value={task.title}
-                                onChange={(event) => updateTask(task.id, { title: event.target.value })}
-                                className="neo-input w-full rounded-md border border-zinc-700 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-sky-200"
+                                autoFocus
+                                value={cellDraft}
+                                onChange={(event) => setCellDraft(event.target.value)}
+                                onBlur={commitCellEdit}
+                                onKeyDown={handleTitleKeyDown}
+                                className="neo-input w-full rounded-md border border-sky-300/40 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-sky-200"
                                 aria-label="タスク名"
                               />
+                              ) : (
+                                <button
+                                  type="button"
+                                  onDoubleClick={() => beginCellEdit(task, "title")}
+                                  className="block w-full rounded-md px-2 py-1 text-left font-semibold text-white transition hover:bg-sky-300/10 hover:text-sky-50"
+                                  title="ダブルクリックで編集"
+                                >
+                                  {task.title}
+                                </button>
+                              )}
+                              {isDescriptionEditing ? (
                               <textarea
-                                value={task.description}
-                                onChange={(event) => updateTask(task.id, { description: event.target.value })}
-                                className="neo-input min-h-16 w-full resize-y rounded-md border border-zinc-700 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-sky-200"
+                                autoFocus
+                                value={cellDraft}
+                                onChange={(event) => setCellDraft(event.target.value)}
+                                onBlur={commitCellEdit}
+                                onKeyDown={handleDescriptionKeyDown}
+                                className="neo-input mt-1 min-h-16 w-full resize-y rounded-md border border-sky-300/40 px-3 py-2 text-xs text-zinc-200 outline-none focus:border-sky-200"
                                 aria-label="タスク説明"
                               />
-                            </div>
-                          ) : (
-                            <div className="flex items-start gap-3">
-                              <button
-                                type="button"
-                                draggable
-                                onDragStart={(event) => startTaskDrag(event, task.id)}
-                                onDragEnd={() => {
-                                  setDraggedTaskId("");
-                                  setTaskDropTarget("");
-                                }}
-                                className="mt-0.5 grid h-8 w-6 shrink-0 cursor-grab place-items-center rounded-md border border-transparent text-base leading-none text-zinc-500 transition hover:border-sky-200/30 hover:bg-sky-200/10 hover:text-sky-100 active:cursor-grabbing group-hover:border-sky-200/20 group-hover:bg-sky-200/5"
-                                aria-label={`${task.title} をドラッグして並び替え`}
-                                title="ドラッグしてタスクを並び替え"
-                              >
-                                ⋮⋮
-                              </button>
-                              <div className="min-w-0">
-                                <div className="font-medium text-white">{task.title}</div>
-                                <div className="mt-1 line-clamp-1 text-xs text-zinc-500">
+                              ) : (
+                                <button
+                                  type="button"
+                                  onDoubleClick={() => beginCellEdit(task, "description")}
+                                  className="mt-1 block w-full rounded-md px-2 py-1 text-left text-xs text-zinc-500 transition hover:bg-sky-300/10 hover:text-zinc-300"
+                                  title="ダブルクリックで編集"
+                                >
                                   {task.description || "メモなし"}
-                                </div>
-                              </div>
+                                </button>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </td>
                         <td className="px-4 py-3 align-middle">
-                          {isEditing ? (
-                            <select
-                              value={task.currentBallHolder}
-                              onChange={(event) => updateTask(task.id, { currentBallHolder: event.target.value })}
-                              className="neo-input w-full rounded-md border border-zinc-700 px-2 py-2 text-sm text-zinc-100"
-                            >
-                              <option value="あなた">自分</option>
-                              <option value="顧客">相手</option>
-                              <option value="AI">AI</option>
-                              <option value="なし">なし</option>
-                              <option value={task.owner}>{task.owner}</option>
-                            </select>
-                          ) : (
-                            <BallBadge task={task} />
-                          )}
+                          <BallSelect task={task} onChange={(value) => updateTask(task.id, { currentBallHolder: value })} />
                         </td>
                         <td className="px-4 py-3 align-middle">
-                          {isEditing ? (
-                            <select
-                              value={task.status}
-                              onChange={(event) => updateTask(task.id, { status: event.target.value as TaskStatus })}
-                              className="neo-input w-full rounded-md border border-zinc-700 px-2 py-2 text-sm text-zinc-100"
-                            >
-                              <option value="todo">未着手</option>
-                              <option value="doing">進行中</option>
-                              <option value="done">完了</option>
-                            </select>
-                          ) : (
-                            <span
-                              className={`inline-flex min-h-8 items-center rounded-md border px-3 py-1 text-sm font-semibold ${statusMeta[task.status].tone}`}
-                            >
-                              {statusMeta[task.status].label}
-                            </span>
-                          )}
+                          <select
+                            value={task.status}
+                            onChange={(event) => updateTask(task.id, { status: event.target.value as TaskStatus })}
+                            className={`inline-flex min-h-8 rounded-md border px-3 py-1 text-sm font-semibold outline-none transition hover:brightness-110 focus:ring-2 focus:ring-sky-200/30 ${statusMeta[task.status].tone}`}
+                            aria-label="状態"
+                          >
+                            <option value="todo">未着手</option>
+                            <option value="doing">進行中</option>
+                            <option value="done">完了</option>
+                          </select>
                         </td>
                         <td className="px-4 py-3 align-middle">
-                          {isEditing ? (
-                            <select
-                              value={task.priority}
-                              onChange={(event) => updateTask(task.id, { priority: event.target.value as TaskPriority })}
-                              className="neo-input w-full rounded-md border border-zinc-700 px-2 py-2 text-sm text-zinc-100"
-                            >
-                              <option value="high">高</option>
-                              <option value="medium">中</option>
-                              <option value="low">低</option>
-                            </select>
-                          ) : (
-                            <span
-                              className={`inline-flex min-h-8 items-center rounded-md border px-3 py-1 text-sm font-semibold ${priorityMeta[task.priority].badge}`}
-                            >
-                              {priorityMeta[task.priority].label}
-                            </span>
-                          )}
+                          <select
+                            value={task.priority}
+                            onChange={(event) => updateTask(task.id, { priority: event.target.value as TaskPriority })}
+                            className={`inline-flex min-h-8 rounded-md border px-3 py-1 text-sm font-semibold outline-none transition hover:brightness-110 focus:ring-2 focus:ring-sky-200/30 ${priorityMeta[task.priority].badge}`}
+                            aria-label="優先度"
+                          >
+                            <option value="high">高</option>
+                            <option value="medium">中</option>
+                            <option value="low">低</option>
+                          </select>
                         </td>
                         <td className="px-4 py-3 align-middle font-medium text-zinc-200">
-                          {isEditing ? (
-                            <input
-                              value={task.owner}
-                              onChange={(event) => updateTask(task.id, { owner: event.target.value })}
-                              className="neo-input w-full rounded-md border border-zinc-700 px-2 py-2 text-sm text-white"
-                              aria-label="担当"
-                            />
-                          ) : (
-                            <span className="truncate">{task.owner}</span>
-                          )}
+                          <input
+                            value={task.owner}
+                            list="schedule-owner-candidates"
+                            onChange={(event) => updateTask(task.id, { owner: event.target.value || "未設定" })}
+                            className="neo-input min-h-8 w-full rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-white outline-none transition hover:border-sky-300/30 hover:bg-sky-300/10 focus:border-sky-200"
+                            aria-label="担当"
+                          />
                         </td>
                         <td
                           className={
@@ -691,30 +796,16 @@ export default function TaskProjects() {
                               : "px-4 py-3 align-middle text-zinc-300"
                           }
                         >
-                          {isEditing ? (
-                            <input
-                              type="date"
-                              value={task.dueDate}
-                              onChange={(event) => updateTask(task.id, { dueDate: event.target.value })}
-                              className="neo-input w-full rounded-md border border-zinc-700 px-2 py-2 text-sm text-white"
-                              aria-label="期限"
-                            />
-                          ) : (
-                            formatDate(task.dueDate)
-                          )}
+                          <DeadlineControl
+                            value={task.dueDate}
+                            onChange={(value) => updateTask(task.id, { dueDate: value })}
+                          />
                         </td>
                         <td className="px-4 py-3 align-middle text-zinc-300">
                           {task.links.length}件
                         </td>
                         <td className="px-4 py-3 align-middle">
                           <div className="flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditingTaskId(isEditing ? "" : task.id)}
-                              className="rounded-md border border-zinc-700 px-3 py-2 text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-white"
-                            >
-                              {isEditing ? "完了" : "編集"}
-                            </button>
                             <button
                               type="button"
                               onClick={() => deleteTask(task)}
@@ -771,38 +862,146 @@ function TaskTabs({ active }: { active: "map" | "projects" }) {
   );
 }
 
-function BallBadge({ task }: { task: Task }) {
-  const owner = task.currentBallHolder;
+function BallSelect({
+  task,
+  onChange,
+}: {
+  task: Task;
+  onChange: (value: string) => void;
+}) {
+  const value =
+    task.status === "done" || task.currentBallHolder === "なし"
+      ? "なし"
+      : task.currentBallHolder === "あなた"
+        ? "あなた"
+        : "相手";
 
-  if (task.status === "done" || owner === "なし") {
-    return (
-      <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-emerald-300/30 bg-emerald-300/10 px-3 py-1 text-sm font-semibold text-emerald-100">
-        完了
-      </span>
-    );
-  }
-
-  if (owner === "あなた") {
-    return (
-      <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-sky-300/40 bg-sky-300/10 px-3 py-1 text-sm font-semibold text-sky-100">
-        自分
-      </span>
-    );
-  }
-
-  if (owner === "AI") {
-    return (
-      <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-violet-300/35 bg-violet-300/10 px-3 py-1 text-sm font-semibold text-violet-100">
-        AI
-      </span>
-    );
-  }
+  const tone =
+    value === "なし"
+      ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-100"
+      : value === "あなた"
+        ? "border-sky-300/45 bg-sky-300/10 text-sky-100"
+        : "border-amber-300/45 bg-amber-300/10 text-amber-100";
 
   return (
-    <span className="inline-flex min-h-8 max-w-full items-center rounded-md border border-amber-300/35 bg-amber-300/10 px-3 py-1 text-sm font-semibold text-amber-100">
-      <span className="truncate">{owner === "顧客" ? "相手" : owner}</span>
-    </span>
+    <select
+      value={value}
+      onChange={(event) => onChange(event.target.value)}
+      className={`inline-flex min-h-8 rounded-md border px-3 py-1 text-sm font-semibold outline-none transition hover:brightness-110 focus:ring-2 focus:ring-sky-200/30 ${tone}`}
+      aria-label="ボール"
+    >
+      <option value="あなた">自分</option>
+      <option value="相手">相手</option>
+      <option value="なし">完了</option>
+    </select>
   );
+}
+
+function DeadlineControl({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const mode = value === "monthly" ? "monthly" : value ? "date" : "none";
+
+  return (
+    <div className="flex min-w-[9rem] flex-col gap-1">
+      <select
+        value={mode}
+        onChange={(event) => {
+          const nextMode = event.target.value;
+
+          if (nextMode === "monthly") {
+            onChange("monthly");
+            return;
+          }
+
+          if (nextMode === "none") {
+            onChange("");
+            return;
+          }
+
+          onChange(value && value !== "monthly" ? value : new Date().toISOString().slice(0, 10));
+        }}
+        className="neo-input min-h-8 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-zinc-100 outline-none transition hover:border-sky-300/30 hover:bg-sky-300/10 focus:border-sky-200"
+        aria-label="期限種別"
+      >
+        <option value="date">日付</option>
+        <option value="monthly">毎月</option>
+        <option value="none">なし</option>
+      </select>
+      {mode === "date" ? (
+        <input
+          type="date"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          className="neo-input min-h-8 rounded-md border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-zinc-100 outline-none transition hover:border-sky-300/30 hover:bg-sky-300/10 focus:border-sky-200"
+          aria-label="期限日"
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function applyTaskPatch(task: Task, patch: Partial<Task>): Task {
+  const next: Task = { ...task, ...patch };
+  const isCompleting = patch.status === "done" || patch.currentBallHolder === "なし";
+  const isLeavingDone =
+    task.status === "done" &&
+    ((patch.status && patch.status !== "done") ||
+      (patch.currentBallHolder && patch.currentBallHolder !== "なし"));
+
+  if (isCompleting && task.status !== "done") {
+    next.status = "done";
+    next.currentBallHolder = "なし";
+    next.progress = 100;
+    next.previousStatus = task.status;
+    next.previousBallHolder = task.currentBallHolder;
+    next.previousProgress = task.progress;
+    return next;
+  }
+
+  if (isLeavingDone) {
+    const restoredStatus =
+      patch.status && patch.status !== "done"
+        ? patch.status
+        : task.previousStatus && task.previousStatus !== "done"
+          ? task.previousStatus
+          : "doing";
+    const restoredBall =
+      patch.currentBallHolder && patch.currentBallHolder !== "なし"
+        ? patch.currentBallHolder
+        : task.previousBallHolder && task.previousBallHolder !== "なし"
+          ? task.previousBallHolder
+          : "あなた";
+
+    next.status = restoredStatus;
+    next.currentBallHolder = restoredBall;
+    next.progress =
+      typeof patch.progress === "number"
+        ? patch.progress
+        : typeof task.previousProgress === "number"
+          ? task.previousProgress
+          : Math.min(task.progress, 99);
+    next.previousStatus = undefined;
+    next.previousBallHolder = undefined;
+    next.previousProgress = undefined;
+    return next;
+  }
+
+  if (patch.status === "done") {
+    next.currentBallHolder = "なし";
+    next.progress = 100;
+  }
+
+  if (patch.currentBallHolder === "なし") {
+    next.status = "done";
+    next.progress = 100;
+  }
+
+  return next;
 }
 
 function SummaryTile({

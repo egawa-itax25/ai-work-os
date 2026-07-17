@@ -14,6 +14,8 @@ export type Task = {
   priority: TaskPriority;
   progress: number;
   previousProgress?: number;
+  previousStatus?: TaskStatus;
+  previousBallHolder?: string;
   nextAction: string;
   x: number;
   y: number;
@@ -363,6 +365,8 @@ export function normalizeTasks(tasks: StoredTask[]): Task[] {
       typeof task.previousProgress === "number"
         ? Math.min(Math.max(task.previousProgress, 0), 100)
         : undefined,
+    previousStatus: task.previousStatus,
+    previousBallHolder: task.previousBallHolder,
     nextAction: task.nextAction ?? "",
     x: task.x ?? 80 + ((index * 72) % 620),
     y: task.y ?? 120 + ((index * 96) % 340),
@@ -382,7 +386,7 @@ export function todayOffset(days: number) {
 }
 
 export function isOverdue(value: string) {
-  if (!value) {
+  if (!value || value === "monthly") {
     return false;
   }
 
@@ -396,6 +400,10 @@ export function isOverdue(value: string) {
 export function formatDate(value: string) {
   if (!value) {
     return "未設定";
+  }
+
+  if (value === "monthly") {
+    return "毎月";
   }
 
   return new Intl.DateTimeFormat("ja-JP", {

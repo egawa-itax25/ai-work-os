@@ -615,6 +615,20 @@ Implemented:
   ball holder, due date, priority, or progress.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
+- The schedule tab's project-by-project task list is also a direct editing
+  surface. Users should be able to double-click task title or memo/detail cells
+  to edit in place, click compact field controls for ball/status/priority/owner
+  and deadline, and remove tasks with the Delete key after selecting a row.
+- In the schedule task list, the primary ball choices are `自分`, `相手`, and
+  `完了`. `AI` can remain in older data, but it is not shown as a primary
+  handoff option in this list.
+- Schedule task list edits save on commit rather than on every keystroke:
+  title uses Enter or outside click, memo/detail uses Shift+Enter or outside
+  click, and Escape cancels the edit.
+- Completion is coupled in the schedule task list: setting status to `完了` also
+  moves the ball to `完了`; setting the ball to `完了` also sets status to
+  `完了`. Returning from completed work restores the immediately previous
+  non-complete status when available.
 - Inline editing controls stop pointer and click propagation so typing,
   selecting priority, or dragging the progress bar does not trigger node drag,
   card selection, or navigation.
