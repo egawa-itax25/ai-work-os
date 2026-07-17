@@ -185,6 +185,7 @@ export default function ProjectTaskMap() {
   const projectTasksRef = useRef<Task[]>([]);
   const dragStateRef = useRef<DragState | null>(null);
   const restoredViewportSizeRef = useRef<Point | null>(null);
+  const skipInitialTaskSaveRef = useRef(true);
   const zoomRef = useRef(taskMapDefaultZoom);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [activeTaskId, setActiveTaskId] = useState("");
@@ -212,6 +213,7 @@ export default function ProjectTaskMap() {
 
   useEffect(() => {
     setIsReady(false);
+    skipInitialTaskSaveRef.current = true;
     void loadSyncedState({
       localKey: storageKey,
       remoteKey: remoteStorageKey,
@@ -262,6 +264,11 @@ export default function ProjectTaskMap() {
 
   useEffect(() => {
     if (isReady) {
+      if (skipInitialTaskSaveRef.current) {
+        skipInitialTaskSaveRef.current = false;
+        return;
+      }
+
       setSyncResult({
         status: "saving",
         message: "保存中です。",

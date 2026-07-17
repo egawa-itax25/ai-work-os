@@ -4,6 +4,7 @@ import Link from "next/link";
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactNode,
@@ -72,6 +73,8 @@ export default function PortfolioView({
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
   const [portfolioTasks, setPortfolioTasks] = useState<Task[]>(initialTasks);
   const [syncReady, setSyncReady] = useState(false);
+  const skipInitialProjectSaveRef = useRef(true);
+  const skipInitialConnectionSaveRef = useRef(true);
 
   useEffect(() => {
     const savedView = window.localStorage.getItem(viewStorageKey);
@@ -148,6 +151,11 @@ export default function PortfolioView({
       return;
     }
 
+    if (skipInitialProjectSaveRef.current) {
+      skipInitialProjectSaveRef.current = false;
+      return;
+    }
+
     setSyncResult({
       status: "saving",
       message: "保存中です。",
@@ -161,6 +169,11 @@ export default function PortfolioView({
 
   useEffect(() => {
     if (!syncReady) {
+      return;
+    }
+
+    if (skipInitialConnectionSaveRef.current) {
+      skipInitialConnectionSaveRef.current = false;
       return;
     }
 

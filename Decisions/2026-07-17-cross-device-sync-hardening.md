@@ -47,3 +47,15 @@ state changes before moving to fully normalized database tables.
   avoid silent destructive overwrites and keep a recovery snapshot.
 - A future migration can add server-side version history, but the immediate fix
   is local overwrite protection plus clearer sync state.
+
+## Follow-up: prevent fallback overwrite
+
+When a signed-in device opens a page before any real workspace state exists,
+the app may render typed fallback data. That fallback must not be treated as a
+user edit and must not be uploaded to Supabase automatically.
+
+For array-based workspace state such as projects and tasks, the sync layer
+should merge local and remote records by `id` when both sides contain data.
+Remote values still win for the same `id`, but local-only records are preserved
+and uploaded. This protects projects and tasks that were entered on the main PC
+before cross-device sync was fully configured.

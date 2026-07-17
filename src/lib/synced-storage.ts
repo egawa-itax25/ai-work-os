@@ -22,6 +22,21 @@ export type SyncResult = {
   httpStatus?: number;
 };
 
+export type SyncLoadSource =
+  | "fallback"
+  | "local"
+  | "remote"
+  | "merged"
+  | "signed-out"
+  | "error";
+
+export type SyncLoadResult = SyncResult & {
+  source: SyncLoadSource;
+  hadLocal: boolean;
+  hadRemote: boolean;
+  uploaded?: boolean;
+};
+
 type RemotePayload = {
   value?: unknown;
   updatedAt?: string | null;
@@ -42,9 +57,9 @@ export async function loadSyncedState<T>({
   normalize,
   onValue,
   onStatus,
-}: SyncedStateOptions<T>) {
+}: SyncedStateOptions<T>): Promise<SyncLoadResult | undefined> {
   if (typeof window === "undefined") {
-    return;
+    return undefined;
   }
 
   const local = readLocalValue(localKey, normalize, fallback);
@@ -62,8 +77,14 @@ export async function loadSyncedState<T>({
     });
 
     if (!response.ok) {
-      setSyncStatus(onStatus, await createHttpResult(response));
-      return;
+      const result = await createHttpResult(response);
+      setSyncStatus(onStatus, result);
+      return {
+        ...result,
+        source: response.status === 401 ? "signed-out" : "error",
+        hadLocal: local.exists,
+        hadRemote: false,
+      };
     }
 
     const payload = (await response.json()) as RemotePayload;
@@ -72,36 +93,74 @@ export async function loadSyncedState<T>({
     if (!hasRemote) {
       if (local.exists && !isEmptySyncedValue(localValue)) {
         const result = await saveSyncedState(localKey, remoteKey, localValue);
-        setSyncStatus(onStatus, {
+        const loadResult: SyncLoadResult = {
           ...result,
           message:
             result.status === "synced"
               ? "この端末のデータをクラウドへ初回同期しました。"
               : result.message,
-        });
-        return;
+          source: "local",
+          hadLocal: true,
+          hadRemote: false,
+          uploaded: result.status === "synced",
+        };
+        setSyncStatus(onStatus, loadResult);
+        return loadResult;
       }
 
-      setSyncStatus(onStatus, {
-        status: "local",
-        message: "この端末に保存しています。同期するにはログイン後に編集してください。",
-      });
-      return;
+      const loadResult: SyncLoadResult = {
+        status: "synced",
+        message: "クラウドに保存済みデータはまだありません。",
+        source: "fallback",
+        hadLocal: false,
+        hadRemote: false,
+      };
+      setSyncStatus(onStatus, loadResult);
+      return loadResult;
     }
 
     const remoteValue = normalize(payload.value);
     const remoteUpdatedAt = payload.updatedAt ?? "";
+    const merged = mergeLocalOnlyItems(localValue, remoteValue);
+
+    if (local.exists && merged.changed) {
+      if (!areEqualJson(localValue, merged.value)) {
+        writeLocalBackup(localKey, localValue);
+      }
+      window.localStorage.setItem(localKey, JSON.stringify(merged.value));
+      onValue(merged.value);
+
+      const result = await saveSyncedState(localKey, remoteKey, merged.value);
+      const loadResult: SyncLoadResult = {
+        ...result,
+        message:
+          result.status === "synced"
+            ? "この端末だけにあったデータをクラウドへ統合しました。"
+            : result.message,
+        source: "merged",
+        hadLocal: true,
+        hadRemote: true,
+        uploaded: result.status === "synced",
+      };
+      setSyncStatus(onStatus, loadResult);
+      return loadResult;
+    }
 
     if (shouldUploadLocal(local, localMeta, localValue, remoteValue, remoteUpdatedAt)) {
       const result = await saveSyncedState(localKey, remoteKey, localValue);
-      setSyncStatus(onStatus, {
+      const loadResult: SyncLoadResult = {
         ...result,
         message:
           result.status === "synced"
             ? "この端末の新しいデータをクラウドへ反映しました。"
             : result.message,
-      });
-      return;
+        source: "local",
+        hadLocal: true,
+        hadRemote: true,
+        uploaded: result.status === "synced",
+      };
+      setSyncStatus(onStatus, loadResult);
+      return loadResult;
     }
 
     if (local.exists && !areEqualJson(localValue, remoteValue)) {
@@ -113,18 +172,29 @@ export async function loadSyncedState<T>({
       writeLocalMeta(localKey, remoteUpdatedAt);
     }
     onValue(remoteValue);
-    setSyncStatus(onStatus, {
+
+    const loadResult: SyncLoadResult = {
       status: "synced",
       message: "クラウド同期済みです。",
-    });
+      source: "remote",
+      hadLocal: local.exists,
+      hadRemote: true,
+    };
+    setSyncStatus(onStatus, loadResult);
+    return loadResult;
   } catch (error) {
-    setSyncStatus(onStatus, {
+    const loadResult: SyncLoadResult = {
       status: "local",
       message:
         error instanceof Error
           ? `この端末に保存しています。クラウド確認に失敗しました: ${error.message}`
           : "この端末に保存しています。クラウド確認に失敗しました。",
-    });
+      source: "error",
+      hadLocal: local.exists,
+      hadRemote: false,
+    };
+    setSyncStatus(onStatus, loadResult);
+    return loadResult;
   }
 }
 
@@ -247,6 +317,33 @@ function shouldUploadLocal<T>(
   }
 
   return getValueWeight(localValue) > getValueWeight(remoteValue);
+}
+
+function mergeLocalOnlyItems<T>(localValue: T, remoteValue: T): { value: T; changed: boolean } {
+  if (!Array.isArray(localValue) || !Array.isArray(remoteValue)) {
+    return { value: remoteValue, changed: false };
+  }
+
+  const remoteIds = new Set(
+    remoteValue.flatMap((item) => (hasStableId(item) ? [item.id] : [])),
+  );
+  const localOnlyItems = localValue.filter((item) => hasStableId(item) && !remoteIds.has(item.id));
+
+  if (localOnlyItems.length === 0) {
+    return { value: remoteValue, changed: false };
+  }
+
+  return { value: [...remoteValue, ...localOnlyItems] as T, changed: true };
+}
+
+function hasStableId(value: unknown): value is { id: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    (value as { id: string }).id.length > 0
+  );
 }
 
 function readLocalMeta(localKey: string): LocalMeta | null {
