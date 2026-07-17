@@ -1018,7 +1018,7 @@ export default function ProjectTaskMap() {
         </div>
       </section>
 
-      <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[1fr_280px]">
+      <section className="grid min-h-0 flex-1 gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,24rem)] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,26rem)]">
         <section className={`${taskFlowViewportHeightClass} flex min-h-0 flex-col overflow-x-auto overflow-y-hidden rounded-lg border border-white/10 bg-slate-950/48 shadow-xl shadow-black/25 backdrop-blur-xl lg:overflow-hidden`}>
           <div className="flex min-w-[760px] flex-col items-start gap-3 border-b border-white/10 px-4 py-4 sm:flex-row sm:items-center sm:justify-between lg:min-w-0">
             <div>
@@ -1177,7 +1177,7 @@ export default function ProjectTaskMap() {
           </div>
         </section>
 
-        <aside className="neo-surface min-h-0 overflow-y-auto rounded-md border p-4">
+        <aside className="neo-surface min-h-0 min-w-0 overflow-x-hidden overflow-y-auto rounded-md border p-4 [overflow-wrap:anywhere]">
           {activeTask && activeTask.project === projectName ? (
             <TaskInspector
               externalLinks={externalLinks.length}
@@ -1784,14 +1784,14 @@ function TaskInspector({
   onRemove: (id: string) => void;
 }) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-start justify-between gap-3">
+    <div className="min-w-0 space-y-4">
+      <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <p className="neo-accent text-xs font-medium">Task Inspector</p>
           <input
             value={task.title}
             onChange={(event) => onUpdate({ title: event.target.value })}
-            className="mt-1 w-full rounded-md border border-transparent bg-transparent px-0 py-1 text-lg font-semibold text-white outline-none hover:border-zinc-700 hover:bg-zinc-950 focus:border-violet-400"
+            className="mt-1 w-full min-w-0 rounded-md border border-transparent bg-transparent px-0 py-1 text-lg font-semibold leading-7 text-white outline-none hover:border-zinc-700 hover:bg-zinc-950 focus:border-violet-400"
             aria-label="タスク名"
           />
         </div>
@@ -1806,7 +1806,7 @@ function TaskInspector({
       <textarea
         value={task.nextAction}
         onChange={(event) => onUpdate({ nextAction: event.target.value, description: event.target.value })}
-        className="min-h-24 w-full resize-none rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-[15px] leading-7 text-slate-100 shadow-inner shadow-black/30 outline-none transition placeholder:text-slate-600 hover:border-sky-200/30 hover:bg-slate-950/82 focus:border-sky-200/70 focus:bg-sky-950/25 focus:ring-2 focus:ring-sky-200/10"
+        className="min-h-24 w-full min-w-0 resize-none rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-[15px] leading-7 text-slate-100 shadow-inner shadow-black/30 outline-none transition placeholder:text-slate-600 hover:border-sky-200/30 hover:bg-slate-950/82 focus:border-sky-200/70 focus:bg-sky-950/25 focus:ring-2 focus:ring-sky-200/10"
         placeholder="次のアクション"
         aria-label="次のアクション"
       />
@@ -1880,8 +1880,8 @@ function TaskInspector({
             }
 
             return (
-              <div key={targetId} className="rounded-md border border-violet-400/30 bg-violet-400/10 px-3 py-2 text-sm text-violet-100">
-                <div className="truncate">{target.title}</div>
+              <div key={targetId} className="min-w-0 rounded-md border border-violet-400/30 bg-violet-400/10 px-3 py-2 text-sm text-violet-100">
+                <div className="break-words">{target.title}</div>
                 <button
                   type="button"
                   onClick={() => onUpdate({ links: task.links.filter((id) => id !== targetId) })}
@@ -2168,8 +2168,8 @@ function EditableTaskField({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="flex items-center justify-between gap-3 rounded-md bg-black px-3 py-2">
-      <span className="text-zinc-500">{label}</span>
+    <label className="grid min-w-0 grid-cols-[minmax(4.5rem,0.45fr)_minmax(0,1fr)] items-center gap-3 rounded-md bg-black px-3 py-2">
+      <span className="min-w-0 break-words text-zinc-500">{label}</span>
       <input
         type={type}
         value={value}
@@ -2242,10 +2242,10 @@ function DetailRow({
   alert?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md bg-black px-3 py-2">
-      <span className="text-zinc-500">{label}</span>
+    <div className="grid min-w-0 grid-cols-[minmax(4.5rem,0.45fr)_minmax(0,1fr)] items-center gap-3 rounded-md bg-black px-3 py-2">
+      <span className="min-w-0 break-words text-zinc-500">{label}</span>
       <span
-        className={`truncate font-medium ${
+        className={`min-w-0 break-words text-right font-medium ${
           alert ? "text-red-200" : "text-zinc-200"
         }`}
       >
