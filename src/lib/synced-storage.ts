@@ -50,6 +50,27 @@ const syncMetaPrefix = "ai-work-os:sync-meta:";
 const backupPrefix = "ai-work-os:backup:";
 const maxBackups = 8;
 
+const messages = {
+  checking: "\u30af\u30e9\u30a6\u30c9\u540c\u671f\u3092\u78ba\u8a8d\u3057\u3066\u3044\u307e\u3059\u3002",
+  firstUpload:
+    "\u3053\u306e\u7aef\u672b\u306e\u30c7\u30fc\u30bf\u3092\u30af\u30e9\u30a6\u30c9\u3078\u521d\u56de\u540c\u671f\u3057\u307e\u3057\u305f\u3002",
+  noRemote:
+    "\u30af\u30e9\u30a6\u30c9\u306b\u4fdd\u5b58\u6e08\u307f\u30c7\u30fc\u30bf\u306f\u307e\u3060\u3042\u308a\u307e\u305b\u3093\u3002",
+  merged:
+    "\u3053\u306e\u7aef\u672b\u3060\u3051\u306b\u3042\u3063\u305f\u30c7\u30fc\u30bf\u3092\u30af\u30e9\u30a6\u30c9\u3078\u7d71\u5408\u3057\u307e\u3057\u305f\u3002",
+  uploaded:
+    "\u3053\u306e\u7aef\u672b\u306e\u65b0\u3057\u3044\u30c7\u30fc\u30bf\u3092\u30af\u30e9\u30a6\u30c9\u3078\u53cd\u6620\u3057\u307e\u3057\u305f\u3002",
+  synced: "\u30af\u30e9\u30a6\u30c9\u540c\u671f\u6e08\u307f\u3067\u3059\u3002",
+  serverOnly: "\u30d6\u30e9\u30a6\u30b6\u5916\u3067\u306f\u4fdd\u5b58\u3057\u307e\u305b\u3093\u3002",
+  syncFailed: "\u30af\u30e9\u30a6\u30c9\u540c\u671f\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002",
+  signedOut:
+    "\u30ed\u30b0\u30a4\u30f3\u3059\u308b\u3068PC\u3068\u30b9\u30de\u30db\u3067\u540c\u671f\u3067\u304d\u307e\u3059\u3002",
+  checkFailed:
+    "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58\u3057\u3066\u3044\u307e\u3059\u3002\u30af\u30e9\u30a6\u30c9\u78ba\u8a8d\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002",
+  saveFailed:
+    "\u3053\u306e\u7aef\u672b\u306b\u4fdd\u5b58\u3057\u3066\u3044\u307e\u3059\u3002\u30af\u30e9\u30a6\u30c9\u4fdd\u5b58\u306b\u5931\u6557\u3057\u307e\u3057\u305f\u3002",
+};
+
 export async function loadSyncedState<T>({
   localKey,
   remoteKey,
@@ -68,7 +89,7 @@ export async function loadSyncedState<T>({
   onValue(localValue);
   setSyncStatus(onStatus, {
     status: "loading",
-    message: "クラウド同期を確認しています。",
+    message: messages.checking,
   });
 
   try {
@@ -95,10 +116,7 @@ export async function loadSyncedState<T>({
         const result = await saveSyncedState(localKey, remoteKey, localValue);
         const loadResult: SyncLoadResult = {
           ...result,
-          message:
-            result.status === "synced"
-              ? "この端末のデータをクラウドへ初回同期しました。"
-              : result.message,
+          message: result.status === "synced" ? messages.firstUpload : result.message,
           source: "local",
           hadLocal: true,
           hadRemote: false,
@@ -110,7 +128,7 @@ export async function loadSyncedState<T>({
 
       const loadResult: SyncLoadResult = {
         status: "synced",
-        message: "クラウドに保存済みデータはまだありません。",
+        message: messages.noRemote,
         source: "fallback",
         hadLocal: false,
         hadRemote: false,
@@ -133,10 +151,7 @@ export async function loadSyncedState<T>({
       const result = await saveSyncedState(localKey, remoteKey, merged.value);
       const loadResult: SyncLoadResult = {
         ...result,
-        message:
-          result.status === "synced"
-            ? "この端末だけにあったデータをクラウドへ統合しました。"
-            : result.message,
+        message: result.status === "synced" ? messages.merged : result.message,
         source: "merged",
         hadLocal: true,
         hadRemote: true,
@@ -150,10 +165,7 @@ export async function loadSyncedState<T>({
       const result = await saveSyncedState(localKey, remoteKey, localValue);
       const loadResult: SyncLoadResult = {
         ...result,
-        message:
-          result.status === "synced"
-            ? "この端末の新しいデータをクラウドへ反映しました。"
-            : result.message,
+        message: result.status === "synced" ? messages.uploaded : result.message,
         source: "local",
         hadLocal: true,
         hadRemote: true,
@@ -175,7 +187,7 @@ export async function loadSyncedState<T>({
 
     const loadResult: SyncLoadResult = {
       status: "synced",
-      message: "クラウド同期済みです。",
+      message: messages.synced,
       source: "remote",
       hadLocal: local.exists,
       hadRemote: true,
@@ -185,10 +197,7 @@ export async function loadSyncedState<T>({
   } catch (error) {
     const loadResult: SyncLoadResult = {
       status: "local",
-      message:
-        error instanceof Error
-          ? `この端末に保存しています。クラウド確認に失敗しました: ${error.message}`
-          : "この端末に保存しています。クラウド確認に失敗しました。",
+      message: error instanceof Error ? `${messages.checkFailed}: ${error.message}` : messages.checkFailed,
       source: "error",
       hadLocal: local.exists,
       hadRemote: false,
@@ -206,7 +215,7 @@ export async function saveSyncedState<T>(
   if (typeof window === "undefined") {
     return {
       status: "idle",
-      message: "ブラウザ外では保存しません。",
+      message: messages.serverOnly,
     };
   }
 
@@ -236,17 +245,14 @@ export async function saveSyncedState<T>(
 
     const result: SyncResult = {
       status: "synced",
-      message: "クラウド同期済みです。",
+      message: messages.synced,
     };
     emitSyncStatus(result);
     return result;
   } catch (error) {
     const result: SyncResult = {
       status: "local",
-      message:
-        error instanceof Error
-          ? `この端末に保存しています。クラウド保存に失敗しました: ${error.message}`
-          : "この端末に保存しています。クラウド保存に失敗しました。",
+      message: error instanceof Error ? `${messages.saveFailed}: ${error.message}` : messages.saveFailed,
     };
     emitSyncStatus(result);
     return result;
@@ -276,13 +282,13 @@ function readLocalValue<T>(
 
 async function createHttpResult(response: Response): Promise<SyncResult> {
   const payload = (await response.json().catch(() => null)) as { error?: string } | null;
-  const message = payload?.error || response.statusText || "クラウド同期に失敗しました。";
+  const message = payload?.error || response.statusText || messages.syncFailed;
 
   if (response.status === 401) {
     return {
       status: "signed-out",
       httpStatus: response.status,
-      message: "ログインするとPCとスマホで同期できます。",
+      message: messages.signedOut,
     };
   }
 
