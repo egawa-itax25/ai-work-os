@@ -38,6 +38,21 @@ textarea {
   font: inherit;
 }
 
+select {
+  color: #f8fafc;
+}
+
+select option {
+  background: #0f172a;
+  color: #f8fafc;
+}
+
+select option:checked,
+select option:hover {
+  background: #1e3a5f;
+  color: #ffffff;
+}
+
 ::selection {
   background: rgba(45, 212, 191, 0.35);
   color: #ffffff;
