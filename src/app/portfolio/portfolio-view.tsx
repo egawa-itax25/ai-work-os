@@ -1028,6 +1028,24 @@ function getSyncStatusClassName(status: SyncResult["status"]) {
   }
 }
 
+function SyncStatusBadge({ syncResult }: { syncResult: SyncResult }) {
+  const className = `rounded-full border px-2 py-1 text-xs font-semibold ${getSyncStatusClassName(syncResult.status)}`;
+
+  if (syncResult.status === "signed-out") {
+    return (
+      <Link href="/login" className={`${className} transition hover:border-amber-200/70 hover:bg-amber-200/15`} title={syncResult.message}>
+        ログインして同期
+      </Link>
+    );
+  }
+
+  return (
+    <span className={className} title={syncResult.message}>
+      {getSyncStatusLabel(syncResult.status)}
+    </span>
+  );
+}
+
 function ProjectInspector({
   project,
   projects,
@@ -1052,12 +1070,7 @@ function ProjectInspector({
       <section className="rounded-lg border border-white/10 bg-slate-950/62 p-4 shadow-xl shadow-black/25 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
           <p className="text-sm font-semibold text-white">プロジェクト切替</p>
-          <span
-            className={`rounded-full border px-2 py-1 text-xs font-semibold ${getSyncStatusClassName(syncResult.status)}`}
-            title={syncResult.message}
-          >
-            {getSyncStatusLabel(syncResult.status)}
-          </span>
+          <SyncStatusBadge syncResult={syncResult} />
         </div>
         <div className="mt-4 space-y-2">
           {projects.slice(0, 4).map((item, index) => (

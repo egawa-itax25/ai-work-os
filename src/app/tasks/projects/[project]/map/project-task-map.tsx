@@ -1773,6 +1773,24 @@ function getSyncStatusClassName(status: SyncResult["status"]) {
   }
 }
 
+function SyncStatusBadge({ syncResult }: { syncResult: SyncResult }) {
+  const className = `shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${getSyncStatusClassName(syncResult.status)}`;
+
+  if (syncResult.status === "signed-out") {
+    return (
+      <Link href="/login" className={`${className} transition hover:border-amber-200/70 hover:bg-amber-200/15`} title={syncResult.message}>
+        ログインして同期
+      </Link>
+    );
+  }
+
+  return (
+    <span className={className} title={syncResult.message}>
+      {getSyncStatusLabel(syncResult.status)}
+    </span>
+  );
+}
+
 function TaskInspector({
   task,
   taskMap,
@@ -1802,12 +1820,7 @@ function TaskInspector({
             aria-label="タスク名"
           />
         </div>
-        <span
-          className={`shrink-0 rounded-full border px-2 py-1 text-xs font-semibold ${getSyncStatusClassName(syncResult.status)}`}
-          title={syncResult.message}
-        >
-          {getSyncStatusLabel(syncResult.status)}
-        </span>
+        <SyncStatusBadge syncResult={syncResult} />
       </div>
 
       <textarea

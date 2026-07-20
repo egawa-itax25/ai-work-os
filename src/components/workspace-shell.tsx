@@ -14,6 +14,7 @@ const defaultNavItems = [
   { id: "knowledge", href: "/knowledge", label: "知識" },
   { id: "calendar", href: "/tasks/projects", label: "予定" },
   { id: "settings", href: "/settings", label: "設定" },
+  { id: "login", href: "/login", label: "同期ログイン" },
   { id: "completed", href: "/completed", label: "完了済み" },
   { id: "trash", href: "/trash", label: "削除済み" },
   { id: "analytics", href: "/analytics", label: "分析" },
@@ -23,7 +24,7 @@ const defaultNavItems = [
 const navOrderStorageKey = "ai-work-os:navigation-order";
 const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics", "ai"]);
 const primaryNavIds = new Set(["calendar", "portfolio", "team", "my-tasks", "projects"]);
-const utilityNavIds = new Set(["settings", "completed", "trash"]);
+const utilityNavIds = new Set(["login", "settings", "completed", "trash"]);
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -362,6 +363,8 @@ function navIcon(id: string) {
       return "⌁";
     case "settings":
       return "⚙";
+    case "login":
+      return "同";
     case "completed":
       return "✓";
     case "trash":

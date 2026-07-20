@@ -1,4 +1,5 @@
 import { signIn, signOut, signUp } from "./actions";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type LoginPageProps = {
   searchParams: Promise<{ error?: string; message?: string }>;
@@ -25,6 +26,10 @@ function getErrorMessage(error?: string) {
 export default async function LoginPage({ searchParams }: LoginPageProps) {
   const { error, message } = await searchParams;
   const errorMessage = getErrorMessage(error);
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   return (
     <main className="mx-auto flex min-h-[calc(100vh-6rem)] w-full max-w-2xl items-center px-5 py-8">
@@ -35,6 +40,19 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <p className="mt-3 text-sm leading-7 text-slate-400">
             同じメールアドレスでログインすると、PC・スマホ・別PCでプロジェクトとタスクを同期できます。
             初めて使う場合はメールアドレスとパスワードを入力して「新規登録」を押してください。
+          </p>
+        </div>
+
+        <div
+          className={`mt-5 rounded-xl border px-4 py-3 text-sm leading-6 ${
+            user
+              ? "border-emerald-300/30 bg-emerald-300/[0.08] text-emerald-50"
+              : "border-amber-300/30 bg-amber-300/[0.08] text-amber-50"
+          }`}
+        >
+          <p className="font-semibold">{user ? "ログイン中です" : "まだログインしていません"}</p>
+          <p className="mt-1 text-xs text-slate-300">
+            {user ? `${user.email ?? "このアカウント"} でクラウド同期できます。` : "ログインまたは新規登録をすると、PC・スマホ・別PCで同じデータを使えます。"}
           </p>
         </div>
 
