@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
 import {
@@ -31,6 +31,12 @@ type EmployeeNode = {
   active: number;
   loadLabel: string;
   isSample?: boolean;
+};
+
+type MindMapLayoutItem = {
+  employee: EmployeeNode;
+  position: { x: number; y: number };
+  tasks: Array<{ task: Task; position: { x: number; y: number } }>;
 };
 
 const nonPeople = new Set(["顧客", "AI", "なし", "未設定", "人事チーム"]);
@@ -347,118 +353,242 @@ function OrbitMap({
 }) {
   const featuredEmployees = employees.slice(0, 15);
   const centerProjects = new Set(taskPool.map((task) => task.project)).size;
+  const layout = buildMindMapLayout(featuredEmployees);
+  const center = { x: 50, y: 50 };
 
   return (
-    <div className="relative z-10 min-h-[680px] p-5">
-      <div className="pointer-events-none absolute inset-0 opacity-70">
-        <svg className="h-full w-full" aria-hidden="true">
-          <defs>
-            <radialGradient id="teamMapGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="rgba(125,211,252,0.12)" />
-              <stop offset="100%" stopColor="rgba(125,211,252,0)" />
-            </radialGradient>
-          </defs>
-          <circle cx="50%" cy="49%" r="190" fill="url(#teamMapGlow)" stroke="rgba(148,163,184,0.14)" />
-          <circle cx="50%" cy="49%" r="315" fill="none" stroke="rgba(148,163,184,0.10)" strokeDasharray="4 12" />
-        </svg>
-      </div>
-
-      <div className="absolute left-1/2 top-1/2 z-20 grid h-36 w-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-slate-950/75 text-center shadow-[0_0_70px_rgba(125,211,252,0.18)] backdrop-blur-xl">
-        <div>
-          <p className="text-xs text-zinc-400">全体プロジェクト</p>
-          <p className="mt-2 text-4xl font-semibold text-white">{centerProjects}</p>
-          <p className="mt-1 text-sm text-zinc-400">プロジェクト</p>
-        </div>
-      </div>
-
-      <div className="relative z-10 grid min-h-[640px] grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
-        {featuredEmployees.map((employee) => {
-        const isHovered = hoveredMember === employee.name;
-        const hasRisk = employee.overdue > 0 || employee.active >= 8;
-
-        return (
-          <section
-            key={employee.name}
-            onDragOver={(event) => {
-              event.preventDefault();
-              onMemberDragEnter(employee.name);
-            }}
-            onDragLeave={() => onMemberDragEnter("")}
-            onDrop={(event) => onMemberDrop(event, employee.name)}
-            className={`relative min-h-[270px] rounded-md border p-4 backdrop-blur-xl transition ${
-              isHovered
-                ? "border-sky-200 bg-sky-300/12 shadow-[0_0_34px_rgba(125,211,252,0.18)]"
-                : hasRisk
-                  ? "border-red-200/25 bg-slate-950/62"
-                  : "border-white/12 bg-slate-950/58"
-            }`}
-          >
-            <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-50" aria-hidden="true">
-              {employee.tasks.slice(0, 4).map((_, index) => (
+    <div className="relative z-10 min-h-[740px] overflow-auto p-4">
+      <div className="relative min-h-[720px] min-w-[1180px] overflow-hidden rounded-md border border-white/10 bg-slate-950/20">
+        <div className="pointer-events-none absolute inset-0 opacity-80">
+          <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <radialGradient id="teamMapGlow" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="rgba(125,211,252,0.12)" />
+                <stop offset="100%" stopColor="rgba(125,211,252,0)" />
+              </radialGradient>
+              <linearGradient id="mindMapLine" x1="0%" x2="100%" y1="0%" y2="100%">
+                <stop offset="0%" stopColor="rgba(125,211,252,0.32)" />
+                <stop offset="58%" stopColor="rgba(167,139,250,0.28)" />
+                <stop offset="100%" stopColor="rgba(148,163,184,0.18)" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="17" fill="url(#teamMapGlow)" stroke="rgba(148,163,184,0.12)" strokeWidth="0.18" />
+            <circle cx="50" cy="50" r="29" fill="none" stroke="rgba(148,163,184,0.10)" strokeDasharray="0.6 1.8" strokeWidth="0.12" />
+            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(148,163,184,0.07)" strokeDasharray="0.4 2.2" strokeWidth="0.1" />
+            {layout.map((item) => (
+              <path
+                key={`${item.employee.name}-center-link`}
+                d={mindMapPath(center, item.position)}
+                fill="none"
+                stroke="url(#mindMapLine)"
+                strokeWidth="0.18"
+              />
+            ))}
+            {layout.flatMap((item) =>
+              item.tasks.map(({ task, position }) => (
                 <path
-                  key={index}
-                  d={`M 104 74 C 155 ${95 + index * 34}, 165 ${112 + index * 34}, 205 ${116 + index * 34}`}
+                  key={`${task.id}-task-link`}
+                  d={mindMapPath(item.position, position)}
                   fill="none"
-                  stroke="rgba(125,211,252,0.20)"
-                  strokeWidth="1"
+                  stroke="rgba(148,163,184,0.22)"
+                  strokeWidth="0.12"
                 />
-              ))}
-            </svg>
+              )),
+            )}
+          </svg>
+        </div>
 
-            <div className="relative z-10 flex items-start gap-3">
-              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-white/20 bg-white/[0.05] shadow-inner">
-                <div className="text-center">
-                  <p className="text-lg font-semibold text-white">{employee.initials}</p>
-                  <p className="text-[11px] text-zinc-400">{employee.averageProgress}%</p>
-                </div>
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold text-white">{employee.name}</h2>
-                    <p className="truncate text-xs text-zinc-500">{employee.role}</p>
+        <div className="absolute left-1/2 top-1/2 z-20 grid h-36 w-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-slate-950/78 text-center shadow-[0_0_70px_rgba(125,211,252,0.18)] backdrop-blur-xl">
+          <div>
+            <p className="text-xs text-zinc-400">全体プロジェクト</p>
+            <p className="mt-2 text-4xl font-semibold text-white">{centerProjects}</p>
+            <p className="mt-1 text-sm text-zinc-400">プロジェクト</p>
+          </div>
+        </div>
+
+        {layout.map(({ employee, position, tasks }) => {
+          const isHovered = hoveredMember === employee.name;
+          const hasRisk = employee.overdue > 0 || employee.active >= 8;
+
+          return (
+            <div key={employee.name}>
+              <section
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  onMemberDragEnter(employee.name);
+                }}
+                onDragLeave={() => onMemberDragEnter("")}
+                onDrop={(event) => onMemberDrop(event, employee.name)}
+                className={`absolute z-30 w-52 -translate-x-1/2 -translate-y-1/2 rounded-md border p-3 backdrop-blur-xl transition ${
+                  isHovered
+                    ? "border-sky-200 bg-sky-300/12 shadow-[0_0_34px_rgba(125,211,252,0.18)]"
+                    : hasRisk
+                      ? "border-red-200/25 bg-slate-950/74"
+                      : "border-white/14 bg-slate-950/70"
+                }`}
+                style={{ left: `${position.x}%`, top: `${position.y}%` }}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/20 bg-white/[0.05] shadow-inner">
+                    <div className="text-center">
+                      <p className="text-sm font-semibold text-white">{employee.initials}</p>
+                      <p className="text-[10px] text-zinc-400">{employee.averageProgress}%</p>
+                    </div>
                   </div>
-                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${hasRisk ? "border-red-300/35 bg-red-300/10 text-red-200" : "border-sky-200/30 bg-sky-300/10 text-sky-100"}`}>
+                  <div className="min-w-0">
+                    <h2 className="truncate text-sm font-semibold text-white">{employee.name}</h2>
+                    <p className="truncate text-[11px] text-zinc-500">{employee.role}</p>
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-zinc-400">
+                  <span>{employee.projects.length}プロジェクト / {employee.tasks.length}タスク</span>
+                  <span className={`rounded-full border px-2 py-0.5 font-semibold ${hasRisk ? "border-red-300/35 bg-red-300/10 text-red-200" : "border-sky-200/30 bg-sky-300/10 text-sky-100"}`}>
                     {employee.loadLabel}
                   </span>
                 </div>
-                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-400">
-                  <MetricChip label="プロジェクト" value={`${employee.projects.length}件`} />
-                  <MetricChip label="タスク" value={`${employee.tasks.length}件`} />
+                <div className="mt-2 grid grid-cols-2 gap-1.5 text-[11px]">
                   <MetricChip label="期限超過" value={`${employee.overdue}件`} urgent={employee.overdue > 0} />
                   <MetricChip label="相手待ち" value={`${employee.waiting}件`} />
                 </div>
-              </div>
-            </div>
+              </section>
 
-            <div className="relative z-10 mt-4 ml-14 space-y-2">
-              {employee.tasks.slice(0, 4).map((task) => (
-                <TaskNode
+              {tasks.map(({ task, position: taskPosition }) => (
+                <MindMapTaskNode
                   key={task.id}
                   task={task}
                   isSelected={selectedTaskId === task.id}
                   isDragging={draggingTaskId === task.id}
                   onSelect={onTaskSelect}
                   onDragStart={onTaskDragStart}
+                  style={{ left: `${taskPosition.x}%`, top: `${taskPosition.y}%` }}
                 />
               ))}
-              {employee.tasks.length === 0 ? (
-                <div className="rounded-md border border-dashed border-white/10 px-3 py-5 text-center text-xs text-zinc-500">
-                  割り振り待ちのタスクはありません
+
+              {employee.tasks.length > tasks.length ? (
+                <div
+                  className="absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[11px] font-semibold text-zinc-400"
+                  style={{ left: `${clamp(position.x + (position.x >= 50 ? 23 : -23), 7, 93)}%`, top: `${clamp(position.y + 24, 8, 92)}%` }}
+                >
+                  ほか {employee.tasks.length - tasks.length}件
                 </div>
               ) : null}
-              {employee.tasks.length > 4 ? (
-                <p className="pl-2 text-xs text-zinc-500">ほか {employee.tasks.length - 4}件</p>
-              ) : null}
             </div>
-          </section>
-        );
-      })}
+          );
+        })}
       </div>
     </div>
   );
 }
 
+function MindMapTaskNode({
+  task,
+  isSelected,
+  isDragging,
+  onSelect,
+  onDragStart,
+  style,
+}: {
+  task: Task;
+  isSelected: boolean;
+  isDragging: boolean;
+  onSelect: (taskId: string) => void;
+  onDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
+  style: { left: string; top: string };
+}) {
+  const status = statusMeta[task.status];
+  const priority = priorityMeta[task.priority];
+  const overdue = task.status !== "done" && isOverdue(task.dueDate);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      draggable
+      onClick={() => onSelect(task.id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(task.id);
+        }
+      }}
+      onDragStart={(event) => onDragStart(event, task.id)}
+      className={`absolute z-40 w-56 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-md border px-3 py-2.5 text-left shadow-lg shadow-black/30 transition active:cursor-grabbing ${
+        isSelected
+          ? "border-sky-200/70 bg-sky-300/14"
+          : "border-white/12 bg-slate-900/84 hover:border-sky-200/40 hover:bg-sky-300/10"
+      } ${isDragging ? "opacity-50" : ""}`}
+      style={style}
+      title="選択して詳細を確認。ドラッグで担当者を変更できます。"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-5 text-white">{task.title}</p>
+          <p className="mt-0.5 truncate text-[11px] text-zinc-500">{task.project}</p>
+        </div>
+        <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${priority.badge}`}>
+          {priority.label}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
+        <span className={`rounded-full border px-2 py-0.5 ${status.tone}`}>{status.label}</span>
+        <span className={overdue ? "font-semibold text-red-200" : "text-zinc-500"}>{formatDate(task.dueDate)}</span>
+      </div>
+    </div>
+  );
+}
+
+function buildMindMapLayout(employees: EmployeeNode[]): MindMapLayoutItem[] {
+  const anchors = [
+    { x: 50, y: 18 },
+    { x: 68, y: 30 },
+    { x: 32, y: 30 },
+    { x: 77, y: 50 },
+    { x: 23, y: 50 },
+    { x: 62, y: 68 },
+    { x: 38, y: 68 },
+    { x: 84, y: 73 },
+    { x: 16, y: 73 },
+    { x: 50, y: 84 },
+    { x: 87, y: 36 },
+    { x: 13, y: 36 },
+    { x: 72, y: 84 },
+    { x: 28, y: 84 },
+    { x: 50, y: 9 },
+  ];
+
+  return employees.map((employee, index) => {
+    const anchor = anchors[index % anchors.length];
+    const side = anchor.x >= 50 ? 1 : -1;
+    const vertical = anchor.y >= 50 ? 1 : -1;
+    const taskOffsets = [
+      { x: side * 20, y: vertical * -10 },
+      { x: side * 22, y: vertical * 3 },
+      { x: side * 20, y: vertical * 16 },
+      { x: side * 14, y: vertical * 29 },
+    ];
+
+    return {
+      employee,
+      position: anchor,
+      tasks: employee.tasks.slice(0, 4).map((task, taskIndex) => ({
+        task,
+        position: {
+          x: clamp(anchor.x + taskOffsets[taskIndex].x, 8, 92),
+          y: clamp(anchor.y + taskOffsets[taskIndex].y, 8, 92),
+        },
+      })),
+    };
+  });
+}
+
+function mindMapPath(from: { x: number; y: number }, to: { x: number; y: number }) {
+  const midX = (from.x + to.x) / 2;
+  return `M ${from.x} ${from.y} C ${midX} ${from.y}, ${midX} ${to.y}, ${to.x} ${to.y}`;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
 function EmployeeList({
   employees,
   hoveredMember,
@@ -540,66 +670,6 @@ function LoadView({ employees }: { employees: EmployeeNode[] }) {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-function TaskNode({
-  task,
-  isSelected,
-  isDragging,
-  onSelect,
-  onDragStart,
-}: {
-  task: Task;
-  isSelected: boolean;
-  isDragging: boolean;
-  onSelect: (taskId: string) => void;
-  onDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
-}) {
-  const status = statusMeta[task.status];
-  const priority = priorityMeta[task.priority];
-  const overdue = task.status !== "done" && isOverdue(task.dueDate);
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      draggable
-      onClick={() => onSelect(task.id)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelect(task.id);
-        }
-      }}
-      onDragStart={(event) => onDragStart(event, task.id)}
-      className={`group relative cursor-grab rounded-md border px-3 py-2.5 text-left shadow-lg shadow-black/20 transition active:cursor-grabbing ${
-        isSelected
-          ? "border-sky-200/70 bg-sky-300/14"
-          : "border-white/12 bg-slate-900/82 hover:border-sky-200/40 hover:bg-sky-300/10"
-      } ${isDragging ? "opacity-50" : ""}`}
-      title="選択して詳細を確認。ドラッグで担当者を変更。"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="line-clamp-2 text-sm font-semibold leading-5 text-white">
-            {task.title}
-          </p>
-          <p className="mt-0.5 truncate text-[11px] text-zinc-500">{task.project}</p>
-        </div>
-        <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${priority.badge}`}>
-          {priority.label}
-        </span>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
-        <span className={`rounded-full border px-2 py-0.5 ${status.tone}`}>
-          {status.label}
-        </span>
-        <span className={overdue ? "font-semibold text-red-200" : "text-zinc-500"}>
-          {formatDate(task.dueDate)}
-        </span>
       </div>
     </div>
   );

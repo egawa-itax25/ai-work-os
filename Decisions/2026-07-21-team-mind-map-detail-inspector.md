@@ -25,6 +25,13 @@ Evolve the central map into a calm mind-map style operating surface:
 
 - employee nodes are parent nodes;
 - each employee's tasks appear as child nodes connected to the parent;
+- the "space map" mode must visually read as a mind map, not as a grid of
+  employee cards;
+- keep list view and load view unchanged while improving only the space map;
+- place a whole-company summary node near the center and arrange employee
+  parent nodes around it;
+- draw thin curved links from the center node to employee nodes and from each
+  employee node to task child nodes;
 - a small sample employee/task set may supplement real data when the workspace
   has fewer than the intended 10 to 15 employees;
 - task pills can still be dragged onto employee nodes to change the task owner;
