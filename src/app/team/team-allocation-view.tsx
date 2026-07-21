@@ -39,6 +39,13 @@ type MindMapLayoutItem = {
   tasks: Array<{ task: Task; position: { x: number; y: number } }>;
 };
 
+type MindMapLayout = {
+  width: number;
+  height: number;
+  center: { x: number; y: number };
+  items: MindMapLayoutItem[];
+};
+
 const nonPeople = new Set(["顧客", "AI", "なし", "未設定", "人事チーム"]);
 const sampleOwnerPrefix = "team-sample";
 
@@ -354,13 +361,16 @@ function OrbitMap({
   const featuredEmployees = employees.slice(0, 15);
   const centerProjects = new Set(taskPool.map((task) => task.project)).size;
   const layout = buildMindMapLayout(featuredEmployees);
-  const center = { x: 50, y: 50 };
+  const center = layout.center;
 
   return (
     <div className="relative z-10 min-h-[740px] overflow-auto p-4">
-      <div className="relative min-h-[720px] min-w-[1180px] overflow-hidden rounded-md border border-white/10 bg-slate-950/20">
+      <div
+        className="relative overflow-hidden rounded-md border border-white/10 bg-slate-950/20"
+        style={{ minWidth: layout.width, minHeight: layout.height }}
+      >
         <div className="pointer-events-none absolute inset-0 opacity-80">
-          <svg className="h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <svg className="h-full w-full" viewBox={`0 0 ${layout.width} ${layout.height}`} preserveAspectRatio="none" aria-hidden="true">
             <defs>
               <radialGradient id="teamMapGlow" cx="50%" cy="50%" r="50%">
                 <stop offset="0%" stopColor="rgba(125,211,252,0.12)" />
@@ -372,33 +382,36 @@ function OrbitMap({
                 <stop offset="100%" stopColor="rgba(148,163,184,0.18)" />
               </linearGradient>
             </defs>
-            <circle cx="50" cy="50" r="17" fill="url(#teamMapGlow)" stroke="rgba(148,163,184,0.12)" strokeWidth="0.18" />
-            <circle cx="50" cy="50" r="29" fill="none" stroke="rgba(148,163,184,0.10)" strokeDasharray="0.6 1.8" strokeWidth="0.12" />
-            <circle cx="50" cy="50" r="40" fill="none" stroke="rgba(148,163,184,0.07)" strokeDasharray="0.4 2.2" strokeWidth="0.1" />
-            {layout.map((item) => (
+            <circle cx={center.x} cy={center.y} r="210" fill="url(#teamMapGlow)" stroke="rgba(148,163,184,0.12)" strokeWidth="2" />
+            <circle cx={center.x} cy={center.y} r="350" fill="none" stroke="rgba(148,163,184,0.10)" strokeDasharray="8 24" strokeWidth="1.5" />
+            <circle cx={center.x} cy={center.y} r="500" fill="none" stroke="rgba(148,163,184,0.07)" strokeDasharray="6 28" strokeWidth="1.2" />
+            {layout.items.map((item) => (
               <path
                 key={`${item.employee.name}-center-link`}
                 d={mindMapPath(center, item.position)}
                 fill="none"
                 stroke="url(#mindMapLine)"
-                strokeWidth="0.18"
+                strokeWidth="2"
               />
             ))}
-            {layout.flatMap((item) =>
+            {layout.items.flatMap((item) =>
               item.tasks.map(({ task, position }) => (
                 <path
                   key={`${task.id}-task-link`}
                   d={mindMapPath(item.position, position)}
                   fill="none"
                   stroke="rgba(148,163,184,0.22)"
-                  strokeWidth="0.12"
+                  strokeWidth="1.4"
                 />
               )),
             )}
           </svg>
         </div>
 
-        <div className="absolute left-1/2 top-1/2 z-20 grid h-36 w-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-slate-950/78 text-center shadow-[0_0_70px_rgba(125,211,252,0.18)] backdrop-blur-xl">
+        <div
+          className="absolute z-20 grid h-36 w-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-slate-950/78 text-center shadow-[0_0_70px_rgba(125,211,252,0.18)] backdrop-blur-xl"
+          style={{ left: center.x, top: center.y }}
+        >
           <div>
             <p className="text-xs text-zinc-400">全体プロジェクト</p>
             <p className="mt-2 text-4xl font-semibold text-white">{centerProjects}</p>
@@ -406,7 +419,7 @@ function OrbitMap({
           </div>
         </div>
 
-        {layout.map(({ employee, position, tasks }) => {
+        {layout.items.map(({ employee, position, tasks }) => {
           const isHovered = hoveredMember === employee.name;
           const hasRisk = employee.overdue > 0 || employee.active >= 8;
 
@@ -426,7 +439,7 @@ function OrbitMap({
                       ? "border-red-200/25 bg-slate-950/74"
                       : "border-white/14 bg-slate-950/70"
                 }`}
-                style={{ left: `${position.x}%`, top: `${position.y}%` }}
+                style={{ left: position.x, top: position.y }}
               >
                 <div className="flex items-center gap-3">
                   <div className="grid h-12 w-12 shrink-0 place-items-center rounded-full border border-white/20 bg-white/[0.05] shadow-inner">
@@ -460,14 +473,14 @@ function OrbitMap({
                   isDragging={draggingTaskId === task.id}
                   onSelect={onTaskSelect}
                   onDragStart={onTaskDragStart}
-                  style={{ left: `${taskPosition.x}%`, top: `${taskPosition.y}%` }}
+                  style={{ left: taskPosition.x, top: taskPosition.y }}
                 />
               ))}
 
               {employee.tasks.length > tasks.length ? (
                 <div
                   className="absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[11px] font-semibold text-zinc-400"
-                  style={{ left: `${clamp(position.x + (position.x >= 50 ? 23 : -23), 7, 93)}%`, top: `${clamp(position.y + 24, 8, 92)}%` }}
+                  style={{ left: position.x + (position.x >= center.x ? 300 : -300), top: position.y + 130 }}
                 >
                   ほか {employee.tasks.length - tasks.length}件
                 </div>
@@ -493,7 +506,7 @@ function MindMapTaskNode({
   isDragging: boolean;
   onSelect: (taskId: string) => void;
   onDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
-  style: { left: string; top: string };
+  style: { left: number; top: number };
 }) {
   const status = statusMeta[task.status];
   const priority = priorityMeta[task.priority];
@@ -537,48 +550,110 @@ function MindMapTaskNode({
   );
 }
 
-function buildMindMapLayout(employees: EmployeeNode[]): MindMapLayoutItem[] {
+function buildMindMapLayout(employees: EmployeeNode[]): MindMapLayout {
+  const width = 2200;
+  const baseHeight = 900;
+  const center = { x: width / 2, y: 455 };
   const anchors = [
-    { x: 50, y: 18 },
-    { x: 68, y: 30 },
-    { x: 32, y: 30 },
-    { x: 77, y: 50 },
-    { x: 23, y: 50 },
-    { x: 62, y: 68 },
-    { x: 38, y: 68 },
-    { x: 84, y: 73 },
-    { x: 16, y: 73 },
-    { x: 50, y: 84 },
-    { x: 87, y: 36 },
-    { x: 13, y: 36 },
-    { x: 72, y: 84 },
-    { x: 28, y: 84 },
-    { x: 50, y: 9 },
+    { x: 1100, y: 170 },
+    { x: 1480, y: 250 },
+    { x: 720, y: 250 },
+    { x: 1710, y: 445 },
+    { x: 490, y: 445 },
+    { x: 1420, y: 660 },
+    { x: 780, y: 660 },
+    { x: 1910, y: 680 },
+    { x: 290, y: 680 },
+    { x: 1100, y: 790 },
+    { x: 1890, y: 300 },
+    { x: 310, y: 300 },
+    { x: 1660, y: 810 },
+    { x: 540, y: 810 },
+    { x: 1100, y: 80 },
   ];
+  const taken: Rect[] = [];
 
-  return employees.map((employee, index) => {
+  const items = employees.map((employee, index) => {
     const anchor = anchors[index % anchors.length];
-    const side = anchor.x >= 50 ? 1 : -1;
-    const vertical = anchor.y >= 50 ? 1 : -1;
-    const taskOffsets = [
-      { x: side * 20, y: vertical * -10 },
-      { x: side * 22, y: vertical * 3 },
-      { x: side * 20, y: vertical * 16 },
-      { x: side * 14, y: vertical * 29 },
-    ];
+    const employeePosition = findFreePoint(anchor, employeeRect(anchor), taken, width, baseHeight);
+    taken.push(employeeRect(employeePosition));
+
+    const side = employeePosition.x >= center.x ? 1 : -1;
+    const vertical = employeePosition.y >= center.y ? 1 : -1;
+    const taskPositions = employee.tasks.slice(0, 4).map((task, taskIndex) => {
+      const candidate = {
+        x: employeePosition.x + side * (315 + (taskIndex % 2) * 38),
+        y: employeePosition.y + (taskIndex - 1.5) * 92 + vertical * 28,
+      };
+      const position = findFreePoint(candidate, taskRect(candidate), taken, width, baseHeight);
+      taken.push(taskRect(position));
+      return { task, position };
+    });
 
     return {
       employee,
-      position: anchor,
-      tasks: employee.tasks.slice(0, 4).map((task, taskIndex) => ({
-        task,
-        position: {
-          x: clamp(anchor.x + taskOffsets[taskIndex].x, 8, 92),
-          y: clamp(anchor.y + taskOffsets[taskIndex].y, 8, 92),
-        },
-      })),
+      position: employeePosition,
+      tasks: taskPositions,
     };
   });
+
+  const height = Math.max(baseHeight, Math.ceil(Math.max(...taken.map((rect) => rect.y + rect.height), baseHeight - 60) + 90));
+
+  return { width, height, center, items };
+}
+
+type Rect = { x: number; y: number; width: number; height: number };
+
+function employeeRect(point: { x: number; y: number }): Rect {
+  return { x: point.x - 116, y: point.y - 82, width: 232, height: 164 };
+}
+
+function taskRect(point: { x: number; y: number }): Rect {
+  return { x: point.x - 126, y: point.y - 54, width: 252, height: 108 };
+}
+
+function findFreePoint(
+  preferred: { x: number; y: number },
+  preferredRect: Rect,
+  taken: Rect[],
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const minX = 150;
+  const maxX = canvasWidth - 150;
+  const minY = 90;
+  const maxY = canvasHeight - 90;
+  const candidates = [
+    preferred,
+    ...Array.from({ length: 10 }, (_, index) => ({ x: preferred.x, y: preferred.y + (index + 1) * 92 })),
+    ...Array.from({ length: 10 }, (_, index) => ({ x: preferred.x, y: preferred.y - (index + 1) * 92 })),
+    ...Array.from({ length: 6 }, (_, index) => ({ x: preferred.x + (index + 1) * 96, y: preferred.y })),
+    ...Array.from({ length: 6 }, (_, index) => ({ x: preferred.x - (index + 1) * 96, y: preferred.y })),
+  ];
+
+  for (const candidate of candidates) {
+    const point = { x: clamp(candidate.x, minX, maxX), y: clamp(candidate.y, minY, maxY) };
+    const rect = {
+      ...preferredRect,
+      x: point.x - preferredRect.width / 2,
+      y: point.y - preferredRect.height / 2,
+    };
+    if (!taken.some((item) => rectsOverlap(rect, item))) {
+      return point;
+    }
+  }
+
+  return { x: clamp(preferred.x, minX, maxX), y: clamp(preferred.y, minY, maxY) };
+}
+
+function rectsOverlap(a: Rect, b: Rect) {
+  const gap = 20;
+  return (
+    a.x < b.x + b.width + gap &&
+    a.x + a.width + gap > b.x &&
+    a.y < b.y + b.height + gap &&
+    a.y + a.height + gap > b.y
+  );
 }
 
 function mindMapPath(from: { x: number; y: number }, to: { x: number; y: number }) {

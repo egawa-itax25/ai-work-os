@@ -32,6 +32,9 @@ Evolve the central map into a calm mind-map style operating surface:
   parent nodes around it;
 - draw thin curved links from the center node to employee nodes and from each
   employee node to task child nodes;
+- distribute child task nodes with collision-aware offsets and a wider virtual
+  canvas so the mind map does not collapse into overlapping labels at narrower
+  desktop widths or when the inspector is open;
 - a small sample employee/task set may supplement real data when the workspace
   has fewer than the intended 10 to 15 employees;
 - task pills can still be dragged onto employee nodes to change the task owner;
