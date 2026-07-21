@@ -17,10 +17,12 @@ when the user is entering task names one after another.
 
 ## Decision
 
-In the schedule tab project task list, a newly created task starts with its title
-field focused. When the title field is active, pressing Enter should commit the
-current title and create the next task at the end of the same project, with the
-new task title focused immediately.
+In the schedule tab project task list, a newly created task starts with an empty
+title field focused. The UI must not prefill `新しいタスク`, so the user can type
+immediately without deleting placeholder content. When the title field is
+active, pressing Enter should commit the current title and create the next task
+at the end of the same project, with another empty title field focused
+immediately.
 
 ## Interaction Rules
 
@@ -29,6 +31,11 @@ new task title focused immediately.
 - IME composition Enter must not create a task, so Japanese text conversion can
   be confirmed normally.
 - Escape cancels the current title edit.
+- A newly created task keeps an empty title only while the title field is being
+  edited. If the user commits or leaves the field while it is still empty, save
+  it as `無題のタスク`.
+- Quick task creation from Task Flow Map follows the same empty-title rule and
+  focuses the new task title immediately.
 - Memo/detail fields keep the existing rule: Shift+Enter saves, normal Enter
   inserts a line break.
 - Empty titles are saved as `無題のタスク` before the next input row is created.

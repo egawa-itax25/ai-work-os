@@ -700,7 +700,7 @@ export default function ProjectTaskMap() {
     );
     const newTask: Task = {
       id: crypto.randomUUID(),
-      title: "新しいタスク",
+      title: "",
       description: "",
       owner: "未設定",
       currentBallHolder: "未設定",
@@ -1365,6 +1365,11 @@ function TaskNode({
             value={task.title}
             rows={3}
             onChange={(event) => onUpdate({ title: event.target.value })}
+            onBlur={() => {
+              if (!task.title.trim()) {
+                onUpdate({ title: "無題のタスク" });
+              }
+            }}
             onClick={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
             onFocus={() => onSelect(task.id)}
@@ -1578,6 +1583,11 @@ function TaskNode({
             ref={titleRef}
             value={task.title}
             onChange={(event) => onUpdate({ title: event.target.value })}
+            onBlur={() => {
+              if (!task.title.trim()) {
+                onUpdate({ title: "無題のタスク" });
+              }
+            }}
             onFocus={() => onSelect(task.id)}
             className="neo-input w-full rounded-md border border-transparent px-2 py-1 text-sm font-semibold text-white outline-none placeholder:text-zinc-600 hover:border-zinc-700 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
             placeholder="タスク名"

@@ -238,7 +238,7 @@ export default function TaskProjects() {
     const projectTasks = sourceTasks.filter((task) => task.project === project);
     const newTask: Task = {
       id: `task-${crypto.randomUUID()}`,
-      title: "新しいタスク",
+      title: "",
       description: "",
       owner: "未設定",
       currentBallHolder: "あなた",

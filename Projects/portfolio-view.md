@@ -609,6 +609,10 @@ Implemented:
   inside each project section. The new task should inherit the project name,
   appear immediately in that section, and sync back to Portfolio through the
   shared task data.
+- Quick-created tasks start with an empty, focused title field instead of a
+  prefilled `新しいタスク` value. If the field is committed while empty, it is
+  normalized to `無題のタスク`. Schedule list and Task Flow Map use the same
+  behavior so users can start typing immediately in either surface.
 - The schedule tab's project task list uses user-controlled ordering. A newly
   added task is appended to the end of the selected project section, and hidden
   priority/due-date sorting must not move it unexpectedly.
