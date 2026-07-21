@@ -1,8 +1,8 @@
-import { signIn, signOut, signUp } from "./actions";
+import { resendConfirmation, signIn, signOut, signUp } from "./actions";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type LoginPageProps = {
-  searchParams: Promise<{ error?: string; message?: string }>;
+  searchParams: Promise<{ error?: string; message?: string; email?: string }>;
 };
 
 function getErrorMessage(error?: string) {
@@ -20,11 +20,19 @@ function getErrorMessage(error?: string) {
     return "このメールアドレスは登録済みです。「ログイン」を押してください。";
   }
 
-  return error;
+  if (lower.includes("email not confirmed")) {
+    return "メールアドレスの確認がまだ完了していません。受信した確認メールのリンクを開くか、下の「確認メールを再送」を押してください。";
+  }
+
+  if (lower.includes("rate limit") || lower.includes("email rate limit exceeded")) {
+    return "確認メールの送信回数が上限に達しました。少し時間を置いてから、もう一度お試しください。";
+  }
+
+  return `認証処理を完了できませんでした。もう一度お試しください。（${error}）`;
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { error, message } = await searchParams;
+  const { error, message, email } = await searchParams;
   const errorMessage = getErrorMessage(error);
   const supabase = await createSupabaseServerClient();
   const {
@@ -78,6 +86,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               autoComplete="email"
               inputMode="email"
               required
+              defaultValue={email ?? ""}
               placeholder="you@example.com"
             />
           </label>
@@ -109,6 +118,18 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
               新規登録
             </button>
           </div>
+
+          <button
+            formAction={resendConfirmation}
+            formNoValidate
+            className="w-full rounded-xl border border-amber-200/30 bg-amber-200/[0.06] px-5 py-3 text-sm font-semibold text-amber-50 transition hover:bg-amber-200/[0.1]"
+          >
+            確認メールを再送
+          </button>
+
+          <p className="text-center text-xs leading-5 text-slate-400">
+            新規登録後にログインできない場合は、先に確認メールのリンクを開いてください。
+          </p>
 
           <button
             formAction={signOut}

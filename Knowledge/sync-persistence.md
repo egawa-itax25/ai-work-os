@@ -44,3 +44,16 @@ The server and browser must render the same initial sync-indicator state.
 Supabase configuration and authentication are reflected only after the browser
 has mounted. This initialization rule must not change stored data or merge
 behavior.
+
+## Email confirmation is part of the sync login flow
+
+When Supabase email confirmation is enabled, sign-up creates an account before
+the account can sign in. The product must not expose Supabase's raw `Email not
+confirmed` error as if registration failed.
+
+- Explain in Japanese that the account is waiting for email confirmation.
+- Provide an in-place confirmation-email resend action.
+- Send confirmation links through an app-owned auth callback and return to the
+  portfolio after the session is established.
+- Keep local projects and tasks intact while confirmation is pending.
+- A resend or callback failure must leave local-only persistence operational.
