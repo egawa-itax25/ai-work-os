@@ -4,6 +4,7 @@ tags: [spec, team, allocation, task-assignment]
 project: ai-task-system
 related:
   - Decisions/2026-07-13-team-allocation-view.md
+  - Decisions/2026-07-21-team-mind-map-detail-inspector.md
   - Projects/portfolio-view.md
 ---
 
@@ -39,9 +40,13 @@ Primary navigation label:
 Use the same dark, calm product UI as Portfolio.
 
 - Left: view and filter controls.
-- Center: employee orbit map with a whole-team summary in the middle.
-- Employee nodes: initials, name, average progress, task count, and short task
-  pills.
+- Center: employee mind map with a whole-team summary and employee parent
+  nodes.
+- Employee nodes: initials, name, department/role, project count, task count,
+  average progress, workload status, overdue count, and waiting count.
+- Child task nodes: task title, project, status, due date, and priority.
+- Right: task inspector that opens when a task is selected and supports direct
+  editing without leaving the map.
 - Bottom: team summary metrics.
 
 When the number of employees grows, the map must not use absolute circular
@@ -51,6 +56,11 @@ spatial feeling while guaranteeing readable spacing.
 
 The page is additive. Do not change existing Portfolio, task list, or task map
 behavior to create this view.
+
+When the workspace has fewer than 10 to 15 visible people, sample employees and
+sample tasks may be added to the Team Allocation View only so the management
+experience can be evaluated at the intended scale. Real workspace tasks remain
+the source of truth for saved edits.
 
 ## Assignment Behavior
 
@@ -88,6 +98,14 @@ Implemented:
 - Primary navigation entry labeled `全体プロジェクト`.
 - Employee workload map derived from shared task data.
 - Employee map uses a responsive non-overlapping constellation grid.
+- Employee mind-map mode with parent employee nodes and child task nodes.
+- Detail inspector for selected tasks.
 - Task drag-to-assign to employee nodes.
 - Filters for member, status, project, and priority.
 - Team summary metrics.
+
+Next:
+
+- Replace sample data with real employee master data when available.
+- Add role/department fields to the durable data model.
+- Add richer capacity and overload recommendations.

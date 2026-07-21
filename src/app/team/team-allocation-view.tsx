@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
 import {
   Task,
   TaskPriority,
@@ -8,8 +8,10 @@ import {
   initialTasks,
   isOverdue,
   normalizeTaskList,
+  priorityMeta,
   remoteStorageKey,
   storageKey,
+  statusMeta,
 } from "../tasks/task-data";
 import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
@@ -20,14 +22,31 @@ type PriorityFilter = "all" | TaskPriority;
 type EmployeeNode = {
   name: string;
   initials: string;
+  role: string;
   tasks: Task[];
   projects: string[];
   averageProgress: number;
   overdue: number;
+  waiting: number;
   active: number;
+  loadLabel: string;
+  isSample?: boolean;
 };
 
 const nonPeople = new Set(["顧客", "AI", "なし", "未設定", "人事チーム"]);
+const sampleOwnerPrefix = "team-sample";
+
+const memberProfiles: Record<string, { role: string }> = {
+  あなた: { role: "代表 / 管理者" },
+  山田太郎: { role: "PM / 業務設計" },
+  山田: { role: "運用担当" },
+  佐藤: { role: "営業支援" },
+  佐藤花子: { role: "顧客対応" },
+  田中: { role: "導入担当" },
+  田中一郎: { role: "開発連携" },
+  鈴木美咲: { role: "人事 / 採用" },
+  AI: { role: "AI処理" },
+};
 
 export default function TeamAllocationView() {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
@@ -39,6 +58,7 @@ export default function TeamAllocationView() {
   const [draggingTaskId, setDraggingTaskId] = useState("");
   const [hoveredMember, setHoveredMember] = useState("");
   const [lastMove, setLastMove] = useState("");
+  const [selectedTaskId, setSelectedTaskId] = useState("");
 
   useEffect(() => {
     void loadSyncedState({
@@ -60,15 +80,17 @@ export default function TeamAllocationView() {
     [tasks],
   );
 
+  const displayTasks = useMemo(() => withTeamScaleSamples(activeTasks), [activeTasks]);
+
   const projects = useMemo(
-    () => Array.from(new Set(activeTasks.map((task) => task.project))).sort(),
-    [activeTasks],
+    () => Array.from(new Set(displayTasks.map((task) => task.project))).sort(),
+    [displayTasks],
   );
 
-  const employees = useMemo(() => buildEmployeeNodes(activeTasks), [activeTasks]);
+  const employees = useMemo(() => buildEmployeeNodes(displayTasks), [displayTasks]);
 
   const filteredTasks = useMemo(() => {
-    return activeTasks.filter((task) => {
+    return displayTasks.filter((task) => {
       const memberMatches = memberFilter === "all" || task.owner === memberFilter;
       const statusMatches = statusFilter === "all" || task.status === statusFilter;
       const projectMatches = projectFilter === "all" || task.project === projectFilter;
@@ -77,11 +99,16 @@ export default function TeamAllocationView() {
 
       return memberMatches && statusMatches && projectMatches && priorityMatches;
     });
-  }, [activeTasks, memberFilter, priorityFilter, projectFilter, statusFilter]);
+  }, [displayTasks, memberFilter, priorityFilter, projectFilter, statusFilter]);
 
   const visibleEmployees = useMemo(
     () => buildEmployeeNodes(filteredTasks),
     [filteredTasks],
+  );
+
+  const selectedTask = useMemo(
+    () => filteredTasks.find((task) => task.id === selectedTaskId) ?? filteredTasks[0],
+    [filteredTasks, selectedTaskId],
   );
 
   const totalProjects = new Set(filteredTasks.map((task) => task.project)).size;
@@ -101,6 +128,9 @@ export default function TeamAllocationView() {
     const task = tasks.find((item) => item.id === taskId);
 
     if (!task) {
+      setLastMove("サンプルタスクは担当変更の動作確認用です。実タスクをドラッグすると保存されます。");
+      setDraggingTaskId("");
+      setHoveredMember("");
       return;
     }
 
@@ -117,6 +147,15 @@ export default function TeamAllocationView() {
     setLastMove(`${task.title} を ${memberName} さんへ割り振りました`);
     setDraggingTaskId("");
     setHoveredMember("");
+  }
+
+  function updateSelectedTask(taskId: string, patch: Partial<Task>) {
+    if (taskId.startsWith(sampleOwnerPrefix)) {
+      setLastMove("サンプルタスクは編集プレビュー用です。実タスクを選択すると保存できます。");
+      return;
+    }
+
+    commitTasks(tasks.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
   }
 
   function handleTaskDragStart(event: DragEvent<HTMLElement>, taskId: string) {
@@ -152,7 +191,7 @@ export default function TeamAllocationView() {
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)]">
+      <section className="grid gap-4 xl:grid-cols-[17rem_minmax(0,1fr)_22rem]">
         <aside className="space-y-4">
           <Panel title="ビュー">
             <SegmentedButton
@@ -246,7 +285,9 @@ export default function TeamAllocationView() {
               taskPool={filteredTasks}
               draggingTaskId={draggingTaskId}
               hoveredMember={hoveredMember}
+              selectedTaskId={selectedTask?.id ?? ""}
               onTaskDragStart={handleTaskDragStart}
+              onTaskSelect={setSelectedTaskId}
               onMemberDragEnter={setHoveredMember}
               onMemberDrop={handleMemberDrop}
             />
@@ -264,6 +305,13 @@ export default function TeamAllocationView() {
 
           {mode === "load" ? <LoadView employees={visibleEmployees} /> : null}
         </main>
+
+        <TaskInspector
+          task={selectedTask}
+          employees={employees}
+          isSample={selectedTask?.id.startsWith(sampleOwnerPrefix) ?? false}
+          onUpdate={updateSelectedTask}
+        />
       </section>
 
       <section className="grid gap-3 md:grid-cols-4">
@@ -281,7 +329,9 @@ function OrbitMap({
   taskPool,
   draggingTaskId,
   hoveredMember,
+  selectedTaskId,
   onTaskDragStart,
+  onTaskSelect,
   onMemberDragEnter,
   onMemberDrop,
 }: {
@@ -289,28 +339,42 @@ function OrbitMap({
   taskPool: Task[];
   draggingTaskId: string;
   hoveredMember: string;
+  selectedTaskId: string;
   onTaskDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
+  onTaskSelect: (taskId: string) => void;
   onMemberDragEnter: (member: string) => void;
   onMemberDrop: (event: DragEvent<HTMLElement>, member: string) => void;
 }) {
+  const featuredEmployees = employees.slice(0, 15);
+  const centerProjects = new Set(taskPool.map((task) => task.project)).size;
+
   return (
-    <div className="relative z-10 min-h-[680px]">
-      <div className="absolute left-6 top-6 grid h-32 w-48 place-items-center rounded-[2rem] border border-white/25 bg-slate-950/72 text-center shadow-[0_0_60px_rgba(125,211,252,0.14)] backdrop-blur-xl">
+    <div className="relative z-10 min-h-[680px] p-5">
+      <div className="pointer-events-none absolute inset-0 opacity-70">
+        <svg className="h-full w-full" aria-hidden="true">
+          <defs>
+            <radialGradient id="teamMapGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(125,211,252,0.12)" />
+              <stop offset="100%" stopColor="rgba(125,211,252,0)" />
+            </radialGradient>
+          </defs>
+          <circle cx="50%" cy="49%" r="190" fill="url(#teamMapGlow)" stroke="rgba(148,163,184,0.14)" />
+          <circle cx="50%" cy="49%" r="315" fill="none" stroke="rgba(148,163,184,0.10)" strokeDasharray="4 12" />
+        </svg>
+      </div>
+
+      <div className="absolute left-1/2 top-1/2 z-20 grid h-36 w-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-white/20 bg-slate-950/75 text-center shadow-[0_0_70px_rgba(125,211,252,0.18)] backdrop-blur-xl">
         <div>
           <p className="text-xs text-zinc-400">全体プロジェクト</p>
-          <p className="mt-2 text-4xl font-semibold text-white">{new Set(taskPool.map((task) => task.project)).size}</p>
+          <p className="mt-2 text-4xl font-semibold text-white">{centerProjects}</p>
           <p className="mt-1 text-sm text-zinc-400">プロジェクト</p>
         </div>
       </div>
 
-      <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-45" aria-hidden="true">
-        <circle cx="50%" cy="50%" r="190" fill="none" stroke="rgba(148,163,184,0.18)" strokeDasharray="4 10" />
-        <circle cx="50%" cy="50%" r="285" fill="none" stroke="rgba(148,163,184,0.12)" />
-      </svg>
-
-      {employees.map((employee, index) => {
-        const position = getOrbitPosition(index, employees.length);
+      <div className="relative z-10 grid min-h-[640px] grid-cols-1 gap-5 lg:grid-cols-2 2xl:grid-cols-3">
+        {featuredEmployees.map((employee) => {
         const isHovered = hoveredMember === employee.name;
+        const hasRisk = employee.overdue > 0 || employee.active >= 8;
 
         return (
           <section
@@ -321,34 +385,76 @@ function OrbitMap({
             }}
             onDragLeave={() => onMemberDragEnter("")}
             onDrop={(event) => onMemberDrop(event, employee.name)}
-            className={`absolute w-48 -translate-x-1/2 -translate-y-1/2 rounded-[2rem] border p-3 text-center backdrop-blur-xl transition ${
+            className={`relative min-h-[270px] rounded-md border p-4 backdrop-blur-xl transition ${
               isHovered
-                ? "scale-105 border-sky-200 bg-sky-300/15 shadow-[0_0_38px_rgba(125,211,252,0.22)]"
-                : "border-white/15 bg-slate-950/68"
+                ? "border-sky-200 bg-sky-300/12 shadow-[0_0_34px_rgba(125,211,252,0.18)]"
+                : hasRisk
+                  ? "border-red-200/25 bg-slate-950/62"
+                  : "border-white/12 bg-slate-950/58"
             }`}
-            style={{ left: position.left, top: position.top }}
           >
-            <div className="mx-auto grid h-20 w-20 place-items-center rounded-full border border-white/20 bg-white/[0.05] shadow-inner">
-              <div>
-                <p className="text-lg font-semibold text-white">{employee.initials}</p>
-                <p className="text-[11px] text-zinc-400">{employee.averageProgress}%</p>
+            <svg className="pointer-events-none absolute inset-0 h-full w-full opacity-50" aria-hidden="true">
+              {employee.tasks.slice(0, 4).map((_, index) => (
+                <path
+                  key={index}
+                  d={`M 104 74 C 155 ${95 + index * 34}, 165 ${112 + index * 34}, 205 ${116 + index * 34}`}
+                  fill="none"
+                  stroke="rgba(125,211,252,0.20)"
+                  strokeWidth="1"
+                />
+              ))}
+            </svg>
+
+            <div className="relative z-10 flex items-start gap-3">
+              <div className="grid h-16 w-16 shrink-0 place-items-center rounded-full border border-white/20 bg-white/[0.05] shadow-inner">
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-white">{employee.initials}</p>
+                  <p className="text-[11px] text-zinc-400">{employee.averageProgress}%</p>
+                </div>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="truncate text-base font-semibold text-white">{employee.name}</h2>
+                    <p className="truncate text-xs text-zinc-500">{employee.role}</p>
+                  </div>
+                  <span className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-semibold ${hasRisk ? "border-red-300/35 bg-red-300/10 text-red-200" : "border-sky-200/30 bg-sky-300/10 text-sky-100"}`}>
+                    {employee.loadLabel}
+                  </span>
+                </div>
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-zinc-400">
+                  <MetricChip label="プロジェクト" value={`${employee.projects.length}件`} />
+                  <MetricChip label="タスク" value={`${employee.tasks.length}件`} />
+                  <MetricChip label="期限超過" value={`${employee.overdue}件`} urgent={employee.overdue > 0} />
+                  <MetricChip label="相手待ち" value={`${employee.waiting}件`} />
+                </div>
               </div>
             </div>
-            <h2 className="mt-2 text-sm font-semibold text-white">{employee.name}</h2>
-            <p className="text-xs text-zinc-500">{employee.projects.length}プロジェクト / {employee.active}タスク</p>
-            <div className="mt-3 space-y-1.5">
-              {employee.tasks.slice(0, 3).map((task) => (
-                <TaskPill
+
+            <div className="relative z-10 mt-4 ml-14 space-y-2">
+              {employee.tasks.slice(0, 4).map((task) => (
+                <TaskNode
                   key={task.id}
                   task={task}
+                  isSelected={selectedTaskId === task.id}
                   isDragging={draggingTaskId === task.id}
+                  onSelect={onTaskSelect}
                   onDragStart={onTaskDragStart}
                 />
               ))}
+              {employee.tasks.length === 0 ? (
+                <div className="rounded-md border border-dashed border-white/10 px-3 py-5 text-center text-xs text-zinc-500">
+                  割り振り待ちのタスクはありません
+                </div>
+              ) : null}
+              {employee.tasks.length > 4 ? (
+                <p className="pl-2 text-xs text-zinc-500">ほか {employee.tasks.length - 4}件</p>
+              ) : null}
             </div>
           </section>
         );
       })}
+      </div>
     </div>
   );
 }
@@ -439,6 +545,273 @@ function LoadView({ employees }: { employees: EmployeeNode[] }) {
   );
 }
 
+function TaskNode({
+  task,
+  isSelected,
+  isDragging,
+  onSelect,
+  onDragStart,
+}: {
+  task: Task;
+  isSelected: boolean;
+  isDragging: boolean;
+  onSelect: (taskId: string) => void;
+  onDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
+}) {
+  const status = statusMeta[task.status];
+  const priority = priorityMeta[task.priority];
+  const overdue = task.status !== "done" && isOverdue(task.dueDate);
+
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      draggable
+      onClick={() => onSelect(task.id)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onSelect(task.id);
+        }
+      }}
+      onDragStart={(event) => onDragStart(event, task.id)}
+      className={`group relative cursor-grab rounded-md border px-3 py-2.5 text-left shadow-lg shadow-black/20 transition active:cursor-grabbing ${
+        isSelected
+          ? "border-sky-200/70 bg-sky-300/14"
+          : "border-white/12 bg-slate-900/82 hover:border-sky-200/40 hover:bg-sky-300/10"
+      } ${isDragging ? "opacity-50" : ""}`}
+      title="選択して詳細を確認。ドラッグで担当者を変更。"
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="line-clamp-2 text-sm font-semibold leading-5 text-white">
+            {task.title}
+          </p>
+          <p className="mt-0.5 truncate text-[11px] text-zinc-500">{task.project}</p>
+        </div>
+        <span className={`shrink-0 rounded border px-1.5 py-0.5 text-[10px] font-semibold ${priority.badge}`}>
+          {priority.label}
+        </span>
+      </div>
+      <div className="mt-2 flex items-center justify-between gap-2 text-[11px]">
+        <span className={`rounded-full border px-2 py-0.5 ${status.tone}`}>
+          {status.label}
+        </span>
+        <span className={overdue ? "font-semibold text-red-200" : "text-zinc-500"}>
+          {formatDate(task.dueDate)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MetricChip({
+  label,
+  value,
+  urgent = false,
+}: {
+  label: string;
+  value: string;
+  urgent?: boolean;
+}) {
+  return (
+    <div className="rounded-md border border-white/10 bg-white/[0.035] px-2.5 py-2">
+      <p className="text-[10px] text-zinc-500">{label}</p>
+      <p className={urgent ? "mt-0.5 font-semibold text-red-200" : "mt-0.5 font-semibold text-zinc-100"}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
+function TaskInspector({
+  task,
+  employees,
+  isSample,
+  onUpdate,
+}: {
+  task?: Task;
+  employees: EmployeeNode[];
+  isSample: boolean;
+  onUpdate: (taskId: string, patch: Partial<Task>) => void;
+}) {
+  if (!task) {
+    return (
+      <aside className="neo-surface rounded-md border p-4">
+        <h2 className="text-sm font-semibold text-white">タスク詳細</h2>
+        <p className="mt-4 text-sm leading-6 text-zinc-500">
+          タスクを選択すると、ここで詳細確認と編集ができます。
+        </p>
+      </aside>
+    );
+  }
+
+  const employeeOptions = employees
+    .filter((employee) => !employee.isSample)
+    .map((employee) => employee.name);
+
+  return (
+    <aside className="neo-surface max-h-[680px] overflow-y-auto rounded-md border p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold text-sky-100">タスク詳細</p>
+          <h2 className="mt-1 text-lg font-semibold leading-6 text-white">
+            {task.title}
+          </h2>
+        </div>
+        <span className={isSample ? "rounded-full border border-amber-300/30 bg-amber-300/10 px-2 py-1 text-[11px] font-semibold text-amber-100" : "rounded-full border border-emerald-300/25 bg-emerald-300/10 px-2 py-1 text-[11px] font-semibold text-emerald-100"}>
+          {isSample ? "サンプル" : "自動保存"}
+        </span>
+      </div>
+
+      {isSample ? (
+        <p className="mt-3 rounded-md border border-amber-300/25 bg-amber-300/10 px-3 py-2 text-xs leading-5 text-amber-100">
+          これは人数感を確認するためのサンプルです。実タスクを選択すると編集内容が保存されます。
+        </p>
+      ) : null}
+
+      <div className="mt-4 space-y-3">
+        <InputField
+          label="タスク名"
+          value={task.title}
+          disabled={isSample}
+          onChange={(value) => onUpdate(task.id, { title: value })}
+        />
+        <TextareaField
+          label="詳細"
+          value={task.description}
+          disabled={isSample}
+          onChange={(value) => onUpdate(task.id, { description: value })}
+        />
+        <SelectField
+          label="担当者"
+          value={task.owner}
+          onChange={(value) => onUpdate(task.id, { owner: value })}
+          options={[
+            { value: task.owner, label: task.owner },
+            ...employeeOptions
+              .filter((name) => name !== task.owner)
+              .map((name) => ({ value: name, label: name })),
+          ]}
+        />
+        <InputField
+          label="現在のボール"
+          value={task.currentBallHolder}
+          disabled={isSample}
+          onChange={(value) => onUpdate(task.id, { currentBallHolder: value })}
+        />
+        <InputField
+          label="プロジェクト"
+          value={task.project}
+          disabled={isSample}
+          onChange={(value) => onUpdate(task.id, { project: value })}
+        />
+        <InputField
+          label="期限"
+          type="date"
+          value={task.dueDate}
+          disabled={isSample}
+          onChange={(value) => onUpdate(task.id, { dueDate: value })}
+        />
+        <SelectField
+          label="状態"
+          value={task.status}
+          onChange={(value) => onUpdate(task.id, { status: value as TaskStatus })}
+          options={[
+            { value: "todo", label: "未着手" },
+            { value: "doing", label: "進行中" },
+            { value: "done", label: "完了" },
+          ]}
+        />
+        <SelectField
+          label="優先度"
+          value={task.priority}
+          onChange={(value) => onUpdate(task.id, { priority: value as TaskPriority })}
+          options={[
+            { value: "high", label: "高" },
+            { value: "medium", label: "中" },
+            { value: "low", label: "低" },
+          ]}
+        />
+        <label className="block">
+          <span className="text-xs font-medium text-zinc-500">進捗</span>
+          <div className="mt-2 flex items-center gap-3">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={task.progress}
+              disabled={isSample}
+              onChange={(event) => onUpdate(task.id, { progress: Number(event.target.value) })}
+              className="w-full accent-sky-200"
+            />
+            <span className="w-12 text-right text-sm font-semibold text-zinc-100">
+              {task.progress}%
+            </span>
+          </div>
+        </label>
+        <TextareaField
+          label="次のアクション"
+          value={task.nextAction}
+          disabled={isSample}
+          onChange={(value) => onUpdate(task.id, { nextAction: value })}
+        />
+      </div>
+    </aside>
+  );
+}
+
+function InputField({
+  label,
+  value,
+  onChange,
+  type = "text",
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-zinc-500">{label}</span>
+      <input
+        type={type}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="neo-input mt-1 min-h-11 w-full rounded-md border border-white/10 bg-slate-950/80 px-3 text-sm text-zinc-100 outline-none transition focus:border-sky-200/50 disabled:cursor-not-allowed disabled:opacity-60"
+      />
+    </label>
+  );
+}
+
+function TextareaField({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-medium text-zinc-500">{label}</span>
+      <textarea
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+        className="neo-input mt-1 min-h-24 w-full resize-y rounded-md border border-white/10 bg-slate-950/80 px-3 py-2 text-sm leading-6 text-zinc-100 outline-none transition focus:border-sky-200/50 disabled:cursor-not-allowed disabled:opacity-60"
+      />
+    </label>
+  );
+}
+
 function TaskPill({
   task,
   isDragging = false,
@@ -466,7 +839,7 @@ function TaskPill({
   );
 }
 
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function Panel({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="neo-surface rounded-md border p-4">
       <h2 className="text-sm font-semibold text-white">{title}</h2>
@@ -556,7 +929,7 @@ function buildEmployeeNodes(tasks: Task[]): EmployeeNode[] {
   const names = new Set<string>();
 
   for (const task of tasks) {
-    if (task.owner) {
+    if (task.owner && !nonPeople.has(task.owner)) {
       names.add(task.owner);
     }
 
@@ -581,15 +954,186 @@ function buildEmployeeNodes(tasks: Task[]): EmployeeNode[] {
       return {
         name,
         initials: getInitials(name),
+        role: getMemberRole(name),
         tasks: ownedTasks,
         projects,
         averageProgress,
         overdue: ownedTasks.filter(
           (task) => task.status !== "done" && isOverdue(task.dueDate),
         ).length,
+        waiting: ownedTasks.filter(
+          (task) =>
+            task.status !== "done" &&
+            task.currentBallHolder !== task.owner &&
+            !["なし", "未設定"].includes(task.currentBallHolder),
+        ).length,
         active: ownedTasks.filter((task) => task.status !== "done").length,
+        loadLabel: getLoadLabel(ownedTasks),
+        isSample: ownedTasks.length > 0 && ownedTasks.every((task) => task.id.startsWith(sampleOwnerPrefix)),
       };
     });
+}
+
+function withTeamScaleSamples(tasks: Task[]) {
+  const people = new Set(
+    tasks
+      .flatMap((task) => [task.owner, task.currentBallHolder])
+      .filter((name) => name && !nonPeople.has(name)),
+  );
+
+  if (people.size >= 10) {
+    return tasks;
+  }
+
+  const samples = createTeamSampleTasks();
+  const needed = Math.max(0, 10 - people.size);
+  const selectedOwners = Array.from(new Set(samples.map((task) => task.owner))).slice(0, needed);
+
+  return [
+    ...tasks,
+    ...samples.filter((task) => selectedOwners.includes(task.owner)),
+  ];
+}
+
+function createTeamSampleTasks(): Task[] {
+  const today = new Date().toISOString().slice(0, 10);
+  const sampleGroups: Array<{
+    owner: string;
+    role: string;
+    project: string;
+    tasks: Array<[string, TaskStatus, TaskPriority, number, string]>;
+  }> = [
+    {
+      owner: "高橋美咲",
+      role: "UXデザイナー",
+      project: "顧客体験改善",
+      tasks: [
+        ["UI/UX改善案", "doing", "medium", 55, "2026-07-24"],
+        ["ブランドガイド更新", "todo", "medium", 10, "2026-07-27"],
+      ],
+    },
+    {
+      owner: "伊藤直太",
+      role: "バックエンド",
+      project: "基盤強化",
+      tasks: [
+        ["セキュリティ監査", "doing", "high", 40, "2026-07-23"],
+        ["アクセス権限見直し", "todo", "medium", 0, "2026-07-29"],
+      ],
+    },
+    {
+      owner: "中村優子",
+      role: "採用 / 広報",
+      project: "採用プロジェクト",
+      tasks: [
+        ["求人プロセス最適化", "doing", "medium", 70, "2026-07-25"],
+        ["面接フロー設計", "todo", "low", 20, "2026-07-31"],
+      ],
+    },
+    {
+      owner: "小林莉奈",
+      role: "カスタマーサクセス",
+      project: "顧客支援",
+      tasks: [
+        ["顧客ドキュメント更新", "todo", "medium", 25, "2026-07-26"],
+        ["全体研修実施", "done", "low", 100, "2026-07-20"],
+      ],
+    },
+    {
+      owner: "渡辺直樹",
+      role: "データ分析",
+      project: "分析基盤",
+      tasks: [
+        ["認証基盤更新", "todo", "high", 12, "2026-07-22"],
+        ["商品フィードバック整理", "doing", "medium", 45, "2026-07-30"],
+      ],
+    },
+    {
+      owner: "加藤愛",
+      role: "QA / 品質管理",
+      project: "品質改善",
+      tasks: [
+        ["テスト仕様作成", "doing", "medium", 52, "2026-07-28"],
+        ["品質改善タスク", "todo", "low", 8, "2026-08-01"],
+      ],
+    },
+    {
+      owner: "吉田昇",
+      role: "マーケティング",
+      project: "市場開拓",
+      tasks: [
+        ["マーケ戦略立案", "doing", "medium", 60, "2026-07-26"],
+        ["SNS広告制作", "todo", "low", 15, "2026-07-30"],
+      ],
+    },
+    {
+      owner: "松本孝成",
+      role: "総務",
+      project: "社内プロセス改善",
+      tasks: [
+        ["会議・稟議管理", "doing", "low", 65, "2026-07-25"],
+        ["業務フロー改善", "todo", "medium", 18, "2026-08-02"],
+      ],
+    },
+  ];
+
+  return sampleGroups.flatMap((group, groupIndex) =>
+    group.tasks.map(([title, status, priority, progress, dueDate], taskIndex) => ({
+      id: `${sampleOwnerPrefix}-${groupIndex + 1}-${taskIndex + 1}`,
+      title,
+      description: `${group.project}に関する確認用サンプルタスクです。`,
+      owner: group.owner,
+      currentBallHolder: taskIndex === 0 ? group.owner : "顧客",
+      ballHoldingStartedAt: today,
+      project: group.project,
+      dueDate,
+      status,
+      priority,
+      progress,
+      nextAction: "次の確認事項を整理する",
+      x: 0,
+      y: 0,
+      links: [],
+      createdAt: today,
+    })),
+  );
+}
+
+function getMemberRole(name: string) {
+  return memberProfiles[name]?.role ?? "メンバー";
+}
+
+function getLoadLabel(tasks: Task[]) {
+  const active = tasks.filter((task) => task.status !== "done").length;
+  const overdue = tasks.filter((task) => task.status !== "done" && isOverdue(task.dueDate)).length;
+
+  if (overdue > 0) {
+    return "要確認";
+  }
+
+  if (active >= 8) {
+    return "高負荷";
+  }
+
+  if (active <= 2) {
+    return "余裕あり";
+  }
+
+  return "通常";
+}
+
+function formatDate(value: string) {
+  if (!value) {
+    return "期限なし";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return `${date.getMonth() + 1}/${date.getDate()}`;
 }
 
 function getInitials(name: string) {
@@ -603,24 +1147,4 @@ function getInitials(name: string) {
 
   const compact = name.replace(/\s/g, "");
   return compact.slice(0, 2).toUpperCase();
-}
-
-function getOrbitPosition(index: number, total: number) {
-  if (total === 1) {
-    return { left: "50%", top: "42%" };
-  }
-
-  const columns = total <= 6 ? 3 : 4;
-  const row = Math.floor(index / columns);
-  const column = index % columns;
-  const rowCount = Math.ceil(total / columns);
-  const horizontalStep = 78 / Math.max(columns - 1, 1);
-  const verticalStep = 52 / Math.max(rowCount - 1, 1);
-  const left = 11 + column * horizontalStep;
-  const top = 36 + row * verticalStep;
-
-  return {
-    left: `${left}%`,
-    top: `${top}%`,
-  };
 }
