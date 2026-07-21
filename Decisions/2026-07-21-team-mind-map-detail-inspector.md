@@ -58,6 +58,15 @@ overlap at the intended 10 to 15 person scale. A single active expansion keeps
 the map calm and comparable, then reveals task detail exactly where the manager
 is looking.
 
+Update: the map should allow the manager to keep specific employees expanded
+when comparing workloads. Hovering an employee previews tasks, clicking pins or
+unpins that employee, and multiple pinned employees may stay open. The map
+must show a compact control surface for the current pinned count, closing all
+expanded employees, and restoring automatic layout. Employee parent nodes may
+be dragged to a preferred position, while task child nodes remain automatically
+distributed around the parent with an overflow summary when several employees
+are expanded.
+
 ## Constraints
 
 - Keep the existing Team Allocation View route and surrounding layout.

@@ -63,6 +63,19 @@ owner of the selected task. This prevents the space map from becoming a dense
 cluster of task cards while still preserving a direct employee-to-task mind map
 when the user inspects one person.
 
+The expansion behavior should support manager-driven comparison:
+
+- Hovering an employee temporarily previews that employee's child tasks.
+- Clicking an employee pins or unpins that employee's child tasks.
+- Multiple employees may be pinned so the manager can compare selected people.
+- A small control surface shows how many employees are currently displayed and
+  offers `すべて閉じる` and `自動整列`.
+- Employee parent nodes can be moved by dragging, while task child nodes remain
+  collision-aware around their owner.
+- Pinned child task groups should reduce the number of visible task cards per
+  employee when several employees are open at once, using a compact summary for
+  overflow instead of allowing dense overlap.
+
 The space map should automatically expand or re-balance its virtual canvas so
 employee nodes and the currently expanded child task nodes do not overlap at
 common desktop widths, including when the right inspector is open.

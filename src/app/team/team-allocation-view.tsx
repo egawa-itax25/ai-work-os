@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type ReactNode } from "react";
 import {
   Task,
   TaskPriority,
@@ -46,6 +46,8 @@ type MindMapLayout = {
   items: MindMapLayoutItem[];
 };
 
+type Point = { x: number; y: number };
+
 const nonPeople = new Set(["顧客", "AI", "なし", "未設定", "人事チーム"]);
 const sampleOwnerPrefix = "team-sample";
 
@@ -70,7 +72,8 @@ export default function TeamAllocationView() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [draggingTaskId, setDraggingTaskId] = useState("");
   const [hoveredMember, setHoveredMember] = useState("");
-  const [expandedMember, setExpandedMember] = useState("");
+  const [pinnedMembers, setPinnedMembers] = useState<string[]>([]);
+  const [memberPositions, setMemberPositions] = useState<Record<string, Point>>({});
   const [lastMove, setLastMove] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState("");
 
@@ -172,6 +175,21 @@ export default function TeamAllocationView() {
     commitTasks(tasks.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
   }
 
+  function togglePinnedMember(memberName: string) {
+    setPinnedMembers((current) =>
+      current.includes(memberName)
+        ? current.filter((member) => member !== memberName)
+        : [...current, memberName],
+    );
+  }
+
+  function moveMemberNode(memberName: string, position: Point) {
+    setMemberPositions((current) => ({
+      ...current,
+      [memberName]: position,
+    }));
+  }
+
   function handleTaskDragStart(event: DragEvent<HTMLElement>, taskId: string) {
     setDraggingTaskId(taskId);
     event.dataTransfer.effectAllowed = "move";
@@ -179,6 +197,10 @@ export default function TeamAllocationView() {
   }
 
   function handleMemberDrop(event: DragEvent<HTMLElement>, memberName: string) {
+    if (event.dataTransfer.getData("application/x-team-member")) {
+      return;
+    }
+
     event.preventDefault();
     const taskId = event.dataTransfer.getData("text/plain") || draggingTaskId;
     assignTaskToMember(taskId, memberName);
@@ -299,11 +321,15 @@ export default function TeamAllocationView() {
               taskPool={filteredTasks}
               draggingTaskId={draggingTaskId}
               hoveredMember={hoveredMember}
-              expandedMember={expandedMember}
+              pinnedMembers={pinnedMembers}
+              memberPositions={memberPositions}
               selectedTaskId={selectedTask?.id ?? ""}
               onTaskDragStart={handleTaskDragStart}
               onTaskSelect={setSelectedTaskId}
-              onExpandedMemberChange={setExpandedMember}
+              onPinnedMemberToggle={togglePinnedMember}
+              onPinnedMembersClear={() => setPinnedMembers([])}
+              onMemberPositionsReset={() => setMemberPositions({})}
+              onMemberPositionChange={moveMemberNode}
               onMemberDragEnter={setHoveredMember}
               onMemberDrop={handleMemberDrop}
             />
@@ -345,11 +371,15 @@ function OrbitMap({
   taskPool,
   draggingTaskId,
   hoveredMember,
-  expandedMember,
+  pinnedMembers,
+  memberPositions,
   selectedTaskId,
   onTaskDragStart,
   onTaskSelect,
-  onExpandedMemberChange,
+  onPinnedMemberToggle,
+  onPinnedMembersClear,
+  onMemberPositionsReset,
+  onMemberPositionChange,
   onMemberDragEnter,
   onMemberDrop,
 }: {
@@ -357,25 +387,76 @@ function OrbitMap({
   taskPool: Task[];
   draggingTaskId: string;
   hoveredMember: string;
-  expandedMember: string;
+  pinnedMembers: string[];
+  memberPositions: Record<string, Point>;
   selectedTaskId: string;
   onTaskDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
   onTaskSelect: (taskId: string) => void;
-  onExpandedMemberChange: (member: string) => void;
+  onPinnedMemberToggle: (member: string) => void;
+  onPinnedMembersClear: () => void;
+  onMemberPositionsReset: () => void;
+  onMemberPositionChange: (member: string, position: Point) => void;
   onMemberDragEnter: (member: string) => void;
   onMemberDrop: (event: DragEvent<HTMLElement>, member: string) => void;
 }) {
+  const canvasRef = useRef<HTMLDivElement>(null);
+  const [draggingMember, setDraggingMember] = useState("");
   const featuredEmployees = employees.slice(0, 15);
   const centerProjects = new Set(taskPool.map((task) => task.project)).size;
   const selectedTask = taskPool.find((task) => task.id === selectedTaskId);
   const selectedOwner = selectedTask?.owner && !nonPeople.has(selectedTask.owner) ? selectedTask.owner : "";
-  const activeMember = hoveredMember || expandedMember || selectedOwner || featuredEmployees[0]?.name || "";
-  const layout = buildMindMapLayout(featuredEmployees, activeMember);
+  const visibleMemberNames = new Set(featuredEmployees.map((employee) => employee.name));
+  const activeMembers = Array.from(
+    new Set([...pinnedMembers, hoveredMember, selectedOwner].filter(Boolean)),
+  ).filter((member) => visibleMemberNames.has(member));
+  const fallbackMembers = activeMembers.length > 0 ? activeMembers : featuredEmployees[0]?.name ? [featuredEmployees[0].name] : [];
+  const layout = buildMindMapLayout(featuredEmployees, fallbackMembers, memberPositions);
   const center = layout.center;
+  const visibleExpandedCount = fallbackMembers.length;
+
+  function handleMapDrop(event: DragEvent<HTMLDivElement>) {
+    if (!draggingMember || !canvasRef.current) {
+      return;
+    }
+
+    event.preventDefault();
+    const rect = canvasRef.current.getBoundingClientRect();
+    onMemberPositionChange(draggingMember, {
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    });
+    setDraggingMember("");
+  }
 
   return (
     <div className="relative z-10 min-h-[740px] overflow-auto p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
+        <span className="rounded-md border border-white/10 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-zinc-300">
+          表示中 {visibleExpandedCount}人
+        </span>
+        <button
+          type="button"
+          onClick={onPinnedMembersClear}
+          className="rounded-md border border-white/10 bg-white/[0.03] px-3 py-2 text-xs font-semibold text-zinc-300 transition hover:border-sky-200/40 hover:bg-sky-300/10 hover:text-white"
+        >
+          すべて閉じる
+        </button>
+        <button
+          type="button"
+          onClick={onMemberPositionsReset}
+          className="rounded-md border border-sky-200/25 bg-sky-300/10 px-3 py-2 text-xs font-semibold text-sky-100 transition hover:border-sky-200/50 hover:bg-sky-300/16"
+        >
+          自動整列
+        </button>
+      </div>
       <div
+        ref={canvasRef}
+        onDragOver={(event) => {
+          if (draggingMember) {
+            event.preventDefault();
+          }
+        }}
+        onDrop={handleMapDrop}
         className="relative overflow-hidden rounded-md border border-white/10 bg-slate-950/20"
         style={{ minWidth: layout.width, minHeight: layout.height }}
       >
@@ -431,7 +512,8 @@ function OrbitMap({
 
         {layout.items.map(({ employee, position, tasks }) => {
           const isHovered = hoveredMember === employee.name;
-          const isActive = activeMember === employee.name;
+          const isPinned = pinnedMembers.includes(employee.name);
+          const isActive = fallbackMembers.includes(employee.name);
           const hasRisk = employee.overdue > 0 || employee.active >= 8;
 
           return (
@@ -439,23 +521,38 @@ function OrbitMap({
               <section
                 role="button"
                 tabIndex={0}
-                onClick={() => onExpandedMemberChange(employee.name)}
-                onFocus={() => onExpandedMemberChange(employee.name)}
-                onMouseEnter={() => onExpandedMemberChange(employee.name)}
+                draggable
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onPinnedMemberToggle(employee.name);
+                }}
+                onFocus={() => onMemberDragEnter(employee.name)}
+                onMouseEnter={() => onMemberDragEnter(employee.name)}
+                onMouseLeave={() => onMemberDragEnter("")}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
                     event.preventDefault();
-                    onExpandedMemberChange(employee.name);
+                    onPinnedMemberToggle(employee.name);
                   }
                 }}
+                onDragStart={(event) => {
+                  setDraggingMember(employee.name);
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("application/x-team-member", employee.name);
+                }}
+                onDragEnd={() => setDraggingMember("")}
                 onDragOver={(event) => {
                   event.preventDefault();
-                  onExpandedMemberChange(employee.name);
                   onMemberDragEnter(employee.name);
                 }}
                 onDragLeave={() => onMemberDragEnter("")}
-                onDrop={(event) => onMemberDrop(event, employee.name)}
-                className={`absolute z-30 w-52 -translate-x-1/2 -translate-y-1/2 rounded-md border p-3 backdrop-blur-xl transition ${
+                onDrop={(event) => {
+                  if (event.dataTransfer.getData("application/x-team-member")) {
+                    return;
+                  }
+                  onMemberDrop(event, employee.name);
+                }}
+                className={`absolute z-30 w-52 -translate-x-1/2 -translate-y-1/2 cursor-grab rounded-md border p-3 backdrop-blur-xl transition active:cursor-grabbing ${
                   isHovered || isActive
                     ? "border-sky-200 bg-sky-300/12 shadow-[0_0_34px_rgba(125,211,252,0.18)]"
                     : hasRisk
@@ -487,7 +584,7 @@ function OrbitMap({
                   <MetricChip label="相手待ち" value={`${employee.waiting}件`} />
                 </div>
                 <p className={`mt-2 text-[10px] ${isActive ? "text-sky-100" : "text-zinc-600"}`}>
-                  {isActive ? "タスク展開中" : "ホバーでタスク表示"}
+                  {isPinned ? "固定表示中" : isActive ? "タスク表示中" : "ホバーでタスク表示"}
                 </p>
               </section>
 
@@ -576,7 +673,11 @@ function MindMapTaskNode({
   );
 }
 
-function buildMindMapLayout(employees: EmployeeNode[], activeMember: string): MindMapLayout {
+function buildMindMapLayout(
+  employees: EmployeeNode[],
+  activeMembers: string[],
+  memberPositions: Record<string, Point>,
+): MindMapLayout {
   const width = 2200;
   const baseHeight = 900;
   const center = { x: width / 2, y: 455 };
@@ -598,10 +699,21 @@ function buildMindMapLayout(employees: EmployeeNode[], activeMember: string): Mi
     { x: 1100, y: 80 },
   ];
   const taken: Rect[] = [];
+  const activeSet = new Set(activeMembers);
+  const taskLimit = activeMembers.length >= 4 ? 3 : activeMembers.length >= 2 ? 4 : 8;
 
   const items: MindMapLayoutItem[] = employees.map((employee, index) => {
     const anchor = anchors[index % anchors.length];
-    const employeePosition = findFreePoint(anchor, employeeRect(anchor), taken, width, baseHeight);
+    const savedPosition = memberPositions[employee.name];
+    const preferredPosition = savedPosition
+      ? {
+          x: clamp(savedPosition.x, 150, width - 150),
+          y: clamp(savedPosition.y, 90, baseHeight - 90),
+        }
+      : anchor;
+    const employeePosition = savedPosition
+      ? preferredPosition
+      : findFreePoint(preferredPosition, employeeRect(preferredPosition), taken, width, baseHeight);
     taken.push(employeeRect(employeePosition));
 
     return {
@@ -611,16 +723,19 @@ function buildMindMapLayout(employees: EmployeeNode[], activeMember: string): Mi
     };
   });
 
-  const activeItem = items.find((item) => item.employee.name === activeMember);
-  if (activeItem) {
-    const taskCount = Math.min(activeItem.employee.tasks.length, 8);
+  for (const activeItem of items) {
+    if (!activeSet.has(activeItem.employee.name)) {
+      continue;
+    }
+
+    const taskCount = Math.min(activeItem.employee.tasks.length, taskLimit);
     const side = activeItem.position.x >= center.x ? 1 : -1;
     const vertical = activeItem.position.y >= center.y ? 1 : -1;
 
-    activeItem.tasks = activeItem.employee.tasks.slice(0, 8).map((task, taskIndex) => {
-      const visibleRows = Math.min(taskCount, 4);
-      const row = taskIndex % 4;
-      const column = Math.floor(taskIndex / 4);
+    activeItem.tasks = activeItem.employee.tasks.slice(0, taskLimit).map((task, taskIndex) => {
+      const visibleRows = Math.min(taskCount, taskLimit >= 8 ? 4 : taskLimit);
+      const row = taskIndex % visibleRows;
+      const column = Math.floor(taskIndex / visibleRows);
       const offsetY = (row - (visibleRows - 1) / 2) * 98 + vertical * 24;
       const candidate = {
         x: activeItem.position.x + side * (315 + column * 285),
