@@ -78,15 +78,20 @@ function getSummary(snapshot: GlobalSyncSnapshot, user: User | null, configured:
 
 export function SyncStatusIndicator() {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [manualSyncing, setManualSyncing] = useState(false);
   const [snapshot, setSnapshot] = useState<GlobalSyncSnapshot>(() => getSyncSnapshot());
   const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const configured = Boolean(supabase);
+  const configured = mounted && Boolean(supabase);
   const summary = getSummary(snapshot, user, configured);
   const isError = summary.tone === "error";
 
   useEffect(() => subscribeSyncStatus(setSnapshot), []);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!supabase) {

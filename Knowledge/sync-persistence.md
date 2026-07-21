@@ -39,3 +39,8 @@ The UI must distinguish these states:
 The indicator is only a status and control layer. It must not replace the
 existing merge-first persistence flow. Login must not delete local projects or
 tasks.
+
+The server and browser must render the same initial sync-indicator state.
+Supabase configuration and authentication are reflected only after the browser
+has mounted. This initialization rule must not change stored data or merge
+behavior.
