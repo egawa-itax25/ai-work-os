@@ -1,3 +1,9 @@
+import {
+  getRegisteredSyncResources,
+  publishSyncStatus,
+  registerSyncResource,
+} from "@/lib/sync-status";
+
 type SyncedStateOptions<T> = {
   localKey: string;
   remoteKey: string;
@@ -83,6 +89,7 @@ export async function loadSyncedState<T>({
     return undefined;
   }
 
+  registerSyncResource({ localKey, remoteKey });
   const local = readLocalValue(localKey, normalize, fallback);
   const localValue = local.value;
   const localMeta = readLocalMeta(localKey);
@@ -219,9 +226,14 @@ export async function saveSyncedState<T>(
     };
   }
 
+  registerSyncResource({ localKey, remoteKey });
   const updatedAt = new Date().toISOString();
   window.localStorage.setItem(localKey, JSON.stringify(value));
   writeLocalMeta(localKey, updatedAt);
+  emitSyncStatus({
+    status: "saving",
+    message: "保存中...",
+  });
 
   try {
     const response = await fetch(`/api/workspace-state/${encodeURIComponent(remoteKey)}`, {
@@ -257,6 +269,46 @@ export async function saveSyncedState<T>(
     emitSyncStatus(result);
     return result;
   }
+}
+
+export async function syncKnownLocalResources() {
+  if (typeof window === "undefined") {
+    return [];
+  }
+
+  const results: SyncResult[] = [];
+
+  for (const resource of getRegisteredSyncResources()) {
+    const saved = window.localStorage.getItem(resource.localKey);
+
+    if (!saved) {
+      continue;
+    }
+
+    try {
+      results.push(
+        await saveSyncedState(resource.localKey, resource.remoteKey, JSON.parse(saved) as unknown),
+      );
+    } catch (error) {
+      const result: SyncResult = {
+        status: "error",
+        message: error instanceof Error ? error.message : "手動同期に失敗しました。",
+      };
+      emitSyncStatus(result);
+      results.push(result);
+    }
+  }
+
+  if (results.length === 0) {
+    const result: SyncResult = {
+      status: "local",
+      message: "同期対象のローカルデータはまだ読み込まれていません。",
+    };
+    emitSyncStatus(result);
+    return [result];
+  }
+
+  return results;
 }
 
 function readLocalValue<T>(
@@ -434,6 +486,23 @@ function setSyncStatus(onStatus: ((result: SyncResult) => void) | undefined, res
 function emitSyncStatus(result: SyncResult) {
   if (typeof window === "undefined") {
     return;
+  }
+
+  const nextStatus = {
+    phase: result.status,
+    mode: result.status === "synced" ? "cloud" : result.status === "idle" ? "unknown" : "local",
+    message: result.message,
+    httpStatus: result.httpStatus,
+    pendingLocalChanges: result.status === "local" || result.status === "signed-out",
+  } satisfies Parameters<typeof publishSyncStatus>[0];
+
+  if (result.status === "synced") {
+    publishSyncStatus({
+      ...nextStatus,
+      lastSyncedAt: new Date().toISOString(),
+    });
+  } else {
+    publishSyncStatus(nextStatus);
   }
 
   window.dispatchEvent(new CustomEvent("ai-work-os:sync-status", { detail: result }));

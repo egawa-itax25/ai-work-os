@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { SyncStatusIndicator } from "@/components/sync-status-indicator";
 
 const defaultNavItems = [
   { id: "team", href: "/team", label: "全体プロジェクト" },
@@ -189,6 +190,7 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
     <body>
       <div className="min-h-screen bg-[radial-gradient(circle_at_20%_0%,rgba(20,184,166,0.22),transparent_28rem),radial-gradient(circle_at_85%_15%,rgba(244,63,94,0.14),transparent_24rem),linear-gradient(135deg,#09090b_0%,#111827_48%,#030712_100%)] text-slate-100">
         <div className="fixed inset-0 -z-10 opacity-40 [background-image:linear-gradient(rgba(255,255,255,0.045)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.045)_1px,transparent_1px)] [background-size:64px_64px]" />
+        <SyncStatusIndicator />
 
         {showDesktopNavigation ? (
           <aside className="fixed left-0 top-0 z-20 hidden h-screen w-56 border-r border-white/10 bg-zinc-950/82 px-2.5 py-4 shadow-2xl shadow-black/35 backdrop-blur-2xl lg:flex lg:flex-col">

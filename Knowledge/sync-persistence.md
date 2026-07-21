@@ -24,3 +24,18 @@ merged when both local and remote contain data:
 
 This prevents a PC's local task data from disappearing when cross-device sync
 is enabled after the user has already created work locally.
+
+## Global sync visibility
+
+As of 2026-07-21, sync state should be visible on every screen.
+The UI must distinguish these states:
+
+- signed out: changes are saved only on this device;
+- saving: local changes are being written to Supabase;
+- synced: the workspace is available from other devices with the same account;
+- local pending: local data exists and will be uploaded when auth/cloud is available;
+- error: cloud sync failed, but local data remains intact.
+
+The indicator is only a status and control layer. It must not replace the
+existing merge-first persistence flow. Login must not delete local projects or
+tasks.
