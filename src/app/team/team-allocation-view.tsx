@@ -37,6 +37,7 @@ type MindMapLayoutItem = {
   employee: EmployeeNode;
   position: { x: number; y: number };
   tasks: Array<{ task: Task; position: { x: number; y: number } }>;
+  overflowPosition?: { x: number; y: number };
 };
 
 type MindMapLayout = {
@@ -485,17 +486,6 @@ function OrbitMap({
                 strokeWidth="2"
               />
             ))}
-            {layout.items.flatMap((item) =>
-              item.tasks.map(({ task, position }) => (
-                <path
-                  key={`${task.id}-task-link`}
-                  d={mindMapPath(item.position, position)}
-                  fill="none"
-                  stroke="rgba(148,163,184,0.22)"
-                  strokeWidth="1.4"
-                />
-              )),
-            )}
           </svg>
         </div>
 
@@ -510,7 +500,7 @@ function OrbitMap({
           </div>
         </div>
 
-        {layout.items.map(({ employee, position, tasks }) => {
+        {layout.items.map(({ employee, position, tasks, overflowPosition }) => {
           const isHovered = hoveredMember === employee.name;
           const isPinned = pinnedMembers.includes(employee.name);
           const isActive = fallbackMembers.includes(employee.name);
@@ -600,10 +590,10 @@ function OrbitMap({
                 />
               ))}
 
-              {isActive && employee.tasks.length > tasks.length ? (
+              {isActive && employee.tasks.length > tasks.length && overflowPosition ? (
                 <div
                   className="absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[11px] font-semibold text-zinc-400"
-                  style={{ left: position.x + (position.x >= center.x ? 300 : -300), top: position.y + 130 }}
+                  style={{ left: overflowPosition.x, top: overflowPosition.y }}
                 >
                   ほか {employee.tasks.length - tasks.length}件
                 </div>
@@ -700,7 +690,7 @@ function buildMindMapLayout(
   ];
   const taken: Rect[] = [];
   const activeSet = new Set(activeMembers);
-  const taskLimit = activeMembers.length >= 4 ? 3 : activeMembers.length >= 2 ? 4 : 8;
+  const taskLimit = activeMembers.length >= 4 ? 2 : activeMembers.length >= 2 ? 3 : 5;
 
   const items: MindMapLayoutItem[] = employees.map((employee, index) => {
     const anchor = anchors[index % anchors.length];
@@ -728,23 +718,31 @@ function buildMindMapLayout(
       continue;
     }
 
-    const taskCount = Math.min(activeItem.employee.tasks.length, taskLimit);
-    const side = activeItem.position.x >= center.x ? 1 : -1;
-    const vertical = activeItem.position.y >= center.y ? 1 : -1;
+    const visibleTasks = activeItem.employee.tasks.slice(0, taskLimit);
+    const side = chooseShelfSide(activeItem.position, center, width);
+    const shelfGap = 118;
+    const shelfX = clamp(activeItem.position.x + side * 310, 150, width - 150);
+    const shelfStartY = activeItem.position.y - ((visibleTasks.length - 1) * shelfGap) / 2;
 
-    activeItem.tasks = activeItem.employee.tasks.slice(0, taskLimit).map((task, taskIndex) => {
-      const visibleRows = Math.min(taskCount, taskLimit >= 8 ? 4 : taskLimit);
-      const row = taskIndex % visibleRows;
-      const column = Math.floor(taskIndex / visibleRows);
-      const offsetY = (row - (visibleRows - 1) / 2) * 98 + vertical * 24;
+    activeItem.tasks = visibleTasks.map((task, taskIndex) => {
       const candidate = {
-        x: activeItem.position.x + side * (315 + column * 285),
-        y: activeItem.position.y + offsetY,
+        x: shelfX,
+        y: shelfStartY + taskIndex * shelfGap,
       };
-      const position = findFreePoint(candidate, taskRect(candidate), taken, width, baseHeight);
+      const position = findShelfPoint(candidate, side, taken, width, baseHeight);
       taken.push(taskRect(position));
       return { task, position };
     });
+
+    if (activeItem.employee.tasks.length > visibleTasks.length) {
+      const overflowCandidate = {
+        x: shelfX,
+        y: shelfStartY + visibleTasks.length * shelfGap,
+      };
+      const overflowPosition = findShelfPoint(overflowCandidate, side, taken, width, baseHeight);
+      activeItem.overflowPosition = overflowPosition;
+      taken.push(overflowRect(overflowPosition));
+    }
   }
 
   const height = Math.max(baseHeight, Math.ceil(Math.max(...taken.map((rect) => rect.y + rect.height), baseHeight - 60) + 90));
@@ -759,7 +757,53 @@ function employeeRect(point: { x: number; y: number }): Rect {
 }
 
 function taskRect(point: { x: number; y: number }): Rect {
-  return { x: point.x - 126, y: point.y - 54, width: 252, height: 108 };
+  return { x: point.x - 126, y: point.y - 48, width: 252, height: 96 };
+}
+
+function overflowRect(point: { x: number; y: number }): Rect {
+  return { x: point.x - 58, y: point.y - 18, width: 116, height: 36 };
+}
+
+function chooseShelfSide(point: Point, center: Point, canvasWidth: number) {
+  if (point.x < 430) {
+    return 1;
+  }
+  if (point.x > canvasWidth - 430) {
+    return -1;
+  }
+  return point.x >= center.x ? -1 : 1;
+}
+
+function findShelfPoint(
+  preferred: Point,
+  side: number,
+  taken: Rect[],
+  canvasWidth: number,
+  canvasHeight: number,
+) {
+  const minX = 140;
+  const maxX = canvasWidth - 140;
+  const minY = 70;
+  const maxY = canvasHeight - 70;
+  const rowOffsets = [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6];
+  const columnOffsets = [0, 1, -1, 2, -2];
+
+  for (const columnOffset of columnOffsets) {
+    for (const rowOffset of rowOffsets) {
+      const point = {
+        x: clamp(preferred.x + side * columnOffset * 286, minX, maxX),
+        y: clamp(preferred.y + rowOffset * 118, minY, maxY),
+      };
+      if (!taken.some((item) => rectsOverlap(taskRect(point), item))) {
+        return point;
+      }
+    }
+  }
+
+  return {
+    x: clamp(preferred.x, minX, maxX),
+    y: clamp(preferred.y, minY, maxY),
+  };
 }
 
 function findFreePoint(

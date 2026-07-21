@@ -80,6 +80,20 @@ The space map should automatically expand or re-balance its virtual canvas so
 employee nodes and the currently expanded child task nodes do not overlap at
 common desktop widths, including when the right inspector is open.
 
+Update 2026-07-21:
+
+- Use an "employee node + task shelf" pattern for the space map.
+- Employee parent nodes remain draggable and can be placed freely by the user.
+- Expanded tasks should not float freely around the canvas. They appear in a
+  compact vertical shelf beside their employee so pinned employees can stay
+  open without creating unreadable overlap.
+- Task shelves auto-stack and avoid other employee nodes, other shelves, and
+  visible task cards. When there are too many tasks, show a compact `ほかN件`
+  summary instead of forcing all cards into the map.
+- Keep the central whole-team links subtle. Long employee-to-task decorative
+  lines may be removed when they reduce readability or create the impression
+  that nodes are tangled.
+
 The page is additive. Do not change existing Portfolio, task list, or task map
 behavior to create this view.
 

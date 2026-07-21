@@ -67,6 +67,13 @@ be dragged to a preferred position, while task child nodes remain automatically
 distributed around the parent with an overflow summary when several employees
 are expanded.
 
+Update 2026-07-21: choose the task shelf approach for pinned expansions.
+Employee nodes remain the draggable objects in the map. Expanded child tasks
+are grouped into a compact shelf beside the employee node instead of being
+scattered as free-floating cards. This keeps multiple people open for
+comparison while avoiding card overlap. Long task branch lines are no longer a
+primary visual requirement when they make the map feel tangled.
+
 ## Constraints
 
 - Keep the existing Team Allocation View route and surrounding layout.
