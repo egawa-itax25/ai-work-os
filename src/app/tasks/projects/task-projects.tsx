@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type DragEvent, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
 import {
   Task,
   TaskPriority,
@@ -43,6 +43,11 @@ export default function TaskProjects() {
   const [projectDropTarget, setProjectDropTarget] = useState("");
   const [draggedTaskId, setDraggedTaskId] = useState("");
   const [taskDropTarget, setTaskDropTarget] = useState("");
+  const [continuousTaskEntry, setContinuousTaskEntry] = useState<{
+    project: string;
+    taskId: string;
+  } | null>(null);
+  const skipNextBlurCommitRef = useRef(false);
 
   useEffect(() => {
     void Promise.all([
@@ -149,32 +154,65 @@ export default function TaskProjects() {
     setSelectedTaskId(task.id);
     setEditingCell({ taskId: task.id, field });
     setCellDraft(field === "title" ? task.title : task.description);
+    setContinuousTaskEntry(null);
+  }
+
+  function applyCellEdit(sourceTasks: Task[]) {
+    if (!editingCell) {
+      return sourceTasks;
+    }
+
+    const value = cellDraft.trim();
+
+    return sourceTasks.map((task) =>
+      task.id === editingCell.taskId
+        ? applyTaskPatch(task, {
+            [editingCell.field]:
+              editingCell.field === "title" ? value || "無題のタスク" : cellDraft,
+          } as Partial<Task>)
+        : task,
+    );
   }
 
   function commitCellEdit() {
+    if (skipNextBlurCommitRef.current) {
+      skipNextBlurCommitRef.current = false;
+      return;
+    }
+
     if (!editingCell) {
       return;
     }
 
-    const value = cellDraft.trim();
-    updateTask(editingCell.taskId, {
-      [editingCell.field]: editingCell.field === "title" ? value || "無題のタスク" : cellDraft,
-    } as Partial<Task>);
+    commitTasks(applyCellEdit(tasks));
     setEditingCell(null);
+    setCellDraft("");
+    setContinuousTaskEntry(null);
   }
 
   function cancelCellEdit() {
     setEditingCell(null);
     setCellDraft("");
+    setContinuousTaskEntry(null);
   }
 
-  function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  function handleTitleKeyDown(event: KeyboardEvent<HTMLInputElement>, task: Task) {
     if (event.nativeEvent.isComposing) {
       return;
     }
 
     if (event.key === "Enter") {
       event.preventDefault();
+
+      if (
+        continuousTaskEntry?.taskId === task.id &&
+        continuousTaskEntry.project === task.project
+      ) {
+        skipNextBlurCommitRef.current = true;
+        commitTitleAndCreateNext(task.project);
+        return;
+      }
+
       commitCellEdit();
     }
 
@@ -196,8 +234,8 @@ export default function TaskProjects() {
     }
   }
 
-  function addTask(project: string) {
-    const projectTasks = tasks.filter((task) => task.project === project);
+  function buildTask(project: string, sourceTasks: Task[]) {
+    const projectTasks = sourceTasks.filter((task) => task.project === project);
     const newTask: Task = {
       id: `task-${crypto.randomUUID()}`,
       title: "新しいタスク",
@@ -217,17 +255,42 @@ export default function TaskProjects() {
       createdAt: new Date().toISOString(),
     };
 
-    const insertIndex = tasks.reduce(
+    return newTask;
+  }
+
+  function insertTaskAtProjectEnd(project: string, sourceTasks: Task[]) {
+    const newTask = buildTask(project, sourceTasks);
+    const insertIndex = sourceTasks.reduce(
       (lastIndex, task, index) => (task.project === project ? index : lastIndex),
       -1,
     );
-    const nextTasks = [...tasks];
+    const nextTasks = [...sourceTasks];
 
     nextTasks.splice(insertIndex + 1, 0, newTask);
-    commitTasks(nextTasks);
+
+    return { newTask, nextTasks };
+  }
+
+  function focusNewTask(newTask: Task) {
     setSelectedTaskId(newTask.id);
     setEditingCell({ taskId: newTask.id, field: "title" });
     setCellDraft(newTask.title);
+    setContinuousTaskEntry({ project: newTask.project, taskId: newTask.id });
+  }
+
+  function addTask(project: string) {
+    const { newTask, nextTasks } = insertTaskAtProjectEnd(project, tasks);
+
+    commitTasks(nextTasks);
+    focusNewTask(newTask);
+  }
+
+  function commitTitleAndCreateNext(project: string) {
+    const committedTasks = applyCellEdit(tasks);
+    const { newTask, nextTasks } = insertTaskAtProjectEnd(project, committedTasks);
+
+    commitTasks(nextTasks);
+    focusNewTask(newTask);
   }
 
   function startProjectDrag(event: DragEvent<HTMLElement>, project: string) {
@@ -716,7 +779,7 @@ export default function TaskProjects() {
                                 value={cellDraft}
                                 onChange={(event) => setCellDraft(event.target.value)}
                                 onBlur={commitCellEdit}
-                                onKeyDown={handleTitleKeyDown}
+                                onKeyDown={(event) => handleTitleKeyDown(event, task)}
                                 className="neo-input w-full rounded-md border border-sky-300/40 px-3 py-2 text-sm font-semibold text-white outline-none focus:border-sky-200"
                                 aria-label="タスク名"
                               />

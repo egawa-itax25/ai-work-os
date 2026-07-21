@@ -685,6 +685,10 @@ Implemented:
   project section or task row is dragged over another item, a subtle horizontal
   blue line should appear at the drop position so users understand where the
   item will land before releasing.
+- Project task list creation should support continuous entry. After adding a
+  task, the title input receives focus; pressing Enter on the title commits that
+  task and appends the next task to the same project, while IME composition
+  Enter is ignored so Japanese conversion is not interrupted.
 - Compact Task Flow node title fields should use the priority control's lower
   dead space. Only the status row reserves room for the upper-right priority
   control; the title input should expand to the full node width and wrap across
