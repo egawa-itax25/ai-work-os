@@ -32,9 +32,12 @@ Evolve the central map into a calm mind-map style operating surface:
   parent nodes around it;
 - draw thin curved links from the center node to employee nodes and from each
   employee node to task child nodes;
-- distribute child task nodes with collision-aware offsets and a wider virtual
-  canvas so the mind map does not collapse into overlapping labels at narrower
-  desktop widths or when the inspector is open;
+- keep employee parent nodes visible by default, but expand child task nodes
+  only for the active employee selected, hovered, focused, or owning the
+  selected task;
+- distribute the active employee's child task nodes with collision-aware
+  offsets and a wider virtual canvas so the mind map does not collapse into
+  overlapping labels at narrower desktop widths or when the inspector is open;
 - a small sample employee/task set may supplement real data when the workspace
   has fewer than the intended 10 to 15 employees;
 - task pills can still be dragged onto employee nodes to change the task owner;
@@ -49,6 +52,11 @@ Managers need to understand workload distribution and ownership at a glance.
 A parent-child map communicates "who owns what" more directly than isolated
 cards, while the right inspector preserves the user's context during detail
 confirmation and editing.
+
+Showing every employee's child task nodes at the same time creates unavoidable
+overlap at the intended 10 to 15 person scale. A single active expansion keeps
+the map calm and comparable, then reveals task detail exactly where the manager
+is looking.
 
 ## Constraints
 

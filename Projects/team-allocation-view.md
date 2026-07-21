@@ -54,11 +54,18 @@ map, not as a grid of employee cards. Place the whole-team summary near the
 center, arrange employee parent nodes around it, and draw thin curved links
 from the center to each employee. Each employee then owns compact child task
 nodes connected by subtler branches. The layout may use fixed anchor points and
-scrollable canvas space, but child task nodes must be distributed from the
-employee parent node based on the available map size. The space map should
-automatically expand or re-balance its virtual canvas so employee nodes and
-child task nodes do not overlap at common desktop widths, including when the
-right inspector is open.
+scrollable canvas space.
+
+To keep the view readable with 10 to 15 employees, employee parent nodes stay
+visible by default, but child task nodes expand only for the active employee.
+The active employee is the employee currently hovered, focused, clicked, or the
+owner of the selected task. This prevents the space map from becoming a dense
+cluster of task cards while still preserving a direct employee-to-task mind map
+when the user inspects one person.
+
+The space map should automatically expand or re-balance its virtual canvas so
+employee nodes and the currently expanded child task nodes do not overlap at
+common desktop widths, including when the right inspector is open.
 
 The page is additive. Do not change existing Portfolio, task list, or task map
 behavior to create this view.

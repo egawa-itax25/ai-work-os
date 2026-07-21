@@ -70,6 +70,7 @@ export default function TeamAllocationView() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [draggingTaskId, setDraggingTaskId] = useState("");
   const [hoveredMember, setHoveredMember] = useState("");
+  const [expandedMember, setExpandedMember] = useState("");
   const [lastMove, setLastMove] = useState("");
   const [selectedTaskId, setSelectedTaskId] = useState("");
 
@@ -298,9 +299,11 @@ export default function TeamAllocationView() {
               taskPool={filteredTasks}
               draggingTaskId={draggingTaskId}
               hoveredMember={hoveredMember}
+              expandedMember={expandedMember}
               selectedTaskId={selectedTask?.id ?? ""}
               onTaskDragStart={handleTaskDragStart}
               onTaskSelect={setSelectedTaskId}
+              onExpandedMemberChange={setExpandedMember}
               onMemberDragEnter={setHoveredMember}
               onMemberDrop={handleMemberDrop}
             />
@@ -342,9 +345,11 @@ function OrbitMap({
   taskPool,
   draggingTaskId,
   hoveredMember,
+  expandedMember,
   selectedTaskId,
   onTaskDragStart,
   onTaskSelect,
+  onExpandedMemberChange,
   onMemberDragEnter,
   onMemberDrop,
 }: {
@@ -352,15 +357,20 @@ function OrbitMap({
   taskPool: Task[];
   draggingTaskId: string;
   hoveredMember: string;
+  expandedMember: string;
   selectedTaskId: string;
   onTaskDragStart: (event: DragEvent<HTMLElement>, taskId: string) => void;
   onTaskSelect: (taskId: string) => void;
+  onExpandedMemberChange: (member: string) => void;
   onMemberDragEnter: (member: string) => void;
   onMemberDrop: (event: DragEvent<HTMLElement>, member: string) => void;
 }) {
   const featuredEmployees = employees.slice(0, 15);
   const centerProjects = new Set(taskPool.map((task) => task.project)).size;
-  const layout = buildMindMapLayout(featuredEmployees);
+  const selectedTask = taskPool.find((task) => task.id === selectedTaskId);
+  const selectedOwner = selectedTask?.owner && !nonPeople.has(selectedTask.owner) ? selectedTask.owner : "";
+  const activeMember = hoveredMember || expandedMember || selectedOwner || featuredEmployees[0]?.name || "";
+  const layout = buildMindMapLayout(featuredEmployees, activeMember);
   const center = layout.center;
 
   return (
@@ -421,19 +431,32 @@ function OrbitMap({
 
         {layout.items.map(({ employee, position, tasks }) => {
           const isHovered = hoveredMember === employee.name;
+          const isActive = activeMember === employee.name;
           const hasRisk = employee.overdue > 0 || employee.active >= 8;
 
           return (
             <div key={employee.name}>
               <section
+                role="button"
+                tabIndex={0}
+                onClick={() => onExpandedMemberChange(employee.name)}
+                onFocus={() => onExpandedMemberChange(employee.name)}
+                onMouseEnter={() => onExpandedMemberChange(employee.name)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onExpandedMemberChange(employee.name);
+                  }
+                }}
                 onDragOver={(event) => {
                   event.preventDefault();
+                  onExpandedMemberChange(employee.name);
                   onMemberDragEnter(employee.name);
                 }}
                 onDragLeave={() => onMemberDragEnter("")}
                 onDrop={(event) => onMemberDrop(event, employee.name)}
                 className={`absolute z-30 w-52 -translate-x-1/2 -translate-y-1/2 rounded-md border p-3 backdrop-blur-xl transition ${
-                  isHovered
+                  isHovered || isActive
                     ? "border-sky-200 bg-sky-300/12 shadow-[0_0_34px_rgba(125,211,252,0.18)]"
                     : hasRisk
                       ? "border-red-200/25 bg-slate-950/74"
@@ -463,6 +486,9 @@ function OrbitMap({
                   <MetricChip label="期限超過" value={`${employee.overdue}件`} urgent={employee.overdue > 0} />
                   <MetricChip label="相手待ち" value={`${employee.waiting}件`} />
                 </div>
+                <p className={`mt-2 text-[10px] ${isActive ? "text-sky-100" : "text-zinc-600"}`}>
+                  {isActive ? "タスク展開中" : "ホバーでタスク表示"}
+                </p>
               </section>
 
               {tasks.map(({ task, position: taskPosition }) => (
@@ -477,7 +503,7 @@ function OrbitMap({
                 />
               ))}
 
-              {employee.tasks.length > tasks.length ? (
+              {isActive && employee.tasks.length > tasks.length ? (
                 <div
                   className="absolute z-20 -translate-x-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-slate-950/70 px-2.5 py-1 text-[11px] font-semibold text-zinc-400"
                   style={{ left: position.x + (position.x >= center.x ? 300 : -300), top: position.y + 130 }}
@@ -550,7 +576,7 @@ function MindMapTaskNode({
   );
 }
 
-function buildMindMapLayout(employees: EmployeeNode[]): MindMapLayout {
+function buildMindMapLayout(employees: EmployeeNode[], activeMember: string): MindMapLayout {
   const width = 2200;
   const baseHeight = 900;
   const center = { x: width / 2, y: 455 };
@@ -573,29 +599,38 @@ function buildMindMapLayout(employees: EmployeeNode[]): MindMapLayout {
   ];
   const taken: Rect[] = [];
 
-  const items = employees.map((employee, index) => {
+  const items: MindMapLayoutItem[] = employees.map((employee, index) => {
     const anchor = anchors[index % anchors.length];
     const employeePosition = findFreePoint(anchor, employeeRect(anchor), taken, width, baseHeight);
     taken.push(employeeRect(employeePosition));
 
-    const side = employeePosition.x >= center.x ? 1 : -1;
-    const vertical = employeePosition.y >= center.y ? 1 : -1;
-    const taskPositions = employee.tasks.slice(0, 4).map((task, taskIndex) => {
+    return {
+      employee,
+      position: employeePosition,
+      tasks: [],
+    };
+  });
+
+  const activeItem = items.find((item) => item.employee.name === activeMember);
+  if (activeItem) {
+    const taskCount = Math.min(activeItem.employee.tasks.length, 8);
+    const side = activeItem.position.x >= center.x ? 1 : -1;
+    const vertical = activeItem.position.y >= center.y ? 1 : -1;
+
+    activeItem.tasks = activeItem.employee.tasks.slice(0, 8).map((task, taskIndex) => {
+      const visibleRows = Math.min(taskCount, 4);
+      const row = taskIndex % 4;
+      const column = Math.floor(taskIndex / 4);
+      const offsetY = (row - (visibleRows - 1) / 2) * 98 + vertical * 24;
       const candidate = {
-        x: employeePosition.x + side * (315 + (taskIndex % 2) * 38),
-        y: employeePosition.y + (taskIndex - 1.5) * 92 + vertical * 28,
+        x: activeItem.position.x + side * (315 + column * 285),
+        y: activeItem.position.y + offsetY,
       };
       const position = findFreePoint(candidate, taskRect(candidate), taken, width, baseHeight);
       taken.push(taskRect(position));
       return { task, position };
     });
-
-    return {
-      employee,
-      position: employeePosition,
-      tasks: taskPositions,
-    };
-  });
+  }
 
   const height = Math.max(baseHeight, Math.ceil(Math.max(...taken.map((rect) => rect.y + rect.height), baseHeight - 60) + 90));
 
