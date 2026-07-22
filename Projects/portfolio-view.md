@@ -774,3 +774,12 @@ Implemented:
 
 Current mock data is deterministic and should later be replaced by Vault parsing
 and AI scoring.
+
+## Project Card Title Readability
+
+- Project card metadata uses a compact first row: project number on the left
+  and Priority Score on the right.
+- The project name occupies a dedicated full-width row below the metadata.
+- Long names wrap to additional lines inside the card instead of being
+  truncated or compressed by the score.
+- Inline editing remains available and the field height follows its content.

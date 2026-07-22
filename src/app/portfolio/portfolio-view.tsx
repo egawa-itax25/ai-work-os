@@ -678,6 +678,7 @@ function ProjectList({
 
                   if (
                     target instanceof HTMLInputElement ||
+                    target instanceof HTMLTextAreaElement ||
                     target instanceof HTMLSelectElement ||
                     target instanceof HTMLButtonElement ||
                     target instanceof HTMLAnchorElement
@@ -692,24 +693,35 @@ function ProjectList({
                 }}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs text-slate-500">
-                      {String(index + 1).padStart(2, "0")}
-                    </p>
-                    <input
-                      value={project.name}
-                      onChange={(event) => onUpdate(project.id, { name: event.target.value })}
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      className="mt-1 w-full rounded-md border border-transparent bg-white/[0.035] px-2 py-1 text-sm font-semibold text-white outline-none transition placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/55 focus:bg-sky-200/[0.06]"
-                      aria-label={`${project.name} のタイトル`}
-                    />
-                  </div>
+                  <p className="pt-0.5 text-xs text-slate-500">
+                    {String(index + 1).padStart(2, "0")}
+                  </p>
                   <div className="text-right">
                     <p className="text-xs text-slate-500">優先スコア</p>
                     <p className="text-lg font-semibold text-sky-100">{score}</p>
                   </div>
                 </div>
+
+                <textarea
+                  ref={(element) => {
+                    if (!element) return;
+                    element.style.height = "0px";
+                    element.style.height = `${element.scrollHeight}px`;
+                  }}
+                  rows={1}
+                  value={project.name}
+                  onChange={(event) => onUpdate(project.id, { name: event.target.value })}
+                  onClick={(event) => event.stopPropagation()}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.currentTarget.blur();
+                    }
+                  }}
+                  className="mt-1 block min-h-8 w-full resize-none overflow-hidden whitespace-pre-wrap rounded-md border border-transparent bg-white/[0.035] px-2 py-1.5 text-sm font-semibold leading-5 text-white outline-none transition [overflow-wrap:anywhere] placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/55 focus:bg-sky-200/[0.06]"
+                  aria-label={`${project.name} のタイトル`}
+                />
 
                 <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-2">
                   <label className="min-w-0 text-xs text-slate-500">
