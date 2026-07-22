@@ -476,6 +476,10 @@ Japanese UI polish decision: [[2026-07-06-japanese-spatial-canvas-polish]].
 - Supabase sign-up must guide users through required email confirmation in
   Japanese. The login screen provides confirmation-email resend, and the auth
   callback establishes the session before returning to Portfolio View.
+- The global sync indicator resolves login state from the authoritative
+  server-side Supabase session. Historical sync success must never be displayed
+  as proof of a current login, and signed-out users see an unambiguous local-only
+  state while their local data remains intact.
 - Initial typed fallback data must not be automatically uploaded as workspace
   state. Project and task arrays should merge local-only records into the
   remote state by `id` so earlier PC-entered work is preserved when sync is

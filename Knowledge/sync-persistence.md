@@ -57,3 +57,20 @@ confirmed` error as if registration failed.
   portfolio after the session is established.
 - Keep local projects and tasks intact while confirmation is pending.
 - A resend or callback failure must leave local-only persistence operational.
+
+## Authentication status must be authoritative
+
+The global sync indicator must not infer the current login state from an old
+successful sync snapshot. Authentication and persistence history are separate:
+
+- the current login state is resolved from the server-side Supabase session;
+- a previous `lastSyncedAt` value does not mean the user is currently signed in;
+- while authentication is being checked, the UI shows a checking state instead
+  of briefly reporting that the user is signed out;
+- manual cloud sync is disabled while signed out;
+- signing out must normalize the visible status to local-only without deleting
+  local projects or tasks.
+
+Japanese UI copy in JSX must be written as Japanese text or as a JavaScript
+string expression. A literal `\\uXXXX` sequence in a JSX text node is rendered
+as visible escape characters and must not be used.
