@@ -800,5 +800,8 @@ In progress on the latest production base:
 - Keep filters and project workspace tabs in one horizontally scrollable row.
 - Verify 1920, 1440, 1280, 1100, 1024, and 768px before production promotion.
 
-Implementation and local validation are complete. Preview sync validation and
-production promotion remain before this stabilization pass is finished.
+Implementation and local validation are complete. The Vercel Preview build is
+Ready and its signed-out fallback correctly prompts for login without replacing
+local data. The unchanged production sync layer continues to report
+`クラウド同期済み` for the existing same-account session. Production promotion
+remains before this stabilization pass is finished.
