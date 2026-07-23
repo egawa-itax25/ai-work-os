@@ -794,6 +794,18 @@ and AI scoring.
   [[2026-07-23-portfolio-selection-and-inspector-editing]]. Full project names
   remain readable, while editing moves to the shared Inspector.
 
+## 2026-07-23 Direct Editing And Score Simplification
+
+- Project titles can be edited in place from Portfolio cards by double-clicking
+  the title. A single click continues to select the project.
+- Enter or blur saves the title, while Escape cancels the edit.
+- The Project Inspector remains available for full project editing.
+- Priority Score and its breakdown are hidden from the daily Portfolio UI.
+- Priority Score calculation and stored data remain available internally for
+  compatibility and future AI analysis.
+- The normal Portfolio order follows the stored project order. Due-date sorting
+  remains available as an optional comparison view.
+
 ## 2026-07-23 Production UI Stabilization
 
 In progress on the latest production base:
