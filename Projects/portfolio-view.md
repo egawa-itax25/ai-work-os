@@ -803,5 +803,6 @@ In progress on the latest production base:
 Implementation and local validation are complete. The Vercel Preview build is
 Ready and its signed-out fallback correctly prompts for login without replacing
 local data. The unchanged production sync layer continues to report
-`クラウド同期済み` for the existing same-account session. Production promotion
-remains before this stabilization pass is finished.
+`クラウド同期済み` for the existing same-account session. Production was
+promoted from commit `74fff97`; the stable Portfolio route shows the new UI and
+the authenticated cloud-sync status without horizontal overflow.
