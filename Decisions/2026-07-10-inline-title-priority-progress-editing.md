@@ -7,6 +7,11 @@ related: [Projects/portfolio-view.md]
 
 # Inline Title, Priority, And Progress Editing
 
+> [!note] Partially superseded on 2026-07-23
+> Portfolio project-card inline editing is replaced by selection-first cards
+> and Inspector editing. Task Flow node inline editing remains active. See
+> [[2026-07-23-portfolio-selection-and-inspector-editing]].
+
 ## Context
 
 Users compare projects and tasks directly from Portfolio View and Task Flow Map.

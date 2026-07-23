@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import {
+  useWorkspaceSync,
+  WorkspaceSyncBadge,
+} from "@/components/workspace-sync";
 
 const defaultNavItems = [
   { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
@@ -24,6 +28,8 @@ const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isCockpit = pathname === "/";
+  const isLogin = pathname === "/login";
+  const workspaceSync = useWorkspaceSync(!isLogin);
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
   const [navigationCollapsed, setNavigationCollapsed] = useState(false);
   const [orderedNavIds, setOrderedNavIds] = useState(() => defaultNavItems.map((item) => item.id));
@@ -315,8 +321,42 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
           </div>
         ) : null}
 
-        <main className={mainClassName}>{children}</main>
+        {!isLogin ? (
+          <div className="fixed bottom-4 left-4 z-40 flex max-w-[calc(100vw-2rem)] flex-col items-start gap-2 lg:left-[19rem]">
+            {workspaceSync.notice ? (
+              <div
+                role="alert"
+                className="flex max-w-md items-start gap-3 rounded-lg border border-amber-300/25 bg-slate-950/95 px-3 py-2 text-xs leading-5 text-amber-50 shadow-xl shadow-black/30 backdrop-blur-xl"
+              >
+                <span>{workspaceSync.notice}</span>
+                <button
+                  type="button"
+                  onClick={workspaceSync.dismissNotice}
+                  className="shrink-0 text-slate-400 transition hover:text-white"
+                  aria-label="同期通知を閉じる"
+                >
+                  ×
+                </button>
+              </div>
+            ) : null}
+            <WorkspaceSyncBadge status={workspaceSync.status} />
+          </div>
+        ) : null}
+
+        <main className={mainClassName}>
+          {workspaceSync.ready ? children : <WorkspaceSyncLoading />}
+        </main>
       </div>
     </body>
+  );
+}
+
+function WorkspaceSyncLoading() {
+  return (
+    <section className="grid min-h-[60vh] place-items-center px-4 py-8">
+      <div className="rounded-lg border border-white/10 bg-slate-950/65 px-5 py-4 text-sm text-slate-300 shadow-xl shadow-black/25 backdrop-blur-xl">
+        アカウントの作業状態を同期しています…
+      </div>
+    </section>
   );
 }

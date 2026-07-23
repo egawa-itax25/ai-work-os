@@ -108,6 +108,13 @@ between views. Do not force desktop absolute-positioned overlays into a narrow
 screen. Use an automatic mobile layout with stacked panels, compact navigation,
 readable Japanese text, and no overlap with browser controls.
 
+## Account Sync
+
+Durable project and task work should follow the same signed-in account across
+devices. Device-specific view state such as scroll position, open panels,
+collapsed navigation, and viewport pan/zoom should stay local so one device
+does not disturb another device's layout.
+
 ## Review Links
 
 When reporting completed UI changes, include the latest relevant review links

@@ -556,11 +556,43 @@ Implemented:
   status, priority, owner, due date, and related counts align vertically across
   project sections. It also shows the current ball as a dedicated column before
   status.
-- Project cards support inline editing for title and progress so users can
-  update common project fields without leaving Portfolio View.
-- Project progress uses a bar-style range control. Setting project progress to
-  100% also sets all tasks in that project to 100%; setting project progress
+- Portfolio project cards are selection-first comparison surfaces. Project
+  title, priority, and progress editing belongs in the shared Project
+  Inspector; Task Flow node inline editing remains available.
+- Project progress remains editable in the Inspector. Setting project progress
+  to 100% also sets all tasks in that project to 100%; setting project progress
   below 100% does not rewrite task progress.
+- Portfolio responsive polish from
+  [[2026-07-23-portfolio-selection-and-inspector-editing]] is implemented: a stable right
+  Inspector column on wide desktop, an accessible drawer below that width,
+  compact scan-first cards, one-row scrolling filters/tabs, and Today’s Focus
+  before the project list.
+- Project cards now expose a click/touch Priority Score popover and keep title,
+  state, progress, current ball, holding duration, due date, and score as the
+  permanent scan surface. Search and sort controls are functional.
+- The Project Inspector header stays visible, matches the selected project, and
+  reports idle, pending, saving, saved, failed, offline, and retry states for
+  debounced local persistence.
+- TypeScript validation, ESLint, and the production build complete successfully.
+  The missing lockfile-recorded ESLint dependency was restored locally without
+  changing `package.json` or `package-lock.json`.
+- Browser verification passes at 1920, 1440, 1280, 1100, 1024, and 768px with
+  no page-level horizontal overflow and single-row workspace tabs. The
+  Inspector is a 360px sticky column at 1440px and above, and a fixed drawer
+  below 1440px. Drawer focus, Escape close, body scroll restoration, project
+  selection synchronization, search, score popover, and console errors were
+  also checked.
+- Same-account workspace synchronization is implemented locally with a
+  local-first cache, optimistic revisions, offline retry, periodic remote
+  checks, per-account device caches, and conflict backup before remote state is
+  adopted. The API falls back without blocking the workspace when Supabase is
+  unavailable.
+- The workspace shows quiet Japanese sync feedback and notifies the user when
+  another device's update is applied or a local conflict copy is protected.
+- The account-sync implementation passes TypeScript, ESLint, production build,
+  and browser fallback verification. The Supabase table, authenticated-only
+  SELECT/INSERT/UPDATE privileges, and three owner-scoped RLS policies are
+  applied and verified; DELETE remains unavailable.
 - Task Flow nodes support inline editing for title and priority so users can
   adjust the task without opening a separate screen.
 - Inline editing controls stop pointer and click propagation so typing,
@@ -600,3 +632,12 @@ Implemented:
 
 Current mock data is deterministic and should later be replaced by Vault parsing
 and AI scoring.
+
+## Account Sync
+
+Same-account cross-device synchronization is implemented through an
+RLS-protected Supabase workspace snapshot. Projects, tasks, project
+connections, trash, and navigation order are synchronized; viewport-dependent
+selection, scroll, drawer, and pan/zoom state stays local to each device. The
+Supabase migration and Data API privileges were applied on 2026-07-23. See
+[[2026-07-23-account-workspace-sync]].
