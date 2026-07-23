@@ -61,7 +61,8 @@ export default function PortfolioView({
   const filter = initialFilter;
   const [projects, setProjects] = useState<PortfolioProject[]>(portfolioProjects);
   const [selectedId, setSelectedId] = useState(portfolioProjects[0]?.id ?? "");
-  const [expandedScoreId, setExpandedScoreId] = useState(portfolioProjects[0]?.id ?? "");
+  const [expandedScoreId, setExpandedScoreId] = useState("");
+  const [inspectorOpen, setInspectorOpen] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>(null);
   const [toast, setToast] = useState<ToastState>(null);
   const [syncResult, setSyncResult] = useState<SyncResult>({
@@ -75,6 +76,9 @@ export default function PortfolioView({
   const [syncReady, setSyncReady] = useState(false);
   const skipInitialProjectSaveRef = useRef(true);
   const skipInitialConnectionSaveRef = useRef(true);
+  const inspectorPanelRef = useRef<HTMLElement>(null);
+  const inspectorCloseRef = useRef<HTMLButtonElement>(null);
+  const inspectorTriggerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const savedView = window.localStorage.getItem(viewStorageKey);
@@ -264,6 +268,52 @@ export default function PortfolioView({
       window.removeEventListener("keydown", closeProjectMenuWithEscape);
     };
   }, [menuProjectId]);
+
+  useEffect(() => {
+    if (!inspectorOpen || window.matchMedia("(min-width: 1440px)").matches) {
+      return;
+    }
+
+    inspectorTriggerRef.current = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.requestAnimationFrame(() => inspectorCloseRef.current?.focus());
+
+    function keepFocusInInspector(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setInspectorOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab" || !inspectorPanelRef.current) {
+        return;
+      }
+
+      const focusable = Array.from(
+        inspectorPanelRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      );
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (!first || !last) return;
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    window.addEventListener("keydown", keepFocusInInspector);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", keepFocusInInspector);
+      inspectorTriggerRef.current?.focus();
+    };
+  }, [inspectorOpen]);
 
   const rankedProjects = useMemo(
     () =>
@@ -476,7 +526,7 @@ export default function PortfolioView({
   return (
     <section className="min-h-screen space-y-5 text-slate-100">
       <header className="grid gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(48rem,1.25fr)]">
-        <div>
+        <div className="min-w-0">
           <p className="text-sm font-medium text-sky-200">ポートフォリオ</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-normal text-white">
             プロジェクトの流れを俯瞰
@@ -485,9 +535,9 @@ export default function PortfolioView({
             状況を見た場所から、そのままプロジェクトとタスクを動かします。
           </p>
         </div>
-        <div className="grid gap-3">
+        <div className="grid min-w-0 gap-3">
           <FilterBar active={filter} />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4">
             <Metric label="最優先" value={rankedProjects[0]?.name ?? "なし"} />
             <Metric label="自分のボール" value={`${actionableProjects.length}件`} />
             <Metric label="平均進捗" value={`${weeklyProgress}%`} />
@@ -502,7 +552,9 @@ export default function PortfolioView({
         </div>
       </header>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <TodayFocus projects={actionableProjects} onSelect={(id) => { setSelectedId(id); setInspectorOpen(true); }} />
+
+      <div className="grid gap-5 min-[1440px]:grid-cols-[minmax(0,1fr)_360px]">
         <div className="min-w-0 space-y-5">
           <ProjectList
             expandedScoreId={expandedScoreId}
@@ -515,9 +567,9 @@ export default function PortfolioView({
             onDelete={deleteProject}
             onDuplicate={duplicateProject}
             onExpandScore={setExpandedScoreId}
+            onOpenInspector={(id) => { setSelectedId(id); setInspectorOpen(true); }}
             onMenuToggle={(id) => setMenuProjectId((current) => (current === id ? "" : id))}
             onSelect={setSelectedId}
-            onUpdate={updateProject}
           />
 
           <SelectedProjectWorkspace
@@ -527,21 +579,30 @@ export default function PortfolioView({
           />
 
           <BottomSummary
-            actionableProjects={actionableProjects}
             stalledProjects={stalledProjects}
             weeklyProgress={weeklyProgress}
           />
         </div>
 
-        <ProjectInspector
-          project={selectedProject}
-          projects={visibleProjects}
-          syncResult={syncResult}
-          onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })}
-          onSelect={setSelectedId}
-          onUpdate={updateProject}
-        />
+        <div className="hidden min-[1440px]:block">
+          <div className="sticky top-5 max-h-[calc(100vh-2.5rem)] overflow-y-auto">
+            <ProjectInspector project={selectedProject} projects={visibleProjects} syncResult={syncResult} onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })} onSelect={setSelectedId} onUpdate={updateProject} />
+          </div>
+        </div>
       </div>
+
+      {inspectorOpen ? (
+        <div className="fixed inset-0 z-50 min-[1440px]:hidden" role="presentation">
+          <button type="button" aria-label="Inspectorを閉じる" onClick={() => setInspectorOpen(false)} className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" />
+          <aside ref={inspectorPanelRef} role="dialog" aria-modal="true" aria-label={`${selectedProject?.name ?? "プロジェクト"} のInspector`} className="absolute inset-y-0 right-0 w-[min(92vw,420px)] overflow-y-auto border-l border-white/10 bg-slate-950/95 p-4 shadow-2xl shadow-black/50">
+            <div className="sticky top-0 z-10 mb-4 flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950/95 pb-3">
+              <div className="min-w-0"><p className="text-xs text-slate-500">Inspector</p><p className="truncate text-sm font-semibold text-white">{selectedProject?.name}</p></div>
+              <button ref={inspectorCloseRef} type="button" onClick={() => setInspectorOpen(false)} className="rounded-md border border-white/10 px-3 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">閉じる</button>
+            </div>
+            <ProjectInspector project={selectedProject} projects={visibleProjects} syncResult={syncResult} onCreateTask={(project) => setDrawer({ type: "task", projectName: project.name })} onSelect={setSelectedId} onUpdate={updateProject} />
+          </aside>
+        </div>
+      ) : null}
 
       {drawer?.type === "project" ? (
         <CreateProjectDrawer onClose={() => setDrawer(null)} onCreate={createProject} />
@@ -563,8 +624,8 @@ export default function PortfolioView({
 
 function FilterBar({ active }: { active: PortfolioFilter }) {
   return (
-    <div className="rounded-lg border border-white/10 bg-slate-950/56 p-2 shadow-xl shadow-black/20 backdrop-blur-xl">
-      <div className="flex flex-wrap gap-2">
+    <div className="min-w-0 max-w-full overflow-hidden rounded-lg border border-white/10 bg-slate-950/56 p-2 shadow-xl shadow-black/20 backdrop-blur-xl">
+      <div className="flex flex-nowrap gap-2 overflow-x-auto pb-1">
         {portfolioFilters.map((item) => (
           <Link
             key={item.id}
@@ -591,12 +652,12 @@ function ProjectList({
   menuProjectId,
   onSelect,
   onExpandScore,
+  onOpenInspector,
   onMenuToggle,
   onCreateProject,
   onCreateTask,
   onDelete,
   onDuplicate,
-  onUpdate,
 }: {
   projects: PortfolioProject[];
   selectedId?: string;
@@ -605,13 +666,30 @@ function ProjectList({
   menuProjectId: string;
   onSelect: (id: string) => void;
   onExpandScore: (id: string) => void;
+  onOpenInspector: (id: string) => void;
   onMenuToggle: (id: string) => void;
   onCreateProject: () => void;
   onCreateTask: (project: PortfolioProject) => void;
   onDelete: (project: PortfolioProject) => void;
   onDuplicate: (project: PortfolioProject) => void;
-  onUpdate: (id: string, patch: Partial<PortfolioProject>) => void;
 }) {
+  const [query, setQuery] = useState("");
+  const [sortMode, setSortMode] = useState<"priority" | "due">("priority");
+  const displayedProjects = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase("ja");
+    const matches = projects.filter((project) =>
+      [project.name, project.owner, project.currentBallHolder].some((value) =>
+        value.toLocaleLowerCase("ja").includes(normalizedQuery),
+      ),
+    );
+
+    return [...matches].sort((left, right) =>
+      sortMode === "due"
+        ? sortableDueDate(left.dueDate).localeCompare(sortableDueDate(right.dueDate))
+        : getPriorityScore(right) - getPriorityScore(left),
+    );
+  }, [projects, query, sortMode]);
+
   return (
     <section className="overflow-hidden rounded-lg border border-white/10 bg-slate-950/62 shadow-xl shadow-black/25 backdrop-blur-xl">
       <div className="flex flex-col gap-3 border-b border-white/10 px-4 py-4 lg:flex-row lg:items-end lg:justify-between">
@@ -619,19 +697,15 @@ function ProjectList({
           <h2 className="text-base font-semibold text-white">プロジェクト一覧</h2>
           <p className="mt-1 text-sm text-slate-500">プロジェクトを選択して、下の作業領域と右側のInspectorで確認できます。</p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
-            一覧
-          </button>
-          <button type="button" className="rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
-            カード
-          </button>
-          <select className="rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 outline-none focus:border-sky-200/60">
-            <option>優先度順</option>
-            <option>更新日順</option>
+        <div className="flex flex-nowrap items-center gap-2 overflow-x-auto pb-1">
+          <select value={sortMode} onChange={(event) => setSortMode(event.target.value as "priority" | "due")} className="shrink-0 rounded-md border border-white/10 bg-slate-950 px-3 py-2 text-xs text-slate-300 outline-none focus:border-sky-200/60">
+            <option value="priority">優先度順</option>
+            <option value="due">期限順</option>
           </select>
           <input
             type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="検索..."
             className="w-40 rounded-md border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300 outline-none placeholder:text-slate-600 focus:border-sky-200/60"
           />
@@ -647,7 +721,7 @@ function ProjectList({
           <span className="mt-3 text-sm font-semibold text-white">新しいプロジェクト</span>
           <span className="mt-2 text-xs text-slate-500">プロジェクトを追加</span>
         </button>
-        {projects.map((project, index) => {
+        {displayedProjects.map((project, index) => {
           const score = getPriorityScore(project);
           const isSelected = project.id === selectedId;
           const isExpanded = project.id === expandedScoreId;
@@ -664,131 +738,43 @@ function ProjectList({
                 project.id === highlightId
                   ? "border-sky-200/75 bg-sky-200/[0.12]"
                   : isSelected
-                    ? "border-sky-200/55 bg-sky-200/[0.08]"
+                    ? "border-sky-200/70 border-l-4 bg-sky-200/[0.09] shadow-lg shadow-sky-950/30"
                     : "border-white/10 bg-white/[0.035] hover:border-white/20 hover:bg-white/[0.055]"
               }`}
             >
-              <div
-                role="button"
-                tabIndex={0}
-                className="w-full text-left"
-                onClick={() => onSelect(project.id)}
-                onKeyDown={(event) => {
-                  const target = event.target;
-
-                  if (
-                    target instanceof HTMLInputElement ||
-                    target instanceof HTMLTextAreaElement ||
-                    target instanceof HTMLSelectElement ||
-                    target instanceof HTMLButtonElement ||
-                    target instanceof HTMLAnchorElement
-                  ) {
-                    return;
-                  }
-
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(project.id);
-                  }
-                }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <p className="pt-0.5 text-xs text-slate-500">
-                    {String(index + 1).padStart(2, "0")}
-                  </p>
-                  <div className="text-right">
-                    <p className="text-xs text-slate-500">優先スコア</p>
-                    <p className="text-lg font-semibold text-sky-100">{score}</p>
-                  </div>
-                </div>
-
-                <textarea
-                  ref={(element) => {
-                    if (!element) return;
-                    element.style.height = "0px";
-                    element.style.height = `${element.scrollHeight}px`;
-                  }}
-                  rows={1}
-                  value={project.name}
-                  onChange={(event) => onUpdate(project.id, { name: event.target.value })}
-                  onClick={(event) => event.stopPropagation()}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      event.currentTarget.blur();
-                    }
-                  }}
-                  className="mt-1 block min-h-8 w-full resize-none overflow-hidden whitespace-pre-wrap rounded-md border border-transparent bg-white/[0.035] px-2 py-1.5 text-sm font-semibold leading-5 text-white outline-none transition [overflow-wrap:anywhere] placeholder:text-slate-600 hover:border-white/10 focus:border-sky-200/55 focus:bg-sky-200/[0.06]"
-                  aria-label={`${project.name} のタイトル`}
-                />
-
-                <div className="mt-4 grid grid-cols-[1fr_auto] items-end gap-2">
-                  <label className="min-w-0 text-xs text-slate-500">
-                    優先度
-                    <select
-                      value={getProjectPriorityLevel(project)}
-                      onChange={(event) =>
-                        onUpdate(project.id, {
-                          businessImportance:
-                            event.target.value === "high"
-                              ? 15
-                              : event.target.value === "medium"
-                                ? 8
-                                : 4,
-                        })
-                      }
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => event.stopPropagation()}
-                      className="mt-1 w-full rounded-md border border-white/10 bg-slate-950/80 px-2 py-1.5 text-xs font-semibold text-slate-100 outline-none focus:border-sky-200/60"
-                    >
-                      <option value="high">高</option>
-                      <option value="medium">中</option>
-                      <option value="low">低</option>
-                    </select>
-                  </label>
-                  <StatusPill project={project} />
-                </div>
-
-                <div className="mt-4">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>進捗 {project.progress}%</span>
-                    <span className="text-slate-500">バーで変更</span>
-                  </div>
-                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
-                    <div className="h-full rounded-full bg-sky-200 transition-all duration-300" style={{ width: `${project.progress}%` }} />
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={project.progress}
-                    onChange={(event) => onUpdate(project.id, { progress: Number(event.target.value) })}
-                    onClick={(event) => event.stopPropagation()}
-                    onPointerDown={(event) => event.stopPropagation()}
-                    className="mt-2 h-2 w-full cursor-pointer accent-sky-200"
-                    aria-label={`${project.name} の進捗`}
-                  />
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-                  <Info label="担当者" value={project.owner} />
-                  <Info label="現在のボール" value={`${project.currentBallHolder} / ${project.ballHoldingDays}日`} />
+              <div className="flex items-start justify-between gap-3">
+                <button type="button" onClick={() => onSelect(project.id)} className="min-w-0 flex-1 text-left">
+                  <div className="flex items-center gap-2 text-xs text-slate-500"><span>{String(index + 1).padStart(2, "0")}</span>{isSelected ? <span className="rounded-full border border-sky-200/35 bg-sky-200/10 px-2 py-0.5 font-semibold text-sky-100">選択中</span> : null}</div>
+                  <p className="mt-2 line-clamp-2 min-h-10 text-sm font-semibold leading-5 text-white">{project.name}</p>
+                </button>
+                <div className="relative shrink-0">
+                  <button type="button" aria-expanded={isExpanded} onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="rounded-md border border-white/10 bg-white/[0.035] px-3 py-2 text-right transition hover:border-sky-200/45 hover:bg-sky-200/[0.08]">
+                    <span className="block text-[10px] text-slate-500">優先スコア</span><span className="block text-lg font-semibold text-sky-100">{score}</span>
+                  </button>
+                  {isExpanded ? <div className="absolute right-0 top-full z-20 mt-2 w-56 rounded-lg border border-white/15 bg-slate-950/98 p-1 shadow-2xl shadow-black/50"><ScoreBreakdown project={project} /></div> : null}
                 </div>
               </div>
 
+              <button type="button" onClick={() => onSelect(project.id)} className="mt-3 block w-full text-left">
+                <div className="flex items-center justify-between gap-2"><StatusPill project={project} /><span className="text-xs text-slate-400">進捗 {project.progress}%</span></div>
+                <div className="mt-3">
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/10">
+                    <div className="h-full rounded-full bg-sky-200 transition-all duration-300" style={{ width: `${project.progress}%` }} />
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+                  <Info label="現在のボール" value={project.currentBallHolder} />
+                  <Info label={project.ballHoldingDays > 0 ? "保持期間" : "期限"} value={project.ballHoldingDays > 0 ? `${project.ballHoldingDays}日` : formatDateLabel(project.dueDate)} />
+                </div>
+              </button>
+
               <div className="mt-4 grid grid-cols-[minmax(3rem,auto)_minmax(0,1fr)_auto] gap-2">
-                <Link href={projectScheduleHref(project)} className="min-w-0 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-center text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">
-                  開く
-                </Link>
+                <button type="button" onClick={() => onOpenInspector(project.id)} className="min-w-0 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-center text-xs font-semibold text-slate-300 transition hover:border-sky-200/50 hover:text-sky-100">詳細</button>
                 <Link href={projectTaskMapHref(project)} className="min-w-0 rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-center text-xs font-semibold leading-5 text-sky-50 transition hover:bg-sky-200/[0.14]">
-                  タスクフローマップ
+                  フローマップ
                 </Link>
                 <button type="button" data-project-menu-trigger onClick={() => onMenuToggle(project.id)} className="min-w-0 whitespace-nowrap rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100" title="操作メニュー">
                   …
-                </button>
-                <button type="button" onClick={() => onExpandScore(isExpanded ? "" : project.id)} className="col-span-3 min-w-0 rounded-md border border-white/10 px-3 py-2 text-xs text-slate-400 transition hover:bg-white/[0.06] hover:text-slate-100">
-                  内訳を見る
                 </button>
               </div>
 
@@ -798,16 +784,15 @@ function ProjectList({
                   onCreateTask={onCreateTask}
                   onDelete={onDelete}
                   onDuplicate={onDuplicate}
-                  onEdit={() => onSelect(project.id)}
+                  onEdit={() => onOpenInspector(project.id)}
                   onClose={() => onMenuToggle(project.id)}
                 />
               ) : null}
 
-              {isExpanded ? <ScoreBreakdown project={project} /> : null}
             </article>
           );
         })}
-        {projects.length === 0 ? (
+        {displayedProjects.length === 0 ? (
           <p className="rounded-lg border border-dashed border-white/10 px-4 py-10 text-center text-sm text-slate-500">
             条件に一致するプロジェクトはありません。
           </p>
@@ -859,12 +844,12 @@ function SelectedProjectWorkspace({
             <span>完了 {doneTasks.length}</span>
           </div>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex max-w-full flex-nowrap items-center gap-2 overflow-x-auto pb-1">
           {["フローマップ", "タスク一覧", "ドキュメント", "メモ", "履歴"].map((tab, index) => (
             <button
               key={tab}
               type="button"
-              className={`rounded-md border px-3 py-2 text-sm transition ${
+              className={`shrink-0 whitespace-nowrap rounded-md border px-3 py-2 text-sm transition ${
                 index === 0
                   ? "border-sky-200/50 bg-sky-200/[0.08] text-sky-50"
                   : "border-transparent text-slate-500 hover:border-white/10 hover:bg-white/[0.05] hover:text-slate-200"
@@ -876,7 +861,7 @@ function SelectedProjectWorkspace({
           <button
             type="button"
             onClick={() => onCreateTask(project)}
-            className="rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
+            className="shrink-0 whitespace-nowrap rounded-md border border-sky-200/35 bg-sky-200/[0.08] px-3 py-2 text-sm font-semibold text-sky-50 transition hover:bg-sky-200/[0.14]"
           >
             ＋ タスクを追加
           </button>
@@ -968,18 +953,6 @@ function PriorityBadge({ priority }: { priority: TaskPriority }) {
   return <span className={`rounded-md border px-2 py-1 text-xs font-semibold ${tone}`}>{label}</span>;
 }
 
-function getProjectPriorityLevel(project: PortfolioProject) {
-  if (project.businessImportance >= 13) {
-    return "high";
-  }
-
-  if (project.businessImportance >= 8) {
-    return "medium";
-  }
-
-  return "low";
-}
-
 function formatDateLabel(value: string) {
   if (isMonthlyProjectDueDate(value)) {
     return "毎月";
@@ -996,6 +969,14 @@ function formatDateLabel(value: string) {
   }
 
   return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
+function sortableDueDate(value: string) {
+  if (!value || isMonthlyProjectDueDate(value)) {
+    return "9999-12-31";
+  }
+
+  return value;
 }
 
 const monthlyProjectDueDate = "monthly";
@@ -1098,11 +1079,9 @@ function ProjectInspector({
         <div className="mb-4 flex items-start justify-between gap-3 border-b border-white/10 pb-4">
           <div>
             <p className="text-sm font-semibold text-white">プロジェクト編集</p>
-            <p className="mt-1 text-xs leading-5 text-slate-500">枠内の項目をクリックして、その場で直接編集できます。</p>
+            <p className="mt-1 text-xs leading-5 text-slate-500">変更は自動保存され、ログイン中は同じアカウントの端末へ同期されます。</p>
           </div>
-          <span className="shrink-0 rounded-md border border-sky-200/25 bg-sky-200/[0.08] px-2 py-1 text-[11px] font-semibold text-sky-100">
-            自動保存
-          </span>
+          <SyncStatusBadge syncResult={syncResult} />
         </div>
 
         <div className="flex items-start justify-between gap-3">
@@ -1504,20 +1483,30 @@ function UndoToast({ toast, onClose }: { toast: ToastState; onClose: () => void 
   );
 }
 
+function TodayFocus({ projects, onSelect }: { projects: PortfolioProject[]; onSelect: (id: string) => void }) {
+  return (
+    <section className="rounded-lg border border-sky-200/25 bg-sky-200/[0.055] p-4 shadow-xl shadow-black/20 backdrop-blur-xl">
+      <div className="flex items-end justify-between gap-3"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-200">Today&apos;s Focus</p><h2 className="mt-1 text-base font-semibold text-white">今日、流れを進めるプロジェクト</h2></div><span className="text-xs text-slate-500">{projects.length}件</span></div>
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {projects.length > 0 ? projects.slice(0, 4).map((project) => (
+          <button key={project.id} type="button" onClick={() => onSelect(project.id)} className="flex min-w-0 items-center justify-between gap-3 rounded-md border border-white/10 bg-slate-950/45 px-3 py-3 text-left transition hover:border-sky-200/45 hover:bg-sky-200/[0.08]">
+            <span className="min-w-0"><span className="block truncate text-sm font-semibold text-slate-100">{project.name}</span><span className="mt-1 block text-xs text-slate-500">{project.currentBallHolder}が {project.ballHoldingDays}日保持</span></span><span className="shrink-0 text-xs font-semibold text-sky-100">確認 →</span>
+          </button>
+        )) : <p className="text-sm text-slate-500">今すぐ自分が動くプロジェクトはありません。</p>}
+      </div>
+    </section>
+  );
+}
+
 function BottomSummary({
-  actionableProjects,
   stalledProjects,
   weeklyProgress,
 }: {
-  actionableProjects: PortfolioProject[];
   stalledProjects: PortfolioProject[];
   weeklyProgress: number;
 }) {
   return (
-    <section className="grid gap-4 lg:grid-cols-3">
-      <SummaryBlock title="今日のフォーカス">
-        {actionableProjects.length > 0 ? actionableProjects.slice(0, 2).map((project) => <SummaryLine key={project.id} project={project} />) : <p className="text-sm text-slate-500">今すぐ自分が動くプロジェクトはありません。</p>}
-      </SummaryBlock>
+    <section className="grid gap-4 lg:grid-cols-2">
       <SummaryBlock title="停滞しているプロジェクト">
         {stalledProjects.length > 0 ? stalledProjects.map((project) => <SummaryLine key={project.id} project={project} />) : <p className="text-sm text-slate-500">停滞中のプロジェクトはありません。</p>}
       </SummaryBlock>
@@ -1536,7 +1525,7 @@ function BottomSummary({
 
 function ScoreBreakdown({ project }: { project: PortfolioProject }) {
   return (
-    <div className="mt-3 space-y-2 rounded-md border border-white/10 bg-black/18 p-3">
+    <div className="space-y-2 rounded-md border border-white/10 bg-black/18 p-3">
       {getPriorityBreakdown(project).map((part) => (
         <div key={part.label} className="flex items-center justify-between gap-3 text-xs">
           <span className="text-slate-500">{part.label}</span>

@@ -782,4 +782,23 @@ and AI scoring.
 - The project name occupies a dedicated full-width row below the metadata.
 - Long names wrap to additional lines inside the card instead of being
   truncated or compressed by the score.
-- Inline editing remains available and the field height follows its content.
+- Portfolio card inline editing is superseded by the selection-first rule in
+  [[2026-07-23-portfolio-selection-and-inspector-editing]]. Full project names
+  remain readable, while editing moves to the shared Inspector.
+
+## 2026-07-23 Production UI Stabilization
+
+In progress on the latest production base:
+
+- Preserve the existing `workspace_states` cross-device sync implementation.
+- Make project cards compact scan-and-select surfaces.
+- Move Priority Score details to a click/touch popover.
+- Make search and due-date/priority sorting functional.
+- Keep Today’s Focus above the project comparison list.
+- Keep a 360px sticky Inspector at 1440px and wider; use an accessible right
+  drawer below that width.
+- Keep filters and project workspace tabs in one horizontally scrollable row.
+- Verify 1920, 1440, 1280, 1100, 1024, and 768px before production promotion.
+
+Implementation and local validation are complete. Preview sync validation and
+production promotion remain before this stabilization pass is finished.

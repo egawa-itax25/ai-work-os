@@ -254,11 +254,11 @@ export function WorkspaceShell({ children }: { children: React.ReactNode }) {
 
         {!isCockpit ? (
           <header className="sticky top-0 z-10 border-b border-white/10 bg-slate-950/70 backdrop-blur-2xl lg:hidden">
-            <div className="flex items-center justify-between gap-3 px-4 py-4">
+            <div className="flex min-w-0 items-center justify-between gap-3 px-4 py-4">
               <Link href="/portfolio" className="shrink-0 whitespace-nowrap text-base font-semibold text-white">
                 AI仕事基盤
               </Link>
-              <nav className="flex gap-2 overflow-x-auto text-[13px] text-slate-400">
+              <nav className="flex min-w-0 flex-1 gap-2 overflow-x-auto text-[13px] text-slate-400">
                 {navItems.map((item) => (
                   <Link
                     key={item.id}

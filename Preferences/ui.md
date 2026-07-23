@@ -18,6 +18,15 @@ Keep the existing dark navy, pale-blue, gray, and restrained state-color system.
 This preference is a structure change only; do not introduce project-specific
 palettes or decorative colors for the project cards.
 
+Portfolio cards should prioritize selection and comparison. Keep permanent
+card content to project identity, state, progress, current ball, time/deadline,
+and Priority Score. Put editing in the Project Inspector and show the score
+breakdown only from an explicit click/touch popover.
+
+Keep a 360px Inspector column on wide desktop. When that column would squeeze
+the main workspace, use an accessible right drawer instead of compressing
+project cards and Japanese labels.
+
 ## Japanese First
 
 Visible product UI should be Japanese-first for this project.
