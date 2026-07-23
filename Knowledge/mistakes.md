@@ -203,3 +203,12 @@ Use this note only when the user gives an explicit correction and both are true:
 - Prevention: Local cache success and cloud sync success must be separate
   states. Return explicit sync results from persistence helpers and surface
   login/server failures in the product UI.
+
+### 2026-07-23 - Sample tasks recreated an unsolicited project
+
+- Mistake: Task loaders used development sample tasks as the production
+  fallback. Portfolio then derived `営業改善` from those tasks and made it look
+  as though the user had created the project.
+- Prevention: Treat empty storage as an empty workspace, filter known legacy
+  sample IDs during normalization, and never pass demo fixtures as production
+  persistence fallbacks.

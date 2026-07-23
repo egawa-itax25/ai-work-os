@@ -376,7 +376,10 @@ export function normalizeTasks(tasks: StoredTask[]): Task[] {
 }
 
 export function normalizeTaskList(value: unknown): Task[] {
-  return Array.isArray(value) ? normalizeTasks(value) : initialTasks;
+  const retiredSampleTaskIds = new Set(["sample-1", "sample-2"]);
+  const tasks = Array.isArray(value) ? normalizeTasks(value) : [];
+
+  return tasks.filter((task) => !retiredSampleTaskIds.has(task.id));
 }
 
 export function todayOffset(days: number) {

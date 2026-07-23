@@ -16,7 +16,6 @@ import {
   Task,
   TaskPriority,
   TaskStatus,
-  initialTasks,
   isOverdue,
   normalizeTaskList,
   priorityMeta,
@@ -187,7 +186,7 @@ export default function ProjectTaskMap() {
   const restoredViewportSizeRef = useRef<Point | null>(null);
   const skipInitialTaskSaveRef = useRef(true);
   const zoomRef = useRef(taskMapDefaultZoom);
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTaskId, setActiveTaskId] = useState("");
   const [focusTaskTitleId, setFocusTaskTitleId] = useState("");
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -217,7 +216,7 @@ export default function ProjectTaskMap() {
     void loadSyncedState({
       localKey: storageKey,
       remoteKey: remoteStorageKey,
-      fallback: initialTasks,
+      fallback: [],
       normalize: normalizeTaskList,
       onValue: (nextTasks) => {
         const firstProjectTask = nextTasks.find((task) => task.project === projectName);

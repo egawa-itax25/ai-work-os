@@ -5,7 +5,6 @@ import {
   Task,
   TaskPriority,
   TaskStatus,
-  initialTasks,
   isOverdue,
   normalizeTaskList,
   priorityMeta,
@@ -65,7 +64,7 @@ const memberProfiles: Record<string, { role: string }> = {
 };
 
 export default function TeamAllocationView() {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [mode, setMode] = useState<ViewMode>("orbit");
   const [memberFilter, setMemberFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -82,7 +81,7 @@ export default function TeamAllocationView() {
     void loadSyncedState({
       localKey: storageKey,
       remoteKey: remoteStorageKey,
-      fallback: initialTasks,
+      fallback: [],
       normalize: normalizeTaskList,
       onValue: setTasks,
     });

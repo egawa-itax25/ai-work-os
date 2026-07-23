@@ -12,6 +12,11 @@ Typed fallback records are useful for first render and development, but they
 are not user data. A signed-in device must not upload fallback projects or
 tasks to Supabase just because a page mounted.
 
+Production loaders must therefore use empty collections as their persistence
+fallbacks. Development sample records may remain as explicit fixtures, but
+normalization must remove known legacy sample IDs before local/cloud merge.
+An empty workspace is intentional user state, not a signal to restore samples.
+
 ## Merge before replacing local arrays
 
 For JSON array workspace state, records with stable `id` fields should be

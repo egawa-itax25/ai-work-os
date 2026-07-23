@@ -241,7 +241,7 @@ export function normalizePortfolioProjects(
 }
 
 export function normalizePortfolioProjectList(value: unknown): PortfolioProject[] {
-  return Array.isArray(value) ? normalizePortfolioProjects(value) : portfolioProjects;
+  return Array.isArray(value) ? normalizePortfolioProjects(value) : [];
 }
 
 export function getPriorityBreakdown(project: PortfolioProject): PriorityScorePart[] {

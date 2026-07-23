@@ -7,7 +7,6 @@ import {
   Task,
   TaskPriority,
   TaskStatus,
-  initialTasks,
   isOverdue,
   normalizeTaskList,
   remoteStorageKey,
@@ -27,7 +26,7 @@ import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 export default function TaskProjects() {
   const searchParams = useSearchParams();
   const projectFilter = searchParams.get("project") ?? "";
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [portfolioProjects, setPortfolioProjects] = useState<PortfolioProject[]>([]);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
@@ -54,7 +53,7 @@ export default function TaskProjects() {
       loadSyncedState({
         localKey: storageKey,
         remoteKey: remoteStorageKey,
-        fallback: initialTasks,
+        fallback: [],
         normalize: normalizeTaskList,
         onValue: setTasks,
       }),

@@ -24,7 +24,6 @@ import {
   type PortfolioProject,
 } from "@/lib/portfolio-data";
 import {
-  initialTasks,
   isOverdue,
   normalizeTaskList,
   remoteStorageKey as taskRemoteStorageKey,
@@ -59,8 +58,8 @@ export default function PortfolioView({
   initialFilter: PortfolioFilter;
 }) {
   const filter = initialFilter;
-  const [projects, setProjects] = useState<PortfolioProject[]>(portfolioProjects);
-  const [selectedId, setSelectedId] = useState(portfolioProjects[0]?.id ?? "");
+  const [projects, setProjects] = useState<PortfolioProject[]>([]);
+  const [selectedId, setSelectedId] = useState("");
   const [expandedScoreId, setExpandedScoreId] = useState("");
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const [drawer, setDrawer] = useState<DrawerState>(null);
@@ -72,7 +71,7 @@ export default function PortfolioView({
   const [highlightId, setHighlightId] = useState("");
   const [menuProjectId, setMenuProjectId] = useState("");
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
-  const [portfolioTasks, setPortfolioTasks] = useState<Task[]>(initialTasks);
+  const [portfolioTasks, setPortfolioTasks] = useState<Task[]>([]);
   const [syncReady, setSyncReady] = useState(false);
   const skipInitialProjectSaveRef = useRef(true);
   const skipInitialConnectionSaveRef = useRef(true);
@@ -108,7 +107,7 @@ export default function PortfolioView({
       loadSyncedState({
         localKey: portfolioStorageKey,
         remoteKey: portfolioRemoteStorageKey,
-        fallback: portfolioProjects,
+        fallback: [],
         normalize: normalizePortfolioProjectList,
         onValue: setProjects,
         onStatus: setSyncResult,
@@ -116,7 +115,7 @@ export default function PortfolioView({
       loadSyncedState({
         localKey: taskStorageKey,
         remoteKey: taskRemoteStorageKey,
-        fallback: initialTasks,
+        fallback: [],
         normalize: normalizeTaskList,
         onValue: setPortfolioTasks,
         onStatus: setSyncResult,
@@ -1646,7 +1645,7 @@ function normalizeProjectConnections(value: unknown): ProjectConnection[] {
 
 function readTasks() {
   const saved = window.localStorage.getItem(taskStorageKey);
-  return saved ? normalizeTaskList(JSON.parse(saved)) : initialTasks;
+  return saved ? normalizeTaskList(JSON.parse(saved)) : [];
 }
 
 function writeTasks(tasks: Task[]) {

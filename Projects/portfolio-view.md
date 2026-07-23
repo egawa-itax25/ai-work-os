@@ -775,6 +775,14 @@ Implemented:
 Current mock data is deterministic and should later be replaced by Vault parsing
 and AI scoring.
 
+## Production Data Safety
+
+- Portfolio must not create projects from development sample tasks during
+  startup, reload, authentication changes, or temporary sync failures.
+- Task-derived project synchronization only consumes normalized user tasks.
+- Empty local or cloud state remains empty.
+- Known legacy sample records are removed without changing user-created data.
+
 ## Project Card Title Readability
 
 - Project card metadata uses a compact first row: project number on the left
