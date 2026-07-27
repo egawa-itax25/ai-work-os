@@ -30,7 +30,7 @@ type StoredTask = Partial<Task> & {
 
 export const storageKey = "codex-task-manager-map:v2";
 export const remoteStorageKey = "tasks";
-export const defaultProject = "営業改善";
+export const defaultProject = "";
 
 export const statusMeta: Record<TaskStatus, { label: string; tone: string }> = {
   todo: {

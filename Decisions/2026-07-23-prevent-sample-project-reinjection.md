@@ -15,6 +15,10 @@ tasks when local or cloud state is missing, temporarily unavailable, or invalid.
 - Initial sample records are fixtures only; they are not fallback user data.
 - Legacy sample task IDs are removed during normalization before local/cloud
   merge so they cannot recreate projects through task-derived synchronization.
+- The previously generated project residue is removed only when both its
+  deterministic legacy ID (`task-project-b943ky`) and name (`営業改善`) match.
+- A missing task project is normalized as unassigned instead of being assigned
+  to `営業改善`.
 - User-created projects and tasks are preserved unchanged.
 
 ## Reason
@@ -28,8 +32,11 @@ This also allowed deleted sample content to return after reload or sync.
 
 - Missing task storage resolves to an empty task list, not sample tasks.
 - Legacy sample task IDs do not survive normalization from local or cloud data.
+- A saved project with ID `task-project-b943ky` and name `営業改善` is removed
+  during normalization and the cleaned state is persisted on the next save.
 - A user-created project or task named `営業改善` remains when its ID is not a
   retired sample ID.
+- A task with no project does not create an `営業改善` project.
 - Portfolio, Schedule, Task Flow Map, and Team views use empty production
   fallbacks.
 - A reload does not recreate `営業改善` unless the user has a real project or

@@ -71,7 +71,6 @@ export default function PortfolioView({
   const [projectConnections, setProjectConnections] = useState<ProjectConnection[]>(defaultProjectConnections);
   const [portfolioTasks, setPortfolioTasks] = useState<Task[]>([]);
   const [syncReady, setSyncReady] = useState(false);
-  const skipInitialProjectSaveRef = useRef(true);
   const skipInitialConnectionSaveRef = useRef(true);
   const inspectorPanelRef = useRef<HTMLElement>(null);
   const inspectorCloseRef = useRef<HTMLButtonElement>(null);
@@ -149,11 +148,6 @@ export default function PortfolioView({
 
   useEffect(() => {
     if (!syncReady) {
-      return;
-    }
-
-    if (skipInitialProjectSaveRef.current) {
-      skipInitialProjectSaveRef.current = false;
       return;
     }
 

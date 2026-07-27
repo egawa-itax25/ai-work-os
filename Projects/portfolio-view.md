@@ -13,6 +13,18 @@ related:
 
 # Portfolio View
 
+## Legacy sample-data migration
+
+- Production state must not recreate projects from development fixtures.
+- The retired generated project is identified by the exact pair
+  `task-project-b943ky` / `営業改善` and removed during normalization.
+- Project names alone must never be used as a deletion condition because a real
+  user project can have the same name.
+- Tasks without a project remain unassigned and must not default to a named
+  project.
+- Normalized local and cloud state is saved again so the retired record does
+  not return on another device.
+
 ## Purpose
 
 Portfolio View is the upper layer for comparing multiple active projects.

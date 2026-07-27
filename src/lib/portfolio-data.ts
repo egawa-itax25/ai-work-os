@@ -211,33 +211,47 @@ export type StoredPortfolioProject = Partial<PortfolioProject> & {
   name: string;
 };
 
+const retiredSampleProject = {
+  id: "task-project-b943ky",
+  name: "営業改善",
+} as const;
+
+function isRetiredSampleProject(project: StoredPortfolioProject) {
+  return (
+    project.id === retiredSampleProject.id &&
+    project.name === retiredSampleProject.name
+  );
+}
+
 export function normalizePortfolioProjects(
   projects: StoredPortfolioProject[],
 ): PortfolioProject[] {
-  return projects.map((project, index) => ({
-    id: project.id,
-    origin: project.origin ?? "manual",
-    rank: project.rank ?? index + 1,
-    name: project.name,
-    objective: project.objective ?? "",
-    owner: project.owner ?? "未設定",
-    dueDate: project.dueDate ?? "",
-    currentBallHolder: project.currentBallHolder ?? "未設定",
-    ballHolderType: project.ballHolderType ?? "member",
-    ballHoldingDays: project.ballHoldingDays ?? 0,
-    progress: clampNumber(project.progress ?? 0, 0, 100),
-    status: project.status ?? "healthy",
-    stalledCount: project.stalledCount ?? 0,
-    deadlineRisk: project.deadlineRisk ?? "none",
-    businessImportance: project.businessImportance ?? 8,
-    downstreamImpact: project.downstreamImpact ?? 8,
-    dueImpact: project.dueImpact ?? 8,
-    nextMilestone: project.nextMilestone ?? "次の一手を決める",
-    aiSuggestion: project.aiSuggestion,
-    risk: project.risk,
-    x: project.x ?? 120 + ((index * 180) % 820),
-    y: project.y ?? 120 + ((index * 110) % 420),
-  }));
+  return projects
+    .filter((project) => !isRetiredSampleProject(project))
+    .map((project, index) => ({
+      id: project.id,
+      origin: project.origin ?? "manual",
+      rank: project.rank ?? index + 1,
+      name: project.name,
+      objective: project.objective ?? "",
+      owner: project.owner ?? "未設定",
+      dueDate: project.dueDate ?? "",
+      currentBallHolder: project.currentBallHolder ?? "未設定",
+      ballHolderType: project.ballHolderType ?? "member",
+      ballHoldingDays: project.ballHoldingDays ?? 0,
+      progress: clampNumber(project.progress ?? 0, 0, 100),
+      status: project.status ?? "healthy",
+      stalledCount: project.stalledCount ?? 0,
+      deadlineRisk: project.deadlineRisk ?? "none",
+      businessImportance: project.businessImportance ?? 8,
+      downstreamImpact: project.downstreamImpact ?? 8,
+      dueImpact: project.dueImpact ?? 8,
+      nextMilestone: project.nextMilestone ?? "次の一手を決める",
+      aiSuggestion: project.aiSuggestion,
+      risk: project.risk,
+      x: project.x ?? 120 + ((index * 180) % 820),
+      y: project.y ?? 120 + ((index * 110) % 420),
+    }));
 }
 
 export function normalizePortfolioProjectList(value: unknown): PortfolioProject[] {
