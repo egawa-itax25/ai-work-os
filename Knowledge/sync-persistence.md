@@ -6,6 +6,14 @@ project: AI Work OS
 
 # Sync Persistence Notes
 
+## Employee registry
+
+- Store the employee registry as a separate synced state.
+- Persist employee ID, name, display order, created time, and updated time.
+- Keep local-only behavior working while signed out.
+- Use the existing cloud synchronization path after sign-in.
+- Preserve employees found only in existing tasks during the first migration.
+
 ## Fallback data must not become remote state
 
 Typed fallback records are useful for first render and development, but they

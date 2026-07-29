@@ -12,6 +12,14 @@ import {
   storageKey,
   statusMeta,
 } from "../tasks/task-data";
+import {
+  employeeRemoteStorageKey,
+  employeeStorageKey,
+  mergeEmployeeRegistries,
+  normalizeEmployeeRegistry,
+  orderedEmployeeNames,
+  type WorkspaceEmployee,
+} from "@/lib/employee-registry";
 import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
 type ViewMode = "orbit" | "list" | "load";
@@ -49,8 +57,6 @@ type MindMapLayout = {
 type Point = { x: number; y: number };
 
 const nonPeople = new Set(["顧客", "AI", "なし", "未設定", "人事チーム"]);
-const sampleOwnerPrefix = "team-sample";
-
 const memberProfiles: Record<string, { role: string }> = {
   あなた: { role: "代表 / 管理者" },
   山田太郎: { role: "PM / 業務設計" },
@@ -65,6 +71,7 @@ const memberProfiles: Record<string, { role: string }> = {
 
 export default function TeamAllocationView() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [employeeRegistry, setEmployeeRegistry] = useState<WorkspaceEmployee[]>([]);
   const [mode, setMode] = useState<ViewMode>("orbit");
   const [memberFilter, setMemberFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -87,6 +94,18 @@ export default function TeamAllocationView() {
     });
   }, []);
 
+  useEffect(() => {
+    void loadSyncedState({
+      localKey: employeeStorageKey,
+      remoteKey: employeeRemoteStorageKey,
+      fallback: [],
+      normalize: normalizeEmployeeRegistry,
+      onValue: (incoming) => {
+        setEmployeeRegistry((current) => mergeEmployeeRegistries(current, incoming));
+      },
+    });
+  }, []);
+
   function commitTasks(nextTasks: Task[]) {
     setTasks(nextTasks);
     void saveSyncedState(storageKey, remoteStorageKey, nextTasks);
@@ -97,14 +116,22 @@ export default function TeamAllocationView() {
     [tasks],
   );
 
-  const displayTasks = useMemo(() => withTeamScaleSamples(activeTasks), [activeTasks]);
+  const displayTasks = activeTasks;
 
   const projects = useMemo(
     () => Array.from(new Set(displayTasks.map((task) => task.project))).sort(),
     [displayTasks],
   );
 
-  const employees = useMemo(() => buildEmployeeNodes(displayTasks), [displayTasks]);
+  const employeeOrder = useMemo(
+    () => orderedEmployeeNames(employeeRegistry, displayTasks),
+    [displayTasks, employeeRegistry],
+  );
+
+  const employees = useMemo(
+    () => buildEmployeeNodes(displayTasks, employeeOrder),
+    [displayTasks, employeeOrder],
+  );
 
   const filteredTasks = useMemo(() => {
     return displayTasks.filter((task) => {
@@ -118,9 +145,15 @@ export default function TeamAllocationView() {
     });
   }, [displayTasks, memberFilter, priorityFilter, projectFilter, statusFilter]);
 
+  const visibleEmployeeOrder = useMemo(() => {
+    return memberFilter === "all"
+      ? employeeOrder
+      : employeeOrder.filter((name) => name === memberFilter);
+  }, [employeeOrder, memberFilter]);
+
   const visibleEmployees = useMemo(
-    () => buildEmployeeNodes(filteredTasks),
-    [filteredTasks],
+    () => buildEmployeeNodes(filteredTasks, visibleEmployeeOrder),
+    [filteredTasks, visibleEmployeeOrder],
   );
 
   const selectedTask = useMemo(
@@ -167,11 +200,6 @@ export default function TeamAllocationView() {
   }
 
   function updateSelectedTask(taskId: string, patch: Partial<Task>) {
-    if (taskId.startsWith(sampleOwnerPrefix)) {
-      setLastMove("サンプルタスクは編集プレビュー用です。実タスクを選択すると保存できます。");
-      return;
-    }
-
     commitTasks(tasks.map((task) => (task.id === taskId ? { ...task, ...patch } : task)));
   }
 
@@ -351,7 +379,7 @@ export default function TeamAllocationView() {
         <TaskInspector
           task={selectedTask}
           employees={employees}
-          isSample={selectedTask?.id.startsWith(sampleOwnerPrefix) ?? false}
+          isSample={false}
           onUpdate={updateSelectedTask}
         />
       </section>
@@ -399,7 +427,9 @@ function OrbitMap({
   onMemberDragEnter: (member: string) => void;
   onMemberDrop: (event: DragEvent<HTMLElement>, member: string) => void;
 }) {
+  const scrollViewportRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLDivElement>(null);
+  const didInitialCenterRef = useRef(false);
   const [draggingMember, setDraggingMember] = useState("");
   const featuredEmployees = employees.slice(0, 15);
   const centerProjects = new Set(taskPool.map((task) => task.project)).size;
@@ -413,6 +443,20 @@ function OrbitMap({
   const layout = buildMindMapLayout(featuredEmployees, fallbackMembers, memberPositions);
   const center = layout.center;
   const visibleExpandedCount = fallbackMembers.length;
+
+  useEffect(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport || didInitialCenterRef.current || featuredEmployees.length === 0) {
+      return;
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      viewport.scrollLeft = Math.max(0, center.x - viewport.clientWidth / 2);
+      didInitialCenterRef.current = true;
+    });
+
+    return () => window.cancelAnimationFrame(frame);
+  }, [center.x, featuredEmployees.length]);
 
   function handleMapDrop(event: DragEvent<HTMLDivElement>) {
     if (!draggingMember || !canvasRef.current) {
@@ -429,7 +473,7 @@ function OrbitMap({
   }
 
   return (
-    <div className="relative z-10 min-h-[740px] overflow-auto p-4">
+    <div ref={scrollViewportRef} className="relative z-10 min-h-[740px] overflow-auto p-4">
       <div className="mb-3 flex flex-wrap items-center justify-end gap-2">
         <span className="rounded-md border border-white/10 bg-slate-950/60 px-3 py-2 text-xs font-semibold text-zinc-300">
           表示中 {visibleExpandedCount}人
@@ -1263,7 +1307,10 @@ function SummaryTile({
   );
 }
 
-function buildEmployeeNodes(tasks: Task[]): EmployeeNode[] {
+function buildEmployeeNodes(
+  tasks: Task[],
+  orderedNames: string[] = [],
+): EmployeeNode[] {
   const names = new Set<string>();
 
   for (const task of tasks) {
@@ -1276,8 +1323,11 @@ function buildEmployeeNodes(tasks: Task[]): EmployeeNode[] {
     }
   }
 
-  return Array.from(names)
-    .sort()
+  const remainingNames = Array.from(names)
+    .filter((name) => !orderedNames.includes(name))
+    .sort((left, right) => left.localeCompare(right, "ja"));
+
+  return [...orderedNames, ...remainingNames]
     .map((name) => {
       const ownedTasks = tasks.filter((task) => task.owner === name);
       const projects = Array.from(new Set(ownedTasks.map((task) => task.project)));
@@ -1307,134 +1357,9 @@ function buildEmployeeNodes(tasks: Task[]): EmployeeNode[] {
         ).length,
         active: ownedTasks.filter((task) => task.status !== "done").length,
         loadLabel: getLoadLabel(ownedTasks),
-        isSample: ownedTasks.length > 0 && ownedTasks.every((task) => task.id.startsWith(sampleOwnerPrefix)),
+        isSample: false,
       };
     });
-}
-
-function withTeamScaleSamples(tasks: Task[]) {
-  const people = new Set(
-    tasks
-      .flatMap((task) => [task.owner, task.currentBallHolder])
-      .filter((name) => name && !nonPeople.has(name)),
-  );
-
-  if (people.size >= 10) {
-    return tasks;
-  }
-
-  const samples = createTeamSampleTasks();
-  const needed = Math.max(0, 10 - people.size);
-  const selectedOwners = Array.from(new Set(samples.map((task) => task.owner))).slice(0, needed);
-
-  return [
-    ...tasks,
-    ...samples.filter((task) => selectedOwners.includes(task.owner)),
-  ];
-}
-
-function createTeamSampleTasks(): Task[] {
-  const today = new Date().toISOString().slice(0, 10);
-  const sampleGroups: Array<{
-    owner: string;
-    role: string;
-    project: string;
-    tasks: Array<[string, TaskStatus, TaskPriority, number, string]>;
-  }> = [
-    {
-      owner: "高橋美咲",
-      role: "UXデザイナー",
-      project: "顧客体験改善",
-      tasks: [
-        ["UI/UX改善案", "doing", "medium", 55, "2026-07-24"],
-        ["ブランドガイド更新", "todo", "medium", 10, "2026-07-27"],
-      ],
-    },
-    {
-      owner: "伊藤直太",
-      role: "バックエンド",
-      project: "基盤強化",
-      tasks: [
-        ["セキュリティ監査", "doing", "high", 40, "2026-07-23"],
-        ["アクセス権限見直し", "todo", "medium", 0, "2026-07-29"],
-      ],
-    },
-    {
-      owner: "中村優子",
-      role: "採用 / 広報",
-      project: "採用プロジェクト",
-      tasks: [
-        ["求人プロセス最適化", "doing", "medium", 70, "2026-07-25"],
-        ["面接フロー設計", "todo", "low", 20, "2026-07-31"],
-      ],
-    },
-    {
-      owner: "小林莉奈",
-      role: "カスタマーサクセス",
-      project: "顧客支援",
-      tasks: [
-        ["顧客ドキュメント更新", "todo", "medium", 25, "2026-07-26"],
-        ["全体研修実施", "done", "low", 100, "2026-07-20"],
-      ],
-    },
-    {
-      owner: "渡辺直樹",
-      role: "データ分析",
-      project: "分析基盤",
-      tasks: [
-        ["認証基盤更新", "todo", "high", 12, "2026-07-22"],
-        ["商品フィードバック整理", "doing", "medium", 45, "2026-07-30"],
-      ],
-    },
-    {
-      owner: "加藤愛",
-      role: "QA / 品質管理",
-      project: "品質改善",
-      tasks: [
-        ["テスト仕様作成", "doing", "medium", 52, "2026-07-28"],
-        ["品質改善タスク", "todo", "low", 8, "2026-08-01"],
-      ],
-    },
-    {
-      owner: "吉田昇",
-      role: "マーケティング",
-      project: "市場開拓",
-      tasks: [
-        ["マーケ戦略立案", "doing", "medium", 60, "2026-07-26"],
-        ["SNS広告制作", "todo", "low", 15, "2026-07-30"],
-      ],
-    },
-    {
-      owner: "松本孝成",
-      role: "総務",
-      project: "社内プロセス改善",
-      tasks: [
-        ["会議・稟議管理", "doing", "low", 65, "2026-07-25"],
-        ["業務フロー改善", "todo", "medium", 18, "2026-08-02"],
-      ],
-    },
-  ];
-
-  return sampleGroups.flatMap((group, groupIndex) =>
-    group.tasks.map(([title, status, priority, progress, dueDate], taskIndex) => ({
-      id: `${sampleOwnerPrefix}-${groupIndex + 1}-${taskIndex + 1}`,
-      title,
-      description: `${group.project}に関する確認用サンプルタスクです。`,
-      owner: group.owner,
-      currentBallHolder: taskIndex === 0 ? group.owner : "顧客",
-      ballHoldingStartedAt: today,
-      project: group.project,
-      dueDate,
-      status,
-      priority,
-      progress,
-      nextAction: "次の確認事項を整理する",
-      x: 0,
-      y: 0,
-      links: [],
-      createdAt: today,
-    })),
-  );
 }
 
 function getMemberRole(name: string) {

@@ -29,6 +29,22 @@ The user should quickly understand:
 /team
 ```
 
+## Employee registry integration
+
+- Prefer the employee registry as the source of displayed members.
+- Use registry order as the member order in every team view.
+- Show registered employees even when they have zero tasks.
+- Append task-only assignees after registered employees so existing work never disappears.
+- Do not create sample employees or sample tasks automatically.
+
+## Employee registry integration
+
+- Prefer the employee registry as the source of displayed members.
+- Use registry order as the member order in every team view.
+- Show registered employees even when they have zero tasks.
+- Append task-only assignees after registered employees so existing work never disappears.
+- Do not create sample employees or sample tasks automatically.
+
 Primary navigation label:
 
 ```text

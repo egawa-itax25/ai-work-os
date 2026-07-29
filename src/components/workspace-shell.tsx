@@ -7,6 +7,7 @@ import { SyncStatusIndicator } from "@/components/sync-status-indicator";
 
 const defaultNavItems = [
   { id: "team", href: "/team", label: "全体プロジェクト" },
+  { id: "employees", href: "/employees", label: "従業員管理" },
   { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
   { id: "cockpit", href: "/", label: "司令室" },
   { id: "my-tasks", href: "/tasks", label: "自分の仕事" },
@@ -25,7 +26,7 @@ const defaultNavItems = [
 const navOrderStorageKey = "ai-work-os:navigation-order";
 const hiddenPrimaryNavIds = new Set(["cockpit", "inbox", "knowledge", "analytics", "ai"]);
 const primaryNavIds = new Set(["calendar", "portfolio", "team", "my-tasks", "projects"]);
-const utilityNavIds = new Set(["login", "settings", "completed", "trash"]);
+const utilityNavIds = new Set(["employees", "login", "settings", "completed", "trash"]);
 
 export function WorkspaceShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -355,6 +356,8 @@ function navIcon(id: string) {
   switch (id) {
     case "team":
       return "全";
+    case "employees":
+      return "人";
     case "calendar":
       return "◷";
     case "portfolio":
