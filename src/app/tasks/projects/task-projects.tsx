@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type DragEvent,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
 import {
   Task,
   TaskPriority,
@@ -23,11 +31,23 @@ import {
 import { addTrashItem, createTrashDates } from "@/lib/trash-data";
 import { loadSyncedState, saveSyncedState } from "@/lib/synced-storage";
 
+function getDefaultProjectDueDate() {
+  const dueDate = new Date();
+  dueDate.setDate(dueDate.getDate() + 7);
+  return dueDate.toISOString().slice(0, 10);
+}
+
 export default function TaskProjects() {
   const searchParams = useSearchParams();
   const projectFilter = searchParams.get("project") ?? "";
   const [tasks, setTasks] = useState<Task[]>([]);
   const [portfolioProjects, setPortfolioProjects] = useState<PortfolioProject[]>([]);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [projectName, setProjectName] = useState("");
+  const [projectDetails, setProjectDetails] = useState("");
+  const [projectOwner, setProjectOwner] = useState("あなた");
+  const [projectDeadlineMode, setProjectDeadlineMode] = useState<"date" | "monthly">("date");
+  const [projectDueDate, setProjectDueDate] = useState(getDefaultProjectDueDate);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | TaskStatus>("all");
   const [editingProject, setEditingProject] = useState("");
@@ -131,6 +151,57 @@ export default function TaskProjects() {
   function commitTasks(nextTasks: Task[]) {
     setTasks(nextTasks);
     void saveSyncedState(storageKey, remoteStorageKey, nextTasks);
+  }
+
+  function commitProjects(nextProjects: PortfolioProject[]) {
+    setPortfolioProjects(nextProjects);
+    void saveSyncedState(portfolioStorageKey, portfolioRemoteStorageKey, nextProjects);
+  }
+
+  function openCreateProject() {
+    setProjectName("");
+    setProjectDetails("");
+    setProjectOwner("あなた");
+    setProjectDeadlineMode("date");
+    setProjectDueDate(getDefaultProjectDueDate());
+    setIsCreateProjectOpen(true);
+  }
+
+  function handleCreateProject(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = projectName.trim();
+    if (!name || (projectDeadlineMode === "date" && !projectDueDate)) return;
+
+    const owner = projectOwner.trim() || "未設定";
+    const projectIndex = portfolioProjects.length;
+    const nextProject: PortfolioProject = {
+      id: `project-${crypto.randomUUID()}`,
+      origin: "manual",
+      rank: projectIndex + 1,
+      name,
+      objective: projectDetails.trim(),
+      owner,
+      dueDate: projectDeadlineMode === "monthly" ? "毎月" : projectDueDate,
+      currentBallHolder: owner,
+      ballHolderType: owner === "あなた" ? "self" : "member",
+      ballHoldingDays: 0,
+      progress: 0,
+      status: "healthy",
+      stalledCount: 0,
+      deadlineRisk: "none",
+      businessImportance: 8,
+      downstreamImpact: 8,
+      dueImpact: 8,
+      nextMilestone: "最初のタスクを決める",
+      aiSuggestion: "最初のタスクを追加すると流れを作れます。",
+      x: 140 + ((projectIndex * 180) % 800),
+      y: 150 + ((projectIndex * 130) % 380),
+    };
+
+    commitProjects([...portfolioProjects, nextProject]);
+    setQuery("");
+    setStatusFilter("all");
+    setIsCreateProjectOpen(false);
   }
 
   function updateTask(id: string, patch: Partial<Task>) {
@@ -485,17 +556,154 @@ export default function TaskProjects() {
         ))}
       </datalist>
 
+      {isCreateProjectOpen ? (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-[#020611]/75 p-4 backdrop-blur-sm"
+          onMouseDown={() => setIsCreateProjectOpen(false)}
+        >
+          <form
+            className="w-full max-w-2xl rounded-lg border border-white/15 bg-[#0a1020] p-6 shadow-2xl"
+            onSubmit={handleCreateProject}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <p className="text-xs text-sky-200">予定へ追加</p>
+                <h2 className="mt-1 text-xl font-semibold text-white">
+                  プロジェクトを作成
+                </h2>
+              </div>
+              <button
+                type="button"
+                aria-label="閉じる"
+                className="h-10 w-10 rounded-md border border-white/10 text-xl text-zinc-400 transition hover:border-white/25 hover:text-white"
+                onClick={() => setIsCreateProjectOpen(false)}
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="mt-6 grid gap-5">
+              <label className="grid gap-2 text-sm text-zinc-300">
+                プロジェクト名
+                <input
+                  autoFocus
+                  required
+                  value={projectName}
+                  onChange={(event) => setProjectName(event.target.value)}
+                  className="h-12 rounded-md border border-white/15 bg-[#070c18] px-4 text-base text-white outline-none transition focus:border-sky-300/70"
+                  placeholder="プロジェクト名を入力"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm text-zinc-300">
+                詳細
+                <textarea
+                  value={projectDetails}
+                  onChange={(event) => setProjectDetails(event.target.value)}
+                  className="min-h-32 resize-y rounded-md border border-white/15 bg-[#070c18] px-4 py-3 text-base leading-7 text-white outline-none transition focus:border-sky-300/70"
+                  placeholder="目的や進め方などを入力"
+                />
+              </label>
+
+              <div className="grid gap-2 text-sm text-zinc-300">
+                <span>期限</span>
+                <div className="grid grid-cols-2 gap-2 rounded-md border border-white/10 bg-[#070c18] p-1">
+                  <button
+                    type="button"
+                    className={`h-10 rounded-md transition ${
+                      projectDeadlineMode === "date"
+                        ? "bg-sky-300/15 text-sky-100"
+                        : "text-zinc-500 hover:text-zinc-200"
+                    }`}
+                    onClick={() => setProjectDeadlineMode("date")}
+                  >
+                    日付
+                  </button>
+                  <button
+                    type="button"
+                    className={`h-10 rounded-md transition ${
+                      projectDeadlineMode === "monthly"
+                        ? "bg-sky-300/15 text-sky-100"
+                        : "text-zinc-500 hover:text-zinc-200"
+                    }`}
+                    onClick={() => setProjectDeadlineMode("monthly")}
+                  >
+                    毎月
+                  </button>
+                </div>
+                {projectDeadlineMode === "date" ? (
+                  <input
+                    required
+                    type="date"
+                    value={projectDueDate}
+                    onChange={(event) => setProjectDueDate(event.target.value)}
+                    className="h-12 rounded-md border border-white/15 bg-[#070c18] px-4 text-base text-white outline-none transition focus:border-sky-300/70"
+                  />
+                ) : (
+                  <p className="rounded-md border border-white/10 bg-[#070c18] px-4 py-3 text-zinc-400">
+                    毎月繰り返す業務として登録します。
+                  </p>
+                )}
+              </div>
+
+              <label className="grid gap-2 text-sm text-zinc-300">
+                責任者
+                <input
+                  list="schedule-owner-candidates"
+                  value={projectOwner}
+                  onChange={(event) => setProjectOwner(event.target.value)}
+                  className="h-12 rounded-md border border-white/15 bg-[#070c18] px-4 text-base text-white outline-none transition focus:border-sky-300/70"
+                  placeholder="責任者を入力"
+                />
+              </label>
+            </div>
+
+            <div className="mt-7 flex justify-end gap-3">
+              <button
+                type="button"
+                className="h-11 min-w-28 rounded-md border border-white/15 px-5 text-sm text-zinc-300 transition hover:border-white/30 hover:text-white"
+                onClick={() => setIsCreateProjectOpen(false)}
+              >
+                キャンセル
+              </button>
+              <button
+                type="submit"
+                disabled={
+                  !projectName.trim() ||
+                  (projectDeadlineMode === "date" && !projectDueDate)
+                }
+                className="h-11 min-w-44 rounded-md border border-sky-300/45 bg-sky-300/12 px-6 text-sm font-semibold text-sky-50 transition hover:bg-sky-300/20 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                プロジェクトを追加
+              </button>
+            </div>
+          </form>
+        </div>
+      ) : null}
+
       <section className="grid gap-4 2xl:grid-cols-[minmax(22rem,0.75fr)_minmax(42rem,1.25fr)]">
-        <div>
-          <p className="neo-accent text-sm font-medium">プロジェクト別の仕事</p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-normal text-white">
-            {projectFilter ? `${projectFilter} のタスク` : "プロジェクトごとにタスクを見る"}
-          </h1>
-          {projectFilter ? (
-            <p className="mt-2 text-sm text-zinc-500">
-              ポートフォリオで選んだプロジェクトだけを表示しています。
-            </p>
-          ) : null}
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="neo-accent text-sm font-medium">プロジェクト別の仕事</p>
+            <h1 className="mt-1 text-3xl font-semibold tracking-normal text-white">
+              {projectFilter
+                ? `${projectFilter} のタスク`
+                : "プロジェクトごとにタスクを見る"}
+            </h1>
+            {projectFilter ? (
+              <p className="mt-2 text-sm text-zinc-500">
+                ポートフォリオで選んだプロジェクトだけを表示しています。
+              </p>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="h-12 rounded-md border border-sky-300/45 bg-sky-300/10 px-5 text-sm font-semibold text-sky-50 transition hover:bg-sky-300/18"
+            onClick={openCreateProject}
+          >
+            ＋ プロジェクト
+          </button>
         </div>
 
         <div className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,auto)]">
