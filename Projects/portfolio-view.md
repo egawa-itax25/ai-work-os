@@ -54,14 +54,9 @@ Knowledge
 Portfolio View links to the existing Project Flow screen. It does not replace
 the single-project task Flow experience.
 
-The shared navigation presents `/portfolio` as `タスク管理` with a checklist
-icon so the operation hub's daily purpose is immediately understandable. The
-icon uses a scalable inline SVG to remain crisp at compact navigation sizes.
-This navigation treatment is implemented and verified in the production build
-and the desktop sidebar.
-
-Deployed to the public Vercel preview on 2026-08-07 from commit `9048464` and
-verified at `/portfolio`: the `タスク管理` label and checklist SVG are present.
+The browser tab for `/portfolio` presents the title `タスク管理` with a
+checklist favicon so the page is easy to identify among open tabs. The in-app
+navigation keeps its existing `ポートフォリオ` label and icon.
 
 ## Layout
 

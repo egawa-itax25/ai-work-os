@@ -2,7 +2,7 @@ import PortfolioView from "./portfolio-view";
 import { portfolioFilters, type PortfolioFilter } from "@/lib/portfolio-data";
 
 export const metadata = {
-  title: "ポートフォリオ",
+  title: "タスク管理",
   description: "複数プロジェクトの進捗、優先順位、現在のボールを俯瞰します。",
 };
 
