@@ -60,6 +60,9 @@ icon uses a scalable inline SVG to remain crisp at compact navigation sizes.
 This navigation treatment is implemented and verified in the production build
 and the desktop sidebar.
 
+Deployed to the public Vercel preview on 2026-08-07 from commit `9048464` and
+verified at `/portfolio`: the `タスク管理` label and checklist SVG are present.
+
 ## Layout
 
 Use three calm regions:
