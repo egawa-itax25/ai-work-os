@@ -54,6 +54,12 @@ Knowledge
 Portfolio View links to the existing Project Flow screen. It does not replace
 the single-project task Flow experience.
 
+The shared navigation presents `/portfolio` as `タスク管理` with a checklist
+icon so the operation hub's daily purpose is immediately understandable. The
+icon uses a scalable inline SVG to remain crisp at compact navigation sizes.
+This navigation treatment is implemented and verified in the production build
+and the desktop sidebar.
+
 ## Layout
 
 Use three calm regions:

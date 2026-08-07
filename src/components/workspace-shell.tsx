@@ -8,7 +8,7 @@ import { SyncStatusIndicator } from "@/components/sync-status-indicator";
 const defaultNavItems = [
   { id: "team", href: "/team", label: "全体プロジェクト" },
   { id: "employees", href: "/employees", label: "従業員管理" },
-  { id: "portfolio", href: "/portfolio", label: "ポートフォリオ" },
+  { id: "portfolio", href: "/portfolio", label: "タスク管理" },
   { id: "cockpit", href: "/", label: "司令室" },
   { id: "my-tasks", href: "/tasks", label: "自分の仕事" },
   { id: "inbox", href: "/inbox", label: "受信箱" },
@@ -361,7 +361,7 @@ function navIcon(id: string) {
     case "calendar":
       return "◷";
     case "portfolio":
-      return "□";
+      return <TaskManagementIcon />;
     case "my-tasks":
       return "✓";
     case "projects":
@@ -377,4 +377,26 @@ function navIcon(id: string) {
     default:
       return "•";
   }
+}
+
+function TaskManagementIcon() {
+  return (
+    <svg
+      aria-hidden="true"
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="1.8"
+    >
+      <path d="m4 6 1.5 1.5L8.5 4.5" />
+      <path d="M11 6h9" />
+      <path d="m4 12 1.5 1.5 3-3" />
+      <path d="M11 12h9" />
+      <path d="m4 18 1.5 1.5 3-3" />
+      <path d="M11 18h9" />
+    </svg>
+  );
 }
