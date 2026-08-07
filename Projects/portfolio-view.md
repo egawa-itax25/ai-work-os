@@ -58,6 +58,9 @@ The browser tab for `/portfolio` presents the title `タスク管理` with a
 checklist favicon so the page is easy to identify among open tabs. The in-app
 navigation keeps its existing `ポートフォリオ` label and icon.
 
+Deployed to the public Vercel preview on 2026-08-07 from commit `cc98e80` and
+verified from the served HTML and SVG response.
+
 ## Layout
 
 Use three calm regions:
